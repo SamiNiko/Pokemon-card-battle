@@ -150,6 +150,7 @@ $('btnPull10').addEventListener('click', () => {
 
 $('btnDebug3').addEventListener('click', () => debugForcePull('rare'));
 $('btnDebug4').addEventListener('click', () => debugForcePull('epic'));
+$('btnDebug5').addEventListener('click', () => debugForcePull('pseudo'));
 
 async function debugForcePull(rarity) {
   const pool = BANNER_POOL.filter(p => p.rarity === rarity);
@@ -508,8 +509,10 @@ $('pullClose').addEventListener('click', () => {
    ================================================================ */
 
 function buildRatesModal() {
-  const groups = { epic: [], rare: [], uncommon: [], common: [] };
-  for (const e of BANNER_POOL) groups[e.rarity].push(e);
+  const groups = { pseudo: [], epic: [], rare: [], uncommon: [], common: [] };
+  for (const e of BANNER_POOL) {
+    if (groups[e.rarity]) groups[e.rarity].push(e);
+  }
 
   const body          = $('ratesList');
   body.innerHTML      = '';

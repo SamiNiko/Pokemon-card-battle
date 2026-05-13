@@ -449,6 +449,15 @@
   border-color: rgba(245, 208, 80, 0.75);
 }
 
+.debug-btn--pseudo {
+  color: #5ee8d8;
+  border-color: rgba(94, 232, 216, 0.55);
+}
+.debug-btn--pseudo:hover {
+  background: rgba(94, 232, 216, 0.14);
+  border-color: rgba(94, 232, 216, 0.8);
+}
+
 /* ================================================================
    CONFIRM MODAL
    ================================================================ */

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Online</title>
+  <link rel="stylesheet" href="css/base.css?v=2" />
+  <link rel="stylesheet" href="css/online.css?v=1" />
+</head>
+<body class="online-page">
+
+  <!-- Sfondo animato -->
+  <div class="online-bg" aria-hidden="true">
+    <div class="online-bg__orb online-bg__orb--1"></div>
+    <div class="online-bg__orb online-bg__orb--2"></div>
+    <div class="online-bg__orb online-bg__orb--3"></div>
+    <div class="online-bg__grid"></div>
+  </div>
+
+  <!-- Top bar -->
+  <header class="online-topbar">
+    <a class="online-topbar__back" href="index.html" id="btnExitOnline">← Home</a>
+    <h1 class="online-topbar__title">🌐 Battaglia Online</h1>
+    <div class="online-topbar__status">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status-label" id="statusLabel">—</span>
+    </div>
+  </header>
+
+  <!-- Stage centrale: cambia in base al fase -->
+  <main class="online-stage">
+
+    <!-- STATO: connessione iniziale -->
+    <section class="phase phase--connecting" data-phase="connecting">
+      <div class="phase__spinner phase__spinner--big"></div>
+      <h2 class="phase__title">Connessione al server…</h2>
+      <p class="phase__hint">Stiamo entrando in matchmaking.</p>
+    </section>
+
+    <!-- STATO: team vuoto, blocca il flow -->
+    <section class="phase hidden" data-phase="no-team">
+      <div class="phase__icon">⚠️</div>
+      <h2 class="phase__title">Team vuoto</h2>
+      <p class="phase__hint">
+        Non hai Pokémon nel team attivo. Vai in Collezione per aggiungerli.
+      </p>
+      <div class="phase__actions">
+        <a class="btn" href="index.html">← Home</a>
+        <a class="btn btn--primary" href="collection.html">📦 Vai in Collezione</a>
+      </div>
+    </section>
+
+    <!-- STATO: ricerca avversario -->
+    <section class="phase hidden" data-phase="searching">
+      <div class="radar">
+        <div class="radar__ring radar__ring--1"></div>
+        <div class="radar__ring radar__ring--2"></div>
+        <div class="radar__ring radar__ring--3"></div>
+        <div class="radar__core">🔍</div>
+      </div>
+      <h2 class="phase__title">In coda per un avversario…</h2>
+      <p class="phase__hint" id="queueHint">Tempo di attesa: <strong id="queueTime">0s</strong></p>
+
+      <!-- Preview del tuo team -->
+      <div class="team-preview">
+        <span class="team-preview__label">Il tuo team</span>
+        <div class="team-preview__slots" id="myTeamPreview"></div>
+      </div>
+
+      <button class="btn" id="btnCancelQueue">Annulla ricerca</button>
+    </section>
+
+    <!-- STATO: avversario trovato -->
+    <section class="phase hidden" data-phase="matched">
+      <div class="vs-display">
+        <div class="vs-display__player vs-display__player--me">
+          <span class="vs-display__avatar">👤</span>
+          <span class="vs-display__name" id="myName">—</span>
+          <div class="vs-display__team" id="myTeamMatch"></div>
+        </div>
+        <div class="vs-display__divider">
+          <span class="vs-display__vs">VS</span>
+        </div>
+        <div class="vs-display__player vs-display__player--opponent">
+          <span class="vs-display__avatar">👤</span>
+          <span class="vs-display__name" id="opponentName">—</span>
+          <div class="vs-display__team" id="opponentTeam"></div>
+        </div>
+      </div>
+      <h2 class="phase__title" id="matchTitle">Avversario trovato!</h2>
+      <p class="phase__hint" id="matchHint">Battaglia in partenza in <strong id="countdown">3</strong>…</p>
+    </section>
+
+    <!-- STATO: errore connessione -->
+    <section class="phase hidden" data-phase="error">
+      <div class="phase__icon">⚠️</div>
+      <h2 class="phase__title">Impossibile connettersi</h2>
+      <p class="phase__hint" id="errorMsg">Il server di gioco non risponde.</p>
+      <div class="phase__actions">
+        <a class="btn" href="index.html">← Home</a>
+        <button class="btn btn--primary" id="btnRetry">↻ Riprova</button>
+      </div>
+      <details class="phase__details">
+        <summary>Dettagli tecnici</summary>
+        <p>Il server PvP gira di default su <code>ws://localhost:8080</code>.<br>
+        Se stai testando in locale, esegui <code>cd server && npm start</code>.</p>
+      </details>
+    </section>
+
+    <!-- STATO: avversario disconnesso -->
+    <section class="phase hidden" data-phase="opponent-left">
+      <div class="phase__icon">💨</div>
+      <h2 class="phase__title">Avversario disconnesso</h2>
+      <p class="phase__hint">L'altro giocatore ha abbandonato la ricerca.</p>
+      <div class="phase__actions">
+        <a class="btn" href="index.html">← Home</a>
+        <button class="btn btn--primary" id="btnRequeue">🔄 Cerca un altro</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast -->
+  <div class="online-toast hidden" id="onlineToast">
+    <span id="onlineToastMsg"></span>
+  </div>
+
+  <script type="module" src="js/online-page.js?v=2"></script>
+</body>
+</html>

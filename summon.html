@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Summon</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/summon.css" />
+</head>
+<body class="summon-page">
+
+  <!-- Header -->
+  <header class="summon-header">
+    <a class="summon-header__back" href="index.html">← Home</a>
+    <h1 class="summon-header__title">✨ Summon</h1>
+    <div class="summon-header__currencies">
+      <div class="s-currency s-currency--gems">
+        <span>💎</span><span id="walletGems">—</span>
+      </div>
+      <div class="s-currency s-currency--euro">
+        <span>🪙</span><span id="walletEuro">—</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner card centrale -->
+  <div class="banner-wrap">
+
+    <!-- Frecce navigazione (future) -->
+    <button class="banner-arrow banner-arrow--left" disabled aria-label="Banner precedente">‹</button>
+
+    <section class="banner-card" id="bannerCard">
+
+      <!-- Sfondo banner (gradiente placeholder, in futuro immagine regione) -->
+      <div class="banner-card__bg" id="bannerBg">
+        <div class="banner-card__bg-text">KANTO</div>
+      </div>
+
+      <!-- Pokémon in evidenza -->
+      <div class="banner-card__featured" id="bannerFeatured"></div>
+
+      <!-- Info overlay in basso -->
+      <div class="banner-card__info">
+        <div class="banner-card__info-left">
+          <span class="banner-card__eyebrow">Banner attivo</span>
+          <h2 class="banner-card__name">Kanto Standard</h2>
+          <div class="banner-card__rate-pills">
+            <span class="bc-pill bc-pill--epic">★★★★ 0.5%</span>
+            <span class="bc-pill bc-pill--rare">★★★ 5.5%</span>
+            <span class="bc-pill bc-pill--uncommon">★★ 24%</span>
+            <span class="bc-pill bc-pill--common">★ 70%</span>
+          </div>
+        </div>
+        <button class="banner-card__rates-btn" id="btnRates">
+          Dettaglio probabilità ▸
+        </button>
+      </div>
+    </section>
+
+    <button class="banner-arrow banner-arrow--right" disabled aria-label="Banner successivo">›</button>
+  </div>
+
+  <!-- Pull buttons -->
+  <div class="pull-actions">
+    <button class="pull-btn" id="btnPull1">
+      <span class="pull-btn__n">×1</span>
+      <span class="pull-btn__cost"><span>💎</span> 160</span>
+    </button>
+    <button class="pull-btn pull-btn--gold" id="btnPull10">
+      <span class="pull-btn__n">×10</span>
+      <span class="pull-btn__cost"><span>💎</span> 1600 <span class="pull-btn__tag">★★ garantito</span></span>
+    </button>
+  </div>
+
+  <!-- Debug: forza rarità per test animazioni -->
+  <div class="debug-actions">
+    <span class="debug-actions__label">🧪 Debug animazioni:</span>
+    <button class="debug-btn debug-btn--rare" id="btnDebug3">Forza ★★★ Raro</button>
+    <button class="debug-btn debug-btn--epic" id="btnDebug4">Forza ★★★★ Pseudo Leggendario</button>
+  </div>
+
+  <!-- ================================================================
+       MODAL CONFERMA
+       ================================================================ -->
+  <div class="modal hidden" id="confirmModal">
+    <div class="modal__backdrop" id="confirmBackdrop"></div>
+    <div class="modal__panel confirm-panel">
+      <h2 class="confirm-panel__title" id="confirmTitle">Summon ×1</h2>
+      <p class="confirm-panel__cost" id="confirmCost"></p>
+      <p class="confirm-panel__after" id="confirmAfter"></p>
+      <div class="confirm-panel__actions">
+        <button class="btn" id="confirmCancel">Annulla</button>
+        <button class="btn btn--primary" id="confirmOk">✓ Conferma</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       PULL OVERLAY — esperienza Star Rail
+       ================================================================ -->
+  <div class="pull-overlay hidden" id="pullOverlay">
+    <div class="pull-overlay__bg" id="pullBg"></div>
+
+    <!-- Screen 1: stelle animate -->
+    <div class="stars-screen hidden" id="starsScreen">
+      <div class="stars-screen__stars" id="starsRow"></div>
+      <div class="stars-screen__name" id="starsName"></div>
+    </div>
+
+    <!-- Screen 2: Pokémon + dettagli (PC landscape) -->
+    <div class="reveal-screen hidden" id="revealScreen">
+      <div class="reveal-screen__left" id="revealLeft">
+        <div class="reveal-screen__glow" id="revealGlow"></div>
+        <img class="reveal-screen__sprite" id="revealSprite" alt="" />
+      </div>
+      <div class="reveal-screen__right" id="revealRight">
+        <!-- riempito da JS -->
+      </div>
+      <button class="reveal-screen__next" id="revealNext">Avanti →</button>
+    </div>
+
+    <!-- Screen 3: riepilogo -->
+    <div class="summary-screen hidden" id="summaryScreen">
+      <h2 class="summary-screen__title">Risultati</h2>
+      <div class="summary-cards" id="summaryCards"></div>
+      <button class="btn btn--primary summary-screen__close" id="pullClose">Continua →</button>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL PROBABILITÀ
+       ================================================================ -->
+  <div class="modal hidden" id="ratesModal" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" id="ratesBackdrop"></div>
+    <div class="modal__panel rates-panel">
+      <div class="rates-panel__header">
+        <h2 class="rates-panel__title">Probabilità di ottenimento</h2>
+        <button class="rates-panel__close" id="btnRatesClose">✕</button>
+      </div>
+      <div class="rates-panel__body" id="ratesList"></div>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div class="summon-loading" id="loadingOverlay">
+    <span class="loader"></span>
+    <p>Caricamento Pokémon…</p>
+  </div>
+
+  <script type="module" src="js/summon.js"></script>
+</body>
+</html>

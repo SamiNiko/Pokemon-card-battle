@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Collezione</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/collection.css" />
+</head>
+<body class="collection-page">
+  <main class="collection">
+
+    <!-- Header -->
+    <header class="collection__header">
+      <a class="btn btn--ghost" href="index.html">← Home</a>
+      <h1 class="collection__title">Collezione</h1>
+      <div class="collection__header-right">
+        <span class="collection__count" id="ownedCount">0 / 151</span>
+        <a class="btn btn--primary hidden" id="btnBattle" href="battle.html?mode=ai">⚔ Vai in Battaglia</a>
+      </div>
+    </header>
+
+    <!-- Main tabs -->
+    <nav class="collection__tabs">
+      <button class="tab is-active" data-tab="team">Team</button>
+      <button class="tab" data-tab="pokemon">Pokémon</button>
+      <button class="tab" data-tab="items">Oggetti</button>
+    </nav>
+
+    <!-- ============ TAB TEAM ============ -->
+    <section class="tab-panel is-active" data-tab-panel="team">
+
+      <!-- Team slot switcher — il team selezionato è quello giocato in battaglia -->
+      <div class="team-switcher">
+        <div class="team-switcher__tabs" id="teamSlotTabs">
+          <button class="slot-tab is-active" data-slot="0"><span class="slot-tab__letter">A</span></button>
+          <button class="slot-tab"           data-slot="1"><span class="slot-tab__letter">B</span></button>
+          <button class="slot-tab"           data-slot="2"><span class="slot-tab__letter">C</span></button>
+          <button class="slot-tab"           data-slot="3"><span class="slot-tab__letter">D</span></button>
+        </div>
+        <span class="team-switcher__hint">Il team selezionato verrà usato in battaglia</span>
+      </div>
+
+      <!-- Layout 2 colonne: slot + riepilogo / pool -->
+      <div class="team-editor">
+
+        <!-- Sinistra: slot del team + summary -->
+        <div class="team-editor__left">
+          <div class="team-slots" id="teamSlots">
+            <!-- 6 slot generati da JS -->
+          </div>
+
+          <div class="team-summary" id="teamSummary">
+            <!-- riepilogo team -->
+          </div>
+        </div>
+
+        <!-- Destra: pool con ricerca + filtri -->
+        <div class="team-editor__right">
+          <div class="pool-toolbar">
+            <input type="text" class="pool-toolbar__search" id="poolSearch" placeholder="🔍 Cerca Pokémon…" />
+            <div class="pool-toolbar__types" id="poolTypes">
+              <!-- chip filtro tipi generati da JS -->
+            </div>
+          </div>
+          <div class="team-pool" id="teamPool" aria-label="Pokémon disponibili">
+            <!-- griglia Pokémon posseduti -->
+          </div>
+          <div class="team-pool__empty hidden" id="poolEmpty">
+            <p>Nessun Pokémon disponibile.</p>
+            <a class="btn btn--primary" href="summon.html">✨ Vai al Summon</a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ TAB POKEMON ============ -->
+    <section class="tab-panel" data-tab-panel="pokemon">
+      <div class="pokedex-toolbar">
+        <input type="text" class="pool-toolbar__search" id="dexSearch" placeholder="🔍 Cerca…" />
+        <label class="pokedex-toolbar__only-owned">
+          <input type="checkbox" id="dexOnlyOwned" />
+          <span>Solo posseduti</span>
+        </label>
+      </div>
+      <div class="pokemon-grid" id="pokemonGrid">
+        <!-- griglia di tutti i 151 Pokémon -->
+      </div>
+    </section>
+
+    <!-- ============ TAB OGGETTI ============ -->
+    <section class="tab-panel" data-tab-panel="items">
+      <p class="tab-panel__hint">Sistema oggetti tenuti — coming soon.</p>
+    </section>
+
+  </main>
+
+  <!-- Toast -->
+  <div class="toast hidden" id="toast">
+    <span id="toastMsg"></span>
+  </div>
+
+  <script type="module" src="js/collection.js"></script>
+</body>
+</html>

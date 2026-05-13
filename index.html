@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Home</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/home.css" />
+</head>
+<body class="home-page">
+
+  <!-- Decorazioni sfondo -->
+  <div class="home-bg" aria-hidden="true">
+    <div class="home-bg__ball"></div>
+    <div class="home-bg__orb home-bg__orb--1"></div>
+    <div class="home-bg__orb home-bg__orb--2"></div>
+    <div class="home-bg__orb home-bg__orb--3"></div>
+    <div class="home-bg__sprites" id="bgSprites"></div>
+  </div>
+
+  <main class="home">
+
+    <!-- ── HEADER ── -->
+    <header class="home__header">
+      <div class="home__logo">
+        <span class="home__logo-ball" aria-hidden="true"></span>
+        <div>
+          <h1 class="home__title">Card Battle</h1>
+          <p class="home__subtitle">Hero Colosseum × Marvel Snap × Gen I</p>
+        </div>
+      </div>
+      <div class="home__wallet" id="homeWallet">
+        <span class="home__wallet-loading">…</span>
+      </div>
+      <button class="refill-btn" id="btnRefill" title="Debug: aggiungi 9 999 gemme">+ 💎</button>
+    </header>
+
+    <!-- ── BODY: 2 colonne su desktop ── -->
+    <div class="home__body">
+
+      <!-- Colonna sinistra: menu + notizie -->
+      <div class="home__left">
+
+        <!-- Menu principale -->
+        <nav class="home__menu">
+          <button class="menu-btn menu-btn--play" id="btnPlay">
+            <span class="menu-btn__text">
+              <span class="menu-btn__label">⚔ Gioca</span>
+              <span class="menu-btn__hint">Storia · Allenamento · Online</span>
+            </span>
+          </button>
+          <button class="menu-btn" id="btnCollection">
+            <span class="menu-btn__text">
+              <span class="menu-btn__label">📦 Collezione</span>
+              <span class="menu-btn__hint">Team, Pokémon, Oggetti</span>
+            </span>
+          </button>
+          <button class="menu-btn menu-btn--summon" id="btnSummon">
+            <span class="menu-btn__text">
+              <span class="menu-btn__label">✨ Summon</span>
+              <span class="menu-btn__hint">Ottieni nuovi Pokémon</span>
+            </span>
+          </button>
+          <button class="menu-btn" id="btnSettings">
+            <span class="menu-btn__text">
+              <span class="menu-btn__label">⚙ Impostazioni</span>
+              <span class="menu-btn__hint">Audio, grafica, account</span>
+            </span>
+          </button>
+          <button class="menu-btn menu-btn--shop" disabled>
+            <span class="menu-btn__text">
+              <span class="menu-btn__label">🛍 Negozio</span>
+              <span class="menu-btn__hint">Oggetti, pacchetti, cosmetici</span>
+            </span>
+            <span class="menu-btn__soon">In arrivo</span>
+          </button>
+        </nav>
+
+        <!-- Notizie / Novità -->
+        <section class="home__news">
+          <div class="home__section-header">
+            <span class="home__section-title">📢 Novità &amp; Aggiornamenti</span>
+          </div>
+
+          <div class="news-list" id="newsList">
+            <!-- riempito da home.js -->
+          </div>
+        </section>
+
+      </div><!-- /home__left -->
+
+      <!-- Colonna destra: sidebar team -->
+      <aside class="home__sidebar">
+
+        <div class="home__sidebar-header">
+          <span class="home__section-title">Il tuo team</span>
+          <a class="home__team-edit" href="collection.html">Modifica ›</a>
+        </div>
+
+        <!-- Team switcher A / B / C / D — il team selezionato è quello giocato -->
+        <div class="team-tabs" id="teamTabs">
+          <button class="team-tab is-active" data-slot="0">A</button>
+          <button class="team-tab"           data-slot="1">B</button>
+          <button class="team-tab"           data-slot="2">C</button>
+          <button class="team-tab"           data-slot="3">D</button>
+        </div>
+
+        <!-- Slot Pokémon (3×2 grid) — dimensioni fisse -->
+        <div class="home__team-slots" id="teamSlots">
+          <!-- riempito da home.js -->
+        </div>
+
+        <p class="home__sidebar-hint">
+          Il team selezionato è quello che porti in battaglia. Modifica gli slot dalla Collezione.
+        </p>
+
+      </aside><!-- /home__sidebar -->
+
+    </div><!-- /home__body -->
+
+    <footer class="home__footer">
+      <p class="home__status" id="dataStatus">Inizializzazione…</p>
+      <p class="home__version">v0.1 · prototipo</p>
+    </footer>
+  </main>
+
+  <!-- ================================================================
+       POPUP "GIOCA"
+       ================================================================ -->
+  <div class="modal hidden" id="playModal" role="dialog" aria-modal="true" aria-labelledby="playModalTitle">
+    <div class="modal__backdrop" data-close-modal></div>
+    <div class="modal__panel play-modal">
+      <h2 class="modal__title" id="playModalTitle">Scegli modalità</h2>
+      <div class="modal__options">
+        <button class="play-option" id="btnPlayStory">
+          <span class="play-option__icon">🗺</span>
+          <span class="play-option__text">
+            <span class="play-option__label">Storia</span>
+            <span class="play-option__hint">Esplora Kanto, sconfiggi i capipalestra</span>
+          </span>
+        </button>
+        <button class="play-option" id="btnPlayOnline">
+          <span class="play-option__icon">🌐</span>
+          <span class="play-option__text">
+            <span class="play-option__label">Online</span>
+            <span class="play-option__hint">Sfida un altro giocatore in PvP</span>
+          </span>
+        </button>
+      </div>
+      <button class="modal__close" data-close-modal>Annulla</button>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       MODAL NOTIZIA ESPANSA
+       ================================================================ -->
+  <div class="modal hidden" id="newsModal" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" id="newsBackdrop"></div>
+    <div class="modal__panel news-modal">
+      <div class="news-modal__header" id="newsModalHeader">
+        <!-- riempito da home.js -->
+      </div>
+      <div class="news-modal__body" id="newsModalBody">
+        <!-- riempito da home.js -->
+      </div>
+      <div class="news-modal__footer" id="newsModalFooter">
+        <!-- cta opzionale -->
+      </div>
+      <button class="modal__close" id="newsModalClose">Chiudi</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/home.js"></script>
+</body>
+</html>

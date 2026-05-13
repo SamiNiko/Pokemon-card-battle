@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Storia</title>
+  <link rel="stylesheet" href="css/base.css?v=2" />
+  <link rel="stylesheet" href="css/story.css?v=4" />
+</head>
+<body class="story-page">
+
+  <!-- Top bar -->
+  <header class="story-topbar">
+    <a class="story-topbar__back" href="index.html" id="btnExitStory">← Home</a>
+    <div class="story-topbar__center">
+      <h1 class="story-topbar__title" id="sceneTitle">—</h1>
+      <p class="story-topbar__subtitle" id="sceneSubtitle"></p>
+    </div>
+    <div class="story-topbar__badges" id="badgesContainer">
+      <!-- medaglie ottenute -->
+    </div>
+  </header>
+
+  <!-- Scene viewport -->
+  <main class="story-stage">
+    <div class="scene" id="sceneRoot">
+      <!-- decorations e hotspots inseriti da story.js -->
+    </div>
+  </main>
+
+  <!-- Backdrop dietro la minimap quando espansa -->
+  <div class="minimap-backdrop hidden" id="minimapBackdrop"></div>
+
+  <!-- Minimap: piccola in basso a destra, espandibile al click -->
+  <aside class="minimap" id="minimap" role="region" aria-label="Mappa di Kanto">
+    <button class="minimap__close" id="minimapClose" aria-label="Chiudi mappa">×</button>
+    <div class="minimap__title" id="minimapTitle">KANTO</div>
+    <div class="minimap__body" id="minimapBody">
+      <img class="minimap__bg" id="minimapBg" alt="" draggable="false" />
+      <div class="minimap__markers" id="minimapMarkers"></div>
+    </div>
+    <div class="minimap__hint">Clicca una città visitata per il Volo ✈</div>
+  </aside>
+
+  <!-- Dialog box (Pokémon-style) -->
+  <div class="dialog hidden" id="dialogBox">
+    <div class="dialog__speaker" id="dialogSpeaker">—</div>
+    <p class="dialog__text" id="dialogText">—</p>
+    <div class="dialog__indicator" id="dialogNext">▼</div>
+  </div>
+
+  <!-- Toast feedback -->
+  <div class="story-toast hidden" id="storyToast">
+    <span id="storyToastMsg"></span>
+  </div>
+
+  <!-- Modal conferma uscita -->
+  <div class="modal hidden" id="exitStoryModal" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" data-close-exit></div>
+    <div class="modal__panel">
+      <h2 class="modal__title">Tornare alla home?</h2>
+      <p style="color:var(--text-dim); margin-bottom: var(--sp-4); font-size: 0.88rem;">
+        Il tuo progresso viene salvato automaticamente. Puoi tornare in qualsiasi momento.
+      </p>
+      <div style="display:flex; gap: var(--sp-3);">
+        <button class="btn" data-close-exit style="flex:1">Annulla</button>
+        <a class="btn btn--primary" href="index.html" style="flex:1">← Vai alla Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/story.js"></script>
+</body>
+</html>

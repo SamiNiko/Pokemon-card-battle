@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Impostazioni</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/settings.css" />
+</head>
+<body class="settings-page">
+
+  <!-- Header -->
+  <header class="settings-header">
+    <a class="settings-header__back" href="index.html">← Home</a>
+    <h1 class="settings-header__title">⚙ Impostazioni</h1>
+    <span></span>
+  </header>
+
+  <main class="settings">
+
+    <!-- ============ ACCOUNT ============ -->
+    <section class="settings-section">
+      <h2 class="settings-section__title">👤 Account</h2>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Nome allenatore</div>
+          <div class="setting-row__hint">Verrà mostrato nei match e nelle future classifiche online</div>
+        </div>
+        <input type="text" class="setting-row__input" id="inpUserName" maxlength="24" placeholder="Allenatore" />
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">ID giocatore</div>
+          <div class="setting-row__hint">
+            <code id="userIdDisplay">—</code>
+            <button class="setting-row__inline-btn" id="btnCopyId" title="Copia ID">📋</button>
+          </div>
+        </div>
+        <span class="settings-badge" id="accountTypeBadge">Guest</span>
+      </div>
+
+      <div class="setting-row" id="authRow">
+        <div class="setting-row__info">
+          <div class="setting-row__label" id="authLabel">Login con Google</div>
+          <div class="setting-row__hint" id="authHint">Sincronizza il salvataggio su tutti i tuoi dispositivi</div>
+        </div>
+        <button class="settings-btn settings-btn--primary" id="btnAuth">
+          <span id="btnAuthLabel">🔑 Accedi con Google</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ SALVATAGGIO ============ -->
+    <section class="settings-section">
+      <h2 class="settings-section__title">💾 Salvataggio</h2>
+
+      <div class="settings-info-box">
+        <strong>Dove è salvato il tuo progresso?</strong><br>
+        Attualmente nel <em>localStorage</em> di questo browser. Cambi browser o PC → progresso non disponibile.
+        Usa <strong>Esporta</strong> per scaricare un file JSON e <strong>Importa</strong> per ripristinarlo altrove.
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Esporta salvataggio</div>
+          <div class="setting-row__hint">Scarica un file JSON con tutti i tuoi progressi</div>
+        </div>
+        <button class="settings-btn settings-btn--primary" id="btnExport">⬇ Esporta</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Importa salvataggio</div>
+          <div class="setting-row__hint">Carica un file JSON salvato in precedenza — sovrascrive lo stato corrente</div>
+        </div>
+        <label class="settings-btn" for="inpImport">⬆ Importa</label>
+        <input type="file" id="inpImport" accept=".json,application/json" hidden />
+      </div>
+    </section>
+
+    <!-- ============ AUDIO ============ -->
+    <section class="settings-section">
+      <h2 class="settings-section__title">🔊 Audio</h2>
+
+      <div class="setting-row setting-row--coming">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Volume musica</div>
+          <div class="setting-row__hint">In arrivo</div>
+        </div>
+        <input type="range" class="setting-row__slider" min="0" max="100" value="50" disabled />
+      </div>
+
+      <div class="setting-row setting-row--coming">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Volume effetti</div>
+          <div class="setting-row__hint">In arrivo</div>
+        </div>
+        <input type="range" class="setting-row__slider" min="0" max="100" value="70" disabled />
+      </div>
+    </section>
+
+    <!-- ============ DANGER ZONE ============ -->
+    <section class="settings-section settings-section--danger">
+      <h2 class="settings-section__title">⚠ Zona pericolosa</h2>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Reset progressi</div>
+          <div class="setting-row__hint">Cancella <strong>tutti</strong> i progressi — irreversibile se non hai un export</div>
+        </div>
+        <button class="settings-btn settings-btn--danger" id="btnReset">Reset</button>
+      </div>
+    </section>
+
+    <!-- ============ INFO ============ -->
+    <section class="settings-section">
+      <h2 class="settings-section__title">ℹ Info</h2>
+
+      <div class="settings-about">
+        <p><strong>Pokémon Card Battle</strong> · v0.1 prototipo</p>
+        <p class="settings-about__sub">Hero Colosseum × Marvel Snap × Gen I</p>
+        <p class="settings-about__sub">Progetto privato — non distribuito</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal conferma reset -->
+  <div class="modal hidden" id="resetModal" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" id="resetBackdrop"></div>
+    <div class="modal__panel">
+      <h2 class="modal__title">⚠ Sicuro di voler resettare?</h2>
+      <p class="reset-warning">
+        Questa azione cancella <strong>tutti</strong> i progressi: Pokémon ottenuti, team salvati, gemme e pokéuro.
+        Se non hai esportato il salvataggio, <strong>non sarà possibile recuperarlo</strong>.
+      </p>
+      <div class="reset-actions">
+        <button class="btn" id="btnResetCancel">Annulla</button>
+        <button class="btn btn--danger" id="btnResetConfirm">Conferma reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast hidden" id="toast">
+    <span id="toastMsg"></span>
+  </div>
+
+  <script type="module" src="js/settings.js"></script>
+</body>
+</html>

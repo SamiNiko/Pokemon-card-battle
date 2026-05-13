@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Combattimento</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/battle.css" />
+</head>
+<body class="battle-page">
+  <main class="battle">
+
+    <!-- AVVERSARIO -->
+    <section class="player-block player-block--enemy" aria-label="Avversario">
+      <div class="player-info">
+        <div class="player-info__avatar" aria-hidden="true" id="enemyAvatar">AI</div>
+        <div class="player-info__meta">
+          <h2 class="player-info__name" id="enemyName">Avversario</h2>
+          <div class="hp-bar" data-side="enemy">
+            <div class="hp-bar__fill" style="width: 100%"></div>
+            <span class="hp-bar__label"><span data-hp-current>3000</span> / <span data-hp-max>3000</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bench bench--enemy" id="enemyBench" aria-label="Panchina avversario">
+        <!-- Carte panchina generate da JS -->
+      </div>
+
+      <div class="grid grid--enemy" id="enemyGrid" aria-label="Griglia avversario">
+        <!-- 6 slot, 2 righe × 3 colonne. Generati da JS -->
+      </div>
+    </section>
+
+    <!-- FASCIA CENTRALE -->
+    <section class="battle-center">
+      <div class="battle-center__turn">
+        <span class="battle-center__turn-label">Turno</span>
+        <span class="battle-center__turn-num" id="turnNumber">1</span>
+      </div>
+
+      <div class="battle-center__timer" id="turnTimer">
+        <span class="battle-center__timer-label">Tempo</span>
+        <span class="battle-center__timer-value" id="timerValue">30</span>
+      </div>
+
+      <!-- Fase + Speed preview -->
+      <div class="battle-center__info">
+        <div class="battle-center__phase" id="phaseLabel">Posiziona le tue carte</div>
+        <div class="battle-center__placement-hint" id="placementHint">0 / 3 carte</div>
+        <div class="battle-center__speed" id="speedPreview">⚡ — vs —</div>
+      </div>
+
+      <!-- Conferma turno -->
+      <button class="btn btn--primary" id="btnConfirm">Conferma turno</button>
+    </section>
+
+    <!-- GIOCATORE -->
+    <section class="player-block player-block--self" aria-label="Tu">
+      <div class="grid grid--self" id="playerGrid" aria-label="Griglia giocatore">
+        <!-- 6 slot, 2 righe × 3 colonne. Generati da JS -->
+      </div>
+
+      <div class="bench bench--self" id="playerBench" aria-label="Panchina giocatore">
+        <!-- Carte panchina generate da JS -->
+      </div>
+
+      <div class="player-info">
+        <div class="player-info__avatar" aria-hidden="true" id="playerAvatar">YOU</div>
+        <div class="player-info__meta">
+          <h2 class="player-info__name" id="playerName">Tu</h2>
+          <div class="hp-bar" data-side="self">
+            <div class="hp-bar__fill" style="width: 100%"></div>
+            <span class="hp-bar__label"><span data-hp-current>3000</span> / <span data-hp-max>3000</span></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="battle__top-right">
+      <button class="btn btn--ghost" id="btnSpeedUp" title="Velocità animazioni">⏩ 1×</button>
+      <a class="battle__exit" href="index.html" aria-label="Torna alla home">← Home</a>
+    </div>
+  </main>
+
+  <!-- Scheda Pokémon (popup tasto destro) -->
+  <div class="modal hidden" id="pokeSheet" role="dialog" aria-modal="true" aria-labelledby="pokeSheetTitle">
+    <div class="modal__backdrop" data-close-modal></div>
+    <div class="modal__panel modal__panel--sheet">
+      <header class="sheet__header">
+        <h2 class="sheet__name" id="pokeSheetTitle">Pokémon</h2>
+        <button class="modal__close" data-close-modal aria-label="Chiudi">×</button>
+      </header>
+      <nav class="sheet__tabs">
+        <button class="sheet__tab is-active" data-sheet-tab="stats">Stat</button>
+        <button class="sheet__tab" data-sheet-tab="moves">Mosse</button>
+        <button class="sheet__tab" data-sheet-tab="gear">Gear</button>
+      </nav>
+      <div class="sheet__body" id="sheetBody">
+        <!-- contenuto pagina attiva -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal conferma uscita partita (4a-4) -->
+  <div class="modal hidden" id="exitModal" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
+    <div class="modal__backdrop" id="exitModalBackdrop"></div>
+    <div class="modal__panel" style="min-width:320px;max-width:420px;">
+      <h2 class="modal__title" id="exitModalTitle">Sei sicuro?</h2>
+      <p style="color:var(--text-dim);margin-bottom:var(--sp-5);">Perderai la partita in corso. Questa azione non può essere annullata.</p>
+      <div style="display:flex;gap:var(--sp-3);justify-content:flex-end;">
+        <button class="btn" id="exitCancel">Annulla</button>
+        <a class="btn btn--danger" href="index.html" id="exitConfirm">Esci comunque</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay di caricamento (rimosso da battle.js dopo loadAllPokemon) -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <span class="loader"></span>
+    <p id="loadingMsg">Caricamento Pokémon…</p>
+  </div>
+
+  <script type="module" src="js/battle.js?v=2"></script>
+</body>
+</html>

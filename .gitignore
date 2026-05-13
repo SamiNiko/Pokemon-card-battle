@@ -1,0 +1,33 @@
+# Claude Code (config locali, skill bundle, ecc.)
+.claude/
+
+# Dipendenze Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Stati e cache locali
+.cache/
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# File ambiente con secret (se li userai in futuro)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts (per il futuro)
+dist/
+build/
+
+# File specifici del progetto
+*.ods.bak
+*.tmp

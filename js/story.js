@@ -12,6 +12,8 @@ import('./data/cloud-sync.js').catch(err => console.warn('[cloud] non disponibil
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { SCENES, DIALOGS, REGION }      from './data/scenes.js';
+import { isLegendary }                  from './data/rarity.js';
+import { playLegendaryCinematic }       from './data/legendary-cinematic.js';
 import { spriteUrl, tileUrl }           from './data/sprites.js';
 import {
   getStoryState,
@@ -596,17 +598,26 @@ function transitionToScene(targetId) {
   }, 180);
 }
 
-function collectItem(hs) {
+async function collectItem(hs) {
   // Effetti onPick
   const onPick = hs.onPick ?? {};
 
   // Aggiungi Pokémon se give.pokemon
+  let isLegendaryCapture = false;
+  let capturedPokemon    = null;
   if (hs.give?.pokemon) {
-    const id = hs.give.pokemon;
+    const id    = hs.give.pokemon;
     const added = givePokemon(id);
-    const pkmn = findPokemon(id);
-    const name = pkmn?.name ?? `Pokémon #${id}`;
-    showToast(added ? `✨ Hai ottenuto ${name}!` : `Avevi già ${name}.`, 'success');
+    const pkmn  = findPokemon(id);
+    capturedPokemon    = pkmn;
+    isLegendaryCapture = added && isLegendary(id);
+
+    if (!isLegendaryCapture) {
+      // Pokémon normale → toast classico
+      const name = pkmn?.name ?? `Pokémon #${id}`;
+      showToast(added ? `✨ Hai ottenuto ${name}!` : `Avevi già ${name}.`, 'success');
+    }
+    // Se leggendario: niente toast, la cinematica gestisce la presentazione
   }
 
   // Set flags
@@ -623,6 +634,11 @@ function collectItem(hs) {
 
   // Re-render per riflettere consumed/flags
   renderScene(currentSceneId);
+
+  // Cinematica leggendario: blocca il flow finché l'utente non clicca "Continua"
+  if (isLegendaryCapture && capturedPokemon) {
+    await playLegendaryCinematic(capturedPokemon);
+  }
 
   // Dialogo dopo la scelta (se previsto)
   if (onPick.dialog) {

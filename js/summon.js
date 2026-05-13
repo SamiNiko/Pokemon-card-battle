@@ -8,6 +8,7 @@ import('./data/cloud-sync.js').catch(err => console.warn('[cloud] non disponibil
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState }         from './data/state.js';
 import { MOVESETS }                    from './data/movesets.js';
+import { getSummonablePool, PULL_RATES, tierLabel } from './data/rarity.js';
 
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -16,52 +17,15 @@ const COST_SINGLE = 160;
 const COST_MULTI  = 1600;
 
 /* ================================================================
-   POOL GEN 1 — 4 tier di rarità
-   ================================================================ */
-
-const STORIA_IDS = new Set([
-  1,2,3,4,5,6,7,8,9,
-  106,107,
-  134,135,136,137,
-  138,139,140,141,142,
-  143,
-  144,145,146,
-  150,151,
-]);
-
-// ★★★★ Epico — pseudo-leggendari
-const EPIC_IDS = new Set([149]); // Dragonite
-
-// ★★★ Raro — Pokémon forti / evoluti finali iconici
-const RARE_IDS = new Set([
-  65,68,76,94,123,124,125,126,127,128,130,131,132,133,
-]);
-// Nota: 149 è epico, non raro
-
-// ★★ Non comune — evoluzioni intermedie e Pokémon notevoli
-const UNCOMMON_IDS = new Set([
-  17,18,20,22,24,26,31,34,36,38,40,42,45,47,49,51,53,55,57,
-  59,62,64,67,71,73,75,78,80,82,85,87,89,91,93,97,99,101,103,
-  105,108,110,112,113,114,115,117,119,121,122,148,
-]);
-
-const BANNER_POOL = (() => {
-  const pool = [];
-  for (let id = 1; id <= 151; id++) {
-    if (STORIA_IDS.has(id)) continue;
-    let rarity;
-    if      (EPIC_IDS.has(id))     rarity = 'epic';
-    else if (RARE_IDS.has(id))     rarity = 'rare';
-    else if (UNCOMMON_IDS.has(id)) rarity = 'uncommon';
-    else                            rarity = 'common';
-    pool.push({ id, rarity });
-  }
-  return pool;
-})();
+   POOL — fonte di verità: js/data/rarity.js
+   ================================================================
+   Pool e probabilità sono importate. Il banner NON include i
+   leggendari (esclusivi della storia).
+*/
+const BANNER_POOL = getSummonablePool();
+const RATE_PCT    = PULL_RATES;   // { pseudo, epic, rare, uncommon, common }
 
 const FEATURED_IDS = [94, 130, 149, 131]; // Gengar, Gyarados, Dragonite, Lapras
-
-const RATE_PCT = { epic: 0.5, rare: 5.5, uncommon: 24, common: 70 };
 
 /* ================================================================
    GACHA LOGIC
@@ -69,21 +33,31 @@ const RATE_PCT = { epic: 0.5, rare: 5.5, uncommon: 24, common: 70 };
 
 function weightedPull() {
   const r = Math.random() * 100;
+  let acc = 0;
   let rarity;
-  if      (r < 0.5)  rarity = 'epic';
-  else if (r < 6.0)  rarity = 'rare';
-  else if (r < 30.0) rarity = 'uncommon';
-  else               rarity = 'common';
+  // Ordine dal più raro al più comune; cumula le probabilità
+  if      ((acc += RATE_PCT.pseudo)   >= r) rarity = 'pseudo';
+  else if ((acc += RATE_PCT.epic)     >= r) rarity = 'epic';
+  else if ((acc += RATE_PCT.rare)     >= r) rarity = 'rare';
+  else if ((acc += RATE_PCT.uncommon) >= r) rarity = 'uncommon';
+  else                                       rarity = 'common';
+
   const pool = BANNER_POOL.filter(p => p.rarity === rarity);
+  if (pool.length === 0) {
+    // Fallback se un tier è vuoto (es. nessun pseudo definito)
+    return BANNER_POOL[Math.floor(Math.random() * BANNER_POOL.length)];
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
 function doPulls(n) {
   const results = Array.from({ length: n }, weightedPull);
-  // Garanzia ×10: almeno 1 ★★ se non c'è nulla sopra comune
+  // Garanzia ×10: almeno 1 ★★+ se non c'è nulla sopra comune
   if (n === 10 && results.every(r => r.rarity === 'common')) {
     const pool = BANNER_POOL.filter(p => p.rarity === 'uncommon');
-    results[Math.floor(Math.random() * 10)] = pool[Math.floor(Math.random() * pool.length)];
+    if (pool.length > 0) {
+      results[Math.floor(Math.random() * 10)] = pool[Math.floor(Math.random() * pool.length)];
+    }
   }
   return results;
 }
@@ -246,7 +220,7 @@ async function showNextResult() {
 async function showStars(entry) {
   const pkmn       = findPokemon(entry.id);
   const rarity     = entry.rarity;
-  const starsCount = { epic: 4, rare: 3, uncommon: 2 }[rarity] ?? 2;
+  const starsCount = { pseudo: 5, epic: 4, rare: 3, uncommon: 2 }[rarity] ?? 2;
 
   // Reset
   const starsScreen = $('starsScreen');
@@ -432,8 +406,8 @@ async function showReveal(entry) {
 function buildDetailHTML(entry, pkmn) {
   if (!pkmn) return `<p style="color:var(--text-muted);font-size:0.85rem">Dati non disponibili</p>`;
 
-  const starsStr    = { epic: '★★★★', rare: '★★★', uncommon: '★★', common: '★' }[entry.rarity];
-  const rarityLabel = { epic: 'Pseudo Leggendario', rare: 'Raro', uncommon: 'Non comune', common: 'Comune' }[entry.rarity];
+  const starsStr    = { pseudo: '★★★★★', epic: '★★★★', rare: '★★★', uncommon: '★★', common: '★' }[entry.rarity];
+  const rarityLabel = { pseudo: 'Pseudo Leggendario', epic: 'Epico', rare: 'Raro', uncommon: 'Non Comune', common: 'Comune' }[entry.rarity];
 
   const typeColors = {
     normal:'#a8a878', fire:'#f08030',   water:'#6890f0',  grass:'#78c850',
@@ -508,7 +482,7 @@ function showSummary() {
   const container = $('summaryCards');
   container.innerHTML = '';
 
-  const starsMap = { epic: '★★★★', rare: '★★★', uncommon: '★★', common: '★' };
+  const starsMap = { pseudo: '★★★★★', epic: '★★★★', rare: '★★★', uncommon: '★★', common: '★' };
 
   pullAll.forEach((entry, i) => {
     const pkmn = findPokemon(entry.id);
@@ -540,9 +514,9 @@ function buildRatesModal() {
   const body          = $('ratesList');
   body.innerHTML      = '';
 
-  const rarityOrder   = ['epic', 'rare', 'uncommon', 'common'];
-  const rarityLabel   = { epic:'Pseudo Leggendario', rare:'Raro', uncommon:'Non comune', common:'Comune' };
-  const rarityStars   = { epic:'★★★★', rare:'★★★', uncommon:'★★', common:'★' };
+  const rarityOrder   = ['pseudo', 'epic', 'rare', 'uncommon', 'common'];
+  const rarityLabel   = { pseudo:'Pseudo Leggendario', epic:'Epico', rare:'Raro', uncommon:'Non Comune', common:'Comune' };
+  const rarityStars   = { pseudo:'★★★★★', epic:'★★★★', rare:'★★★', uncommon:'★★', common:'★' };
 
   for (const rarity of rarityOrder) {
     const entries = groups[rarity];

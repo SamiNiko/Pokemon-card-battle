@@ -8,15 +8,30 @@
    API: createOnlineClient(serverUrl).on('eventName', cb)
 */
 
-/* URL del game server. Override possibile via localStorage:
-     localStorage.setItem('pkmn_server_url', 'wss://mio-server.up.railway.app')
-   Pratico per switchare dev/prod senza ricompilare. */
-const DEFAULT_SERVER_URL = 'ws://localhost:8080';
+/* URL del game server. Logica di risoluzione:
+   1. Override esplicito passato a createOnlineClient(url)
+   2. localStorage.pkmn_server_url se settato (utile per dev avanzato)
+   3. Auto-detect:
+      - hostname localhost/127.0.0.1  → ws://localhost:8080 (dev locale)
+      - qualsiasi altro hostname       → wss://...railway.app (prod)
+*/
+const PROD_SERVER_URL = 'wss://pokemon-card-battle-production.up.railway.app';
+const DEV_SERVER_URL  = 'ws://localhost:8080';
 
 function resolveServerUrl(override) {
   if (override) return override;
-  try { return localStorage.getItem('pkmn_server_url') || DEFAULT_SERVER_URL; }
-  catch { return DEFAULT_SERVER_URL; }
+  try {
+    const stored = localStorage.getItem('pkmn_server_url');
+    if (stored) return stored;
+  } catch {}
+  // Auto-detect: dev se siamo serviti da localhost, altrimenti prod
+  try {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.')) {
+      return DEV_SERVER_URL;
+    }
+  } catch {}
+  return PROD_SERVER_URL;
 }
 
 export function createOnlineClient(serverUrl) {

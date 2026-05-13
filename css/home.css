@@ -205,6 +205,18 @@
 .wallet-row--gems   .wallet-row__amount { color: var(--accent); }
 .wallet-row--euro   { border-color: rgba(59,76,202,0.25); }
 .wallet-row--euro   .wallet-row__amount { color: #8899ff; }
+.wallet-row--collection {
+  border-color: rgba(77, 173, 91, 0.30);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.wallet-row--collection:hover {
+  background: rgba(77, 173, 91, 0.10);
+  border-color: rgba(77, 173, 91, 0.6);
+  text-decoration: none;
+}
+.wallet-row--collection .wallet-row__amount { color: var(--success); }
 .wallet-row__icon   { font-size: 0.9rem; }
 .wallet-row__amount { min-width: 28px; text-align: right; }
 .home__wallet-loading { color: var(--text-muted); font-size: 0.8rem; }
@@ -767,5 +779,43 @@
 
   .home__left {
     gap: var(--sp-6);
+  }
+}
+
+/* ================================================================
+   MOBILE STRETTO — sotto 460px: compatta wallet e header
+   ================================================================ */
+@media (max-width: 460px) {
+  .home { padding: var(--sp-4) var(--sp-3); }
+
+  /* Header in due righe: titolo + (wallet | refill) */
+  .home__header {
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+  .home__logo { flex: 1 1 auto; }
+  .home__title { font-size: 1.6rem; }
+  .home__subtitle { font-size: 0.78rem; }
+
+  /* Wallet: righe compatte, no a capo del numero */
+  .home__wallet {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+  .wallet-row {
+    padding: 3px 10px 3px 8px;
+    font-size: 0.75rem;
+  }
+  .wallet-row__icon { font-size: 0.85rem; }
+
+  .refill-btn { order: 99; }
+
+  /* Team in 3 colonne × 2 righe per non sforare */
+  .home__team-slots {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
   }
 }

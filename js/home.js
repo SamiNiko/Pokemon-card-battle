@@ -116,6 +116,10 @@ const NEWS_ITEMS = [
 function buildWallet(gs) {
   const el = $id('homeWallet');
   if (!el) return;
+
+  // Collezione: quanti Pokémon Gen 1 distinti possiedo / 151
+  const ownedCount = (gs.owned ?? []).filter(id => id >= 1 && id <= 151).length;
+
   el.innerHTML = `
     <div class="wallet-row wallet-row--gems">
       <span class="wallet-row__icon">💎</span>
@@ -125,6 +129,10 @@ function buildWallet(gs) {
       <span class="wallet-row__icon">🪙</span>
       <span class="wallet-row__amount">${gs.pokeuro ?? 0}</span>
     </div>
+    <a class="wallet-row wallet-row--collection" href="stats.html" title="Vai alle statistiche">
+      <span class="wallet-row__icon">📦</span>
+      <span class="wallet-row__amount">${ownedCount} / 151</span>
+    </a>
   `;
 }
 

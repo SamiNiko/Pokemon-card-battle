@@ -114,6 +114,19 @@ async function init() {
     location.href = 'index.html';
   });
 
+  // ---- Reset solo statistiche (cronologia + lifetimeStats) ----
+  $('btnResetStats')?.addEventListener('click', async () => {
+    if (!confirm('Resettare cronologia battaglie e tutte le statistiche?\n\nI Pokémon e le gemme NON verranno toccate.')) return;
+    try {
+      const { clearMatchHistory } = await import('./data/match-history.js');
+      clearMatchHistory();
+      toast('Statistiche resettate', 'success');
+    } catch (e) {
+      console.error(e);
+      toast('Errore nel reset stats', 'error');
+    }
+  });
+
   // ESC chiude modale reset
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') $('resetModal').classList.add('hidden');

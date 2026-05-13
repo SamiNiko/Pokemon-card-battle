@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pokémon Card Battle — Home</title>
-  <link rel="stylesheet" href="css/base.css" />
-  <link rel="stylesheet" href="css/home.css" />
+  <link rel="stylesheet" href="css/base.css?v=3" />
+  <link rel="stylesheet" href="css/home.css?v=2" />
 </head>
 <body class="home-page">
 
@@ -59,6 +59,12 @@
             <span class="menu-btn__text">
               <span class="menu-btn__label">✨ Summon</span>
               <span class="menu-btn__hint">Ottieni nuovi Pokémon</span>
+            </span>
+          </button>
+          <button class="menu-btn" id="btnStats" onclick="location.href='stats.html'">
+            <span class="menu-btn__text">
+              <span class="menu-btn__label">📊 Statistiche</span>
+              <span class="menu-btn__hint">Collezione, cronologia, record</span>
             </span>
           </button>
           <button class="menu-btn" id="btnSettings">
@@ -170,6 +176,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/home.js"></script>
+  <script type="module" src="js/home.js?v=2"></script>
 </body>
 </html>

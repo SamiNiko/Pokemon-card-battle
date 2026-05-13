@@ -362,6 +362,18 @@
   .battle-center { grid-template-columns: 1fr auto 1fr auto; }
 }
 
+/* Schermi molto stretti (telefoni in portrait) */
+@media (max-width: 480px) {
+  .battle { padding: var(--sp-1); gap: var(--sp-2); }
+  .bench { width: 96px; }   /* 2 col da ~42px */
+  .battle__top-right { top: var(--sp-1); right: var(--sp-1); gap: 4px; }
+  .battle__exit { font-size: 0.75rem; padding: 4px 8px; }
+  /* I label di fase più piccoli per non sforare */
+  .battle-center__phase-label,
+  .battle-center__turn-label,
+  .battle-center__timer-label { font-size: 0.62rem; }
+}
+
 /* ============================================================
    LOADING OVERLAY
    ============================================================ */

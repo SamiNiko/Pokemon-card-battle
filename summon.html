@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pokémon Card Battle — Summon</title>
-  <link rel="stylesheet" href="css/base.css?v=2" />
-  <link rel="stylesheet" href="css/summon.css?v=3" />
+  <link rel="stylesheet" href="css/base.css?v=3" />
+  <link rel="stylesheet" href="css/summon.css?v=17" />
 </head>
 <body class="summon-page">
 
@@ -103,6 +103,22 @@
   <div class="pull-overlay hidden" id="pullOverlay">
     <div class="pull-overlay__bg" id="pullBg"></div>
 
+    <!-- Skip button (visibile durante l'intera sequenza di pull) -->
+    <button class="pull-skip-btn hidden" id="btnSkipPull">⏭ Skip</button>
+
+    <!-- Hold-to-charge gate (solo multi ×10) -->
+    <div class="pull-gate hidden" id="pullGate">
+      <p class="pull-gate__hint">Tieni premuto per assorbire l'energia</p>
+      <div class="pull-gate__circle">
+        <svg viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="54" class="pull-gate__ring-bg"></circle>
+          <circle cx="60" cy="60" r="54" class="pull-gate__ring-fill"></circle>
+        </svg>
+        <div class="pull-gate__pulse"></div>
+      </div>
+      <p class="pull-gate__sub">Rilascia per fermare la carica</p>
+    </div>
+
     <!-- Screen 1: stelle animate -->
     <div class="stars-screen hidden" id="starsScreen">
       <div class="stars-screen__stars" id="starsRow"></div>
@@ -149,6 +165,6 @@
     <p>Caricamento Pokémon…</p>
   </div>
 
-  <script type="module" src="js/summon.js?v=3"></script>
+  <script type="module" src="js/summon.js?v=16"></script>
 </body>
 </html>

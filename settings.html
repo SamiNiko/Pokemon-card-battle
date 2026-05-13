@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pokémon Card Battle — Impostazioni</title>
-  <link rel="stylesheet" href="css/base.css" />
-  <link rel="stylesheet" href="css/settings.css" />
+  <link rel="stylesheet" href="css/base.css?v=3" />
+  <link rel="stylesheet" href="css/settings.css?v=2" />
 </head>
 <body class="settings-page">
 
@@ -107,6 +107,14 @@
 
       <div class="setting-row">
         <div class="setting-row__info">
+          <div class="setting-row__label">Reset statistiche</div>
+          <div class="setting-row__hint">Cancella cronologia battaglie e record. <strong>Non</strong> tocca Pokémon o gemme.</div>
+        </div>
+        <button class="settings-btn" id="btnResetStats">Reset stats</button>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
           <div class="setting-row__label">Reset progressi</div>
           <div class="setting-row__hint">Cancella <strong>tutti</strong> i progressi — irreversibile se non hai un export</div>
         </div>
@@ -148,6 +156,6 @@
     <span id="toastMsg"></span>
   </div>
 
-  <script type="module" src="js/settings.js"></script>
+  <script type="module" src="js/settings.js?v=2"></script>
 </body>
 </html>

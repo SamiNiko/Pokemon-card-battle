@@ -11,7 +11,22 @@ import { MOVESETS }                    from './data/movesets.js';
 import { getSummonablePool, PULL_RATES, tierLabel } from './data/rarity.js';
 
 const $ = id => document.getElementById(id);
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* Sleep cancellabile: se l'utente preme Skip, tutti gli sleep risolvono
+   immediatamente così le animazioni "saltano" al punto successivo. */
+let pullSkipRequested = false;
+const sleep = ms => new Promise(resolve => {
+  if (pullSkipRequested) { resolve(); return; }
+  const t = setTimeout(resolve, ms);
+  const i = setInterval(() => {
+    if (pullSkipRequested) {
+      clearTimeout(t);
+      clearInterval(i);
+      resolve();
+    }
+  }, 30);
+  setTimeout(() => clearInterval(i), ms + 100);
+});
 
 const COST_SINGLE = 160;
 const COST_MULTI  = 1600;
@@ -160,6 +175,8 @@ async function debugForcePull(rarity) {
   }
   const entry = pool[Math.floor(Math.random() * pool.length)];
 
+  pullSkipRequested = false;
+
   // NB: non aggiunge al posseduti e non scala gemme — è solo per test animazioni
   pullAll   = [entry];
   pullQueue = [entry];
@@ -169,7 +186,187 @@ async function debugForcePull(rarity) {
   $('revealScreen').classList.add('hidden');
   $('summaryScreen').classList.add('hidden');
 
+  $('btnSkipPull').classList.remove('hidden');
+
+  // Anche il debug pull passa per l'intro, così posso verificare l'animazione completa
+  await summonIntro();
+  if (pullSkipRequested) { showSummary(); return; }
+
   await showNextResult();
+}
+
+/* ================================================================
+   SKIP & HOLD-TO-CHARGE GATE
+   ================================================================ */
+
+function handleSkipClick() {
+  pullSkipRequested = true;
+  // Rimuovo overlay effimeri (intro, pokéball stinger, gate)
+  document.querySelectorAll('.summon-intro, .stinger-pokeball').forEach(el => el.remove());
+  $('pullGate').classList.add('hidden');
+  $('starsScreen').classList.add('hidden');
+  $('starsScreen').classList.remove('is-fading-out');
+  $('revealScreen').classList.add('hidden');
+  showSummary();
+}
+
+$('btnSkipPull').addEventListener('click', handleSkipClick);
+
+/* Hold-to-charge: l'utente tiene premuto sullo schermo per "caricare"
+   il portale. Quando la barra è piena, la pull prosegue. Rilasciando
+   prima del completo, la barra decade lentamente. */
+async function pullGate() {
+  return new Promise(resolve => {
+    const gate = $('pullGate');
+    const fill = gate.querySelector('.pull-gate__ring-fill');
+    const CIRC = 339.292;          // 2π × 54 (raggio del cerchio in SVG)
+    const HOLD_MS = 1200;          // tempo per riempire al massimo
+    const DECAY_FACTOR = 1.6;      // decade più lentamente del riempimento
+
+    gate.classList.remove('hidden');
+    gate.classList.remove('is-holding');
+
+    let holding   = false;
+    let progress  = 0;
+    let lastTs    = 0;
+    let raf       = null;
+    let completed = false;
+
+    function update(ts) {
+      if (completed || pullSkipRequested) { cleanup(); return; }
+
+      const dt = lastTs ? Math.min(50, ts - lastTs) : 16;
+      lastTs = ts;
+
+      if (holding) {
+        progress = Math.min(1, progress + dt / HOLD_MS);
+      } else {
+        progress = Math.max(0, progress - dt / (HOLD_MS * DECAY_FACTOR));
+      }
+
+      fill.style.strokeDashoffset = CIRC * (1 - progress);
+
+      if (progress >= 1) {
+        completed = true;
+        cleanup();
+        return;
+      }
+      raf = requestAnimationFrame(update);
+    }
+
+    function startHold(e) {
+      e.preventDefault();
+      if (!holding) {
+        holding = true;
+        gate.classList.add('is-holding');
+      }
+    }
+    function endHold() {
+      if (holding) {
+        holding = false;
+        gate.classList.remove('is-holding');
+      }
+    }
+
+    function cleanup() {
+      cancelAnimationFrame(raf);
+      gate.removeEventListener('mousedown',  startHold);
+      gate.removeEventListener('touchstart', startHold);
+      window.removeEventListener('mouseup',   endHold);
+      window.removeEventListener('touchend',  endHold);
+      window.removeEventListener('mouseleave', endHold);
+      gate.classList.add('hidden');
+      resolve();
+    }
+
+    gate.addEventListener('mousedown',  startHold);
+    gate.addEventListener('touchstart', startHold, { passive: false });
+    window.addEventListener('mouseup',  endHold);
+    window.addEventListener('touchend', endHold);
+    window.addEventListener('mouseleave', endHold);
+
+    raf = requestAnimationFrame(update);
+  });
+}
+
+/* ================================================================
+   SUMMON INTRO — "portale che carica energia"
+   Il tier (intensità) è determinato dalla massima rarità nel pull,
+   senza rivelare quale né dove. Il giocatore intuisce ma non sa.
+   ================================================================ */
+
+async function summonIntro() {
+  /* Determino il tier dell'intro dal massimo della batch */
+  const order = ['common', 'uncommon', 'rare', 'epic', 'pseudo'];
+  const maxIdx = Math.max(0, ...pullAll.map(r => order.indexOf(r.rarity)));
+  let tier;
+  if      (maxIdx <= 1) tier = 't1';   // common / uncommon → scintille leggere
+  else if (maxIdx === 2) tier = 't2';  // rare              → energia
+  else if (maxIdx === 3) tier = 't3';  // epic              → fulmini
+  else                   tier = 't4';  // pseudo            → distorsione spazio
+
+  const overlay = $('pullOverlay');
+  const intro   = document.createElement('div');
+  intro.className = `summon-intro summon-intro--${tier}`;
+  intro.innerHTML = `
+    <div class="summon-intro__bg"></div>
+    <div class="summon-intro__distortion"></div>
+    <div class="summon-intro__portal">
+      <div class="summon-intro__portal-ring summon-intro__portal-ring--1"></div>
+      <div class="summon-intro__portal-ring summon-intro__portal-ring--2"></div>
+      <div class="summon-intro__portal-ring summon-intro__portal-ring--3"></div>
+    </div>
+    <div class="summon-intro__orbits"></div>
+    <div class="summon-intro__lightning"></div>
+    <div class="summon-intro__particles"></div>
+    <div class="summon-intro__core"></div>
+  `;
+  overlay.appendChild(intro);
+
+  /* Particelle che convergono — quantità scala col tier */
+  const particleCounts = { t1: 16, t2: 26, t3: 40, t4: 56 };
+  const particlesEl = intro.querySelector('.summon-intro__particles');
+  for (let i = 0; i < particleCounts[tier]; i++) {
+    const p = document.createElement('span');
+    p.className = 'summon-intro__particle';
+    const angle    = Math.random() * Math.PI * 2;
+    const distance = 280 + Math.random() * 220;
+    p.style.setProperty('--sx', `${Math.cos(angle) * distance}px`);
+    p.style.setProperty('--sy', `${Math.sin(angle) * distance}px`);
+    p.style.animationDelay = `${Math.random() * 0.55}s`;
+    particlesEl.appendChild(p);
+  }
+
+  /* Sagome (carte) che orbitano: quantità scala col tier */
+  const orbitCounts = { t1: 3, t2: 5, t3: 7, t4: 9 };
+  const orbitsEl = intro.querySelector('.summon-intro__orbits');
+  const n = orbitCounts[tier];
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('span');
+    c.className = 'summon-intro__orbit-card';
+    c.style.setProperty('--orbit-angle', `${(i / n) * 360}deg`);
+    c.style.animationDelay = `${i * 70}ms`;
+    orbitsEl.appendChild(c);
+  }
+
+  /* Fulmini: solo tier 3 (epic) e tier 4 (pseudo) */
+  if (tier === 't3' || tier === 't4') {
+    const arcCount  = tier === 't3' ? 4 : 7;
+    const lightning = intro.querySelector('.summon-intro__lightning');
+    for (let i = 0; i < arcCount; i++) {
+      const arc = document.createElement('span');
+      arc.className = 'summon-intro__arc';
+      arc.style.setProperty('--arc-angle', `${(i / arcCount) * 360 + Math.random() * 40}deg`);
+      arc.style.animationDelay = `${700 + i * 90 + Math.random() * 60}ms`;
+      lightning.appendChild(arc);
+    }
+  }
+
+  void intro.offsetWidth;
+  intro.classList.add('is-active');
+
+  await sleep(1700);
+  intro.remove();
 }
 
 /* ================================================================
@@ -182,6 +379,8 @@ let pullAll   = []; // tutti i risultati (per il riepilogo)
 async function handlePull(n) {
   const cost = n === 1 ? COST_SINGLE : COST_MULTI;
   if (getGems() < cost) { alert('Gemme insufficienti!'); return; }
+
+  pullSkipRequested = false;
 
   const results = doPulls(n);
   spendGems(cost);
@@ -196,11 +395,24 @@ async function handlePull(n) {
   $('revealScreen').classList.add('hidden');
   $('summaryScreen').classList.add('hidden');
 
+  // Skip disponibile per tutto il pull
+  $('btnSkipPull').classList.remove('hidden');
+
+  // Hold-to-charge gate solo per multi pull
+  if (n >= 10) {
+    await pullGate();
+    if (pullSkipRequested) { showSummary(); return; }
+  }
+
+  // Intro "evocazione" — energia che si raccoglie, prima del primo reveal
+  await summonIntro();
+  if (pullSkipRequested) { showSummary(); return; }
+
   await showNextResult();
 }
 
 async function showNextResult() {
-  if (pullQueue.length === 0) {
+  if (pullSkipRequested || pullQueue.length === 0) {
     showSummary();
     return;
   }
@@ -219,6 +431,7 @@ async function showNextResult() {
 /* ---- Stars Screen — sequenza cinematica ---- */
 
 async function showStars(entry) {
+  if (pullSkipRequested) return;
   const rarity     = entry.rarity;
   const starsCount = { pseudo: 5, epic: 4, rare: 3, uncommon: 2 }[rarity] ?? 2;
 
@@ -245,31 +458,20 @@ async function showStars(entry) {
 
   /* === PHASE 1 — Anticipazione === */
   if (rarity === 'pseudo') {
-    // PSEUDO: doppio beam multi-colore + flash + shake — il più scenico
+    // PSEUDO: beam multi-colore + flash + shake + aurora che sale forte
     const beam1 = document.createElement('div');
     beam1.className = 'stars-screen__beam stars-screen__beam--pseudo';
     starsScreen.appendChild(beam1);
     await sleep(80);
     beam1.classList.add('is-firing');
-    await sleep(500);
+    await sleep(450);
     flashScreen('pseudo');
     shakeOverlay();
-    await sleep(450);
+    await sleep(400);
     beam1.remove();
 
-    // Secondo beam, verticale, taglia la scena
-    const beam2 = document.createElement('div');
-    beam2.className = 'stars-screen__beam stars-screen__beam--pseudo-vert';
-    starsScreen.appendChild(beam2);
-    await sleep(60);
-    beam2.classList.add('is-firing');
     aurora.classList.add('is-shown');
-    await sleep(600);
-    flashScreen('pseudo');
-    await sleep(300);
-    beam2.remove();
-
-    await sleep(400);   // pausa di tensione prima delle stelle
+    await sleep(550);   // aurora respira prima delle stelle
   } else if (rarity === 'epic') {
     const beam = document.createElement('div');
     beam.className = 'stars-screen__beam';
@@ -315,12 +517,57 @@ async function showStars(entry) {
     }
   }
 
-  /* === PHASE 3 — Hold di tensione prima del reveal (NO nome) === */
-  const holdMs = { pseudo: 2400, epic: 1900, rare: 1300, uncommon: 800 }[rarity] ?? 700;
-  await sleep(holdMs);
+  /* === PHASE 3 — Pausa di 1.5 secondi per "respirare" sulle stelle === */
+  await sleep(1500);
 
-  starsScreen.classList.add('hidden');
-  await showReveal(entry);
+  /* === PHASE 3b — Le stelle e l'aurora svaniscono prima della pokéball ===
+     Così la pokéball appare su una "tela pulita", non sovrapposta. */
+  starsScreen.classList.add('is-fading-out');
+  await sleep(380);
+
+  /* === PHASE 4 — Transizione stinger (pokéball) ===
+     Cambio scena (stars → reveal) dentro lo switchSceneFn, nascosto sotto al flash. */
+  await stingerTransition(rarity, async () => {
+    starsScreen.classList.add('hidden');
+    starsScreen.classList.remove('is-fading-out');   // reset per il prossimo pull
+    await showReveal(entry);
+  });
+}
+
+/* ---- Stinger transition (stile Twitch) ---- */
+
+async function stingerTransition(rarity, switchSceneFn) {
+  const overlay = $('pullOverlay');
+  const stinger = document.createElement('div');
+  stinger.className = `stinger-pokeball stinger-pokeball--${rarity}`;
+  stinger.innerHTML = `
+    <div class="pball__body">
+      <div class="pball__top"></div>
+      <div class="pball__bottom"></div>
+      <div class="pball__band"></div>
+      <div class="pball__button"></div>
+    </div>
+    <div class="pball__flash"></div>
+  `;
+  overlay.appendChild(stinger);
+  void stinger.offsetWidth;
+
+  /* FASE 1 — La pokéball appare al centro con bounce + wobble (~750ms) */
+  stinger.classList.add('is-active');
+  await sleep(750);
+
+  /* FASE 2 — La pokéball si apre: due metà volano via, il bottone lampeggia,
+     un'onda di luce esplode dal centro */
+  stinger.classList.add('is-opening');
+  await sleep(280);   // attesa fino al picco del flash (ball quasi sparita)
+
+  /* A questo punto il flash copre il centro → cambio scena sotto */
+  if (switchSceneFn) await switchSceneFn();
+
+  /* FASE 3 — Il flash si espande oltre lo schermo e svanisce → reveal visibile */
+  await sleep(620);
+
+  stinger.remove();
 }
 
 /* ---- Helpers cinematici ---- */
@@ -367,7 +614,7 @@ function flashScreen(rarity) {
   $('pullOverlay').appendChild(flash);
   void flash.offsetWidth;
   flash.classList.add('is-active');
-  setTimeout(() => flash.remove(), 550);
+  setTimeout(() => flash.remove(), 1000);
 }
 
 function shakeOverlay() {
@@ -381,6 +628,7 @@ function shakeOverlay() {
 /* ---- Reveal Screen ---- */
 
 async function showReveal(entry) {
+  if (pullSkipRequested) return;
   const pkmn   = findPokemon(entry.id);
   const sprite = $('revealSprite');
   const glow   = $('revealGlow');
@@ -497,8 +745,14 @@ $('revealNext').addEventListener('click', () => showNextResult());
 /* ---- Summary Screen ---- */
 
 function showSummary() {
+  // Pulisco eventuali overlay effimeri ancora vivi
+  document.querySelectorAll('.summon-intro, .stinger-pokeball').forEach(el => el.remove());
+  $('pullGate').classList.add('hidden');
+  $('btnSkipPull').classList.add('hidden');
+
   $('revealScreen').classList.add('hidden');
   $('starsScreen').classList.add('hidden');
+  $('starsScreen').classList.remove('is-fading-out');
   $('summaryScreen').classList.remove('hidden');
 
   const container = $('summaryCards');

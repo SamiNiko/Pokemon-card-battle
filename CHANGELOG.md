@@ -5,6 +5,39 @@
 
 ---
 
+## 2026-05-14 — Match History + Stats + Mobile Polish
+
+**Nuova pagina Statistiche (`stats.html`):**
+- Collezione: badge "N / 151" + breakdown per rarità (6★ leggendari → 1★ comuni) con progress bar dedicate
+- Stats di carriera: battaglie totali, W-L-D, win-rate, streak corrente, miglior streak, record vs CPU/PvP, danni inflitti/subiti, tempo totale, durata media
+- Top 5 Pokémon più utilizzati con sprite, rarità, count schierati e win-rate
+- Cronologia ultime 50 battaglie cliccabili → modal dettaglio (data, durata, turni, danni, team di entrambi i lati)
+- Modal mobile-first, espande a desktop sopra 680px / 1000px
+- Reset stats selettivo aggiunto in Settings (non tocca Pokémon/gemme)
+
+**Nuovo modulo `js/data/match-history.js`:**
+- API `recordMatch(entry)` chiamata da `battle.js endGame()` (solo battle reali, una volta per match)
+- API `getMatchHistory()`, `getLifetimeStats()`, `getTopPokemon(n)`, `clearMatchHistory()`, helper `formatDuration`/`formatRelativeDate`
+- Cap a 50 entry, FIFO (le più vecchie vengono droppate)
+- Migrazione automatica in `state.js` per save pre-stats (nessun reset richiesto)
+
+**Wallet home: nuova riga "📦 N / 151"** cliccabile → linka a stats. Stile coerente coi gemme/euro.
+
+**Mobile polish:**
+- Home `≤460px`: header in due righe, wallet compatto orizzontale, team in 3×2
+- Collection `≤600px`: tab scrollabili orizzontalmente, slot-tabs compatti, ricerca pokédex a tutta larghezza
+- Collection `≤520px`: pool a colonne minime 76px, type-chip ridotti, max-height 50vh
+- Battle `≤480px`: bench ridotta a 96px, top-right compatto, label fase più piccole
+- Stats: mobile-first dal design
+
+**Cache busting normalizzato** su tutti gli HTML (base.css v=3, pagine js/css aggiornati). Niente più asset senza version sui file principali.
+
+**File toccati:**
+- Nuovi: `stats.html`, `css/stats.css`, `js/stats.js`, `js/data/match-history.js`
+- Modificati: `js/data/state.js` (+ migrazione), `js/battle.js` (hook endGame), `js/home.js` (wallet collection), `js/settings.js` (reset stats), `index.html` (menu), `settings.html` (reset stats button), `css/home.css`, `css/collection.css`, `css/battle.css`
+
+---
+
 ## 2026-05-11 — Redesign Summon + Index
 
 **Summon page — redesign completo:**

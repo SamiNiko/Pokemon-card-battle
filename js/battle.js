@@ -11,6 +11,7 @@ import { resolveTurn }                 from './engine/combat.js';
 import { aiPlaceCards, aiChooseMoves } from './engine/ai.js';
 import { MOVESETS }                    from './data/movesets.js';
 import { createOnlineClient }          from './data/online.js';
+import { recordMatch }                 from './data/match-history.js';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -39,6 +40,8 @@ const FIELD_LIMIT   = 3;   // max carte in campo contemporaneamente
 const bs = {
   phase:          'placement',   // 'placement' | 'resolving' | 'ended'
   turn:           1,
+  startedAt:      Date.now(),     // per calcolare la durata della battaglia
+  matchRecorded:  false,          // evita doppio insert in caso di rerun di endGame
   playerHP:       PLAYER_MAX_HP,
   enemyHP:        ENEMY_MAX_HP,
   playerTeamIds:  [],
@@ -943,6 +946,28 @@ function endGame(result) {
   bs.phase = 'ended';
   stopTimer();
   setPhase(result === 'win' ? '🏆 Hai vinto!' : '💀 Hai perso!');
+
+  // Registra il risultato nella cronologia (una sola volta)
+  if (!bs.matchRecorded) {
+    bs.matchRecorded = true;
+    try {
+      recordMatch({
+        result,
+        mode:        bs.pvp ? 'pvp' : 'ai',
+        opponent:    bs.pvp?.opponentName ?? 'CPU',
+        durationSec: Math.round((Date.now() - bs.startedAt) / 1000),
+        turns:       bs.turn,
+        myTeam:      [...bs.playerTeamIds],
+        enemyTeam:   [...bs.enemyTeamIds],
+        // La barra HP del team va da PLAYER_MAX_HP (3000) a 0 → il damage
+        // totale subito/inflitto si ricava per differenza.
+        damageDealt: Math.max(0, ENEMY_MAX_HP  - bs.enemyHP),
+        damageTaken: Math.max(0, PLAYER_MAX_HP - bs.playerHP),
+      });
+    } catch (e) {
+      console.warn('Impossibile registrare la battaglia:', e);
+    }
+  }
 
   const btn = $('#btnConfirm');
   btn.textContent = 'Torna alla Home';

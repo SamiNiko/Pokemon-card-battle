@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Statistiche</title>
+  <link rel="stylesheet" href="css/base.css?v=3" />
+  <link rel="stylesheet" href="css/stats.css?v=1" />
+</head>
+<body class="stats-page">
+
+  <!-- Header -->
+  <header class="stats-header">
+    <a class="stats-header__back" href="index.html">← Home</a>
+    <h1 class="stats-header__title">📊 Statistiche &amp; Cronologia</h1>
+    <div class="stats-header__spacer"></div>
+  </header>
+
+  <main class="stats-main">
+
+    <!-- Sezione Collezione -->
+    <section class="stats-section" id="collectionSection">
+      <h2 class="stats-section__title">📦 Collezione</h2>
+
+      <div class="collection-overview">
+        <div class="collection-overview__main">
+          <span class="collection-overview__count" id="collectionCount">0 / 151</span>
+          <span class="collection-overview__label">Pokémon catturati</span>
+        </div>
+        <div class="collection-overview__bar">
+          <div class="collection-overview__fill" id="collectionFill"></div>
+        </div>
+        <span class="collection-overview__percent" id="collectionPercent">0%</span>
+      </div>
+
+      <div class="rarity-breakdown" id="rarityBreakdown">
+        <!-- Riempito da JS -->
+      </div>
+    </section>
+
+    <!-- Sezione Statistiche battaglia -->
+    <section class="stats-section">
+      <h2 class="stats-section__title">⚔ Statistiche battaglia</h2>
+
+      <div class="stats-grid">
+        <div class="stat-card stat-card--accent">
+          <span class="stat-card__label">Battaglie</span>
+          <span class="stat-card__value" id="statTotal">0</span>
+        </div>
+        <div class="stat-card stat-card--win">
+          <span class="stat-card__label">Vittorie</span>
+          <span class="stat-card__value" id="statWins">0</span>
+        </div>
+        <div class="stat-card stat-card--loss">
+          <span class="stat-card__label">Sconfitte</span>
+          <span class="stat-card__value" id="statLosses">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Win rate</span>
+          <span class="stat-card__value" id="statWinRate">—</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Streak attuale</span>
+          <span class="stat-card__value" id="statStreak">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Miglior streak</span>
+          <span class="stat-card__value" id="statBestStreak">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">vs CPU</span>
+          <span class="stat-card__value" id="statAi">0 / 0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">vs Online</span>
+          <span class="stat-card__value" id="statPvp">0 / 0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Danni inflitti</span>
+          <span class="stat-card__value" id="statDmgDealt">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Danni subiti</span>
+          <span class="stat-card__value" id="statDmgTaken">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Tempo totale</span>
+          <span class="stat-card__value" id="statPlayTime">0m</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card__label">Battaglia media</span>
+          <span class="stat-card__value" id="statAvgDuration">—</span>
+        </div>
+      </div>
+
+      <div class="stats-mvp">
+        <h3 class="stats-mvp__title">🏆 Pokémon più utilizzati</h3>
+        <div class="stats-mvp__list" id="topPokemon">
+          <p class="stats-empty">Nessun dato — gioca le tue prime battaglie!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sezione Cronologia -->
+    <section class="stats-section">
+      <h2 class="stats-section__title">📜 Cronologia battaglie</h2>
+      <p class="stats-section__hint">Ultime 50 battaglie. Tocca un risultato per i dettagli.</p>
+
+      <div class="match-list" id="matchList">
+        <p class="stats-empty">Nessuna battaglia registrata. Vai a Gioca per cominciare!</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal dettaglio match -->
+  <div class="modal hidden" id="matchModal" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" data-close-modal></div>
+    <div class="modal__panel match-modal">
+      <button class="modal__close" data-close-modal>×</button>
+      <div class="match-modal__body" id="matchModalBody">
+        <!-- riempito da JS -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/stats.js?v=1"></script>
+</body>
+</html>

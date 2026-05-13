@@ -398,10 +398,35 @@
   .team-slot { aspect-ratio: 1; }
 }
 
+@media (max-width: 600px) {
+  .collection__header { flex-wrap: wrap; gap: var(--sp-2); }
+  .collection__header-right { width: 100%; justify-content: space-between; }
+
+  /* Tabs principali: scrolla orizzontalmente se serve, niente overflow */
+  .collection__tabs {
+    overflow-x: auto;
+    scrollbar-width: thin;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab { padding: var(--sp-2) var(--sp-3); white-space: nowrap; }
+
+  /* Team switcher: tab più compatti */
+  .slot-tab { padding: 6px 10px; font-size: 0.85rem; }
+
+  /* Pokédex toolbar: cerca a tutta larghezza */
+  .pokedex-toolbar .pool-toolbar__search { max-width: none; flex: 1 1 100%; }
+}
+
 @media (max-width: 520px) {
   .collection { padding: var(--sp-3); }
   .collection__title { font-size: 1.3rem; }
   .team-slots { grid-template-columns: repeat(3, 1fr); }
   .team-slot { aspect-ratio: 3/4; }
-  .team-pool { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+  .team-pool {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    max-height: 50vh;
+    padding: var(--sp-2);
+  }
+  /* Type chip più stretti per non sforare */
+  .type-chip { font-size: 0.58rem; padding: 2px 7px; }
 }

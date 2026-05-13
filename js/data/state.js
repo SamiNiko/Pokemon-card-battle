@@ -29,6 +29,29 @@ const DEFAULT_STATE = {
   /* ---- Valute ---- */
   gems:    0,
   pokeuro: 0,
+
+  /* ---- Cronologia battaglie + statistiche aggregate ----
+     matchHistory : ultime ~50 battaglie (le più vecchie vengono droppate)
+     lifetimeStats: contatori cumulativi non azzerabili.
+     Vedi js/data/match-history.js per l'API di scrittura. */
+  matchHistory: [],
+  lifetimeStats: {
+    totalMatches:    0,
+    wins:            0,
+    losses:          0,
+    draws:           0,
+    aiWins:          0,
+    aiLosses:        0,
+    pvpWins:         0,
+    pvpLosses:       0,
+    damageDealt:     0,
+    damageTaken:     0,
+    currentStreak:   0,   // streak corrente (positivo = vittorie consecutive, negativo = sconfitte)
+    longestStreak:   0,   // miglior streak di vittorie consecutive
+    pokemonUsage:    {},  // { id → numero di volte schierato in team }
+    pokemonWinsWith: {},  // { id → numero di vittorie ottenute con quel pokémon in team }
+    totalPlayTimeSec: 0,
+  },
 };
 
 let _state = null;
@@ -227,6 +250,22 @@ function readAndMigrate() {
   while (merged.teams.length < 4) merged.teams.push([]);
   merged.teams = merged.teams.slice(0, 4).map(t => Array.isArray(t) ? t : []);
   if (typeof merged.activeTeam !== 'number') merged.activeTeam = 0;
+
+  // Migrazione: aggiungi matchHistory + lifetimeStats se mancano (save pre-stats)
+  if (!Array.isArray(merged.matchHistory)) merged.matchHistory = [];
+  if (!merged.lifetimeStats || typeof merged.lifetimeStats !== 'object') {
+    merged.lifetimeStats = structuredClone(DEFAULT_STATE.lifetimeStats);
+  } else {
+    // Riempi eventuali nuovi campi senza azzerare i valori esistenti
+    const defaultStats = DEFAULT_STATE.lifetimeStats;
+    for (const k of Object.keys(defaultStats)) {
+      if (merged.lifetimeStats[k] === undefined) {
+        merged.lifetimeStats[k] = typeof defaultStats[k] === 'object'
+          ? structuredClone(defaultStats[k])
+          : defaultStats[k];
+      }
+    }
+  }
 
   // Persisti subito al primo avvio / dopo migrazione
   if (!loaded || !loaded.userId || !Array.isArray(loaded?.teams)) {

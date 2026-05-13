@@ -527,6 +527,15 @@
 }
 .stars-screen.hidden { display: none; }
 
+/* Fade-out di stelle + aurora prima della pokéball: tutto svanisce insieme */
+.stars-screen.is-fading-out {
+  animation: stars-screen-fade 380ms cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+@keyframes stars-screen-fade {
+  0%   { opacity: 1; transform: scale(1);     filter: blur(0); }
+  100% { opacity: 0; transform: scale(0.96);  filter: blur(2px); }
+}
+
 /* Aurora di sfondo (rare/epic) */
 .stars-screen__aurora {
   position: absolute;
@@ -613,37 +622,6 @@
   animation: beam-shot 1.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
 }
 
-/* Beam verticale pseudo — taglia la scena dall'alto in basso */
-.stars-screen__beam--pseudo-vert {
-  position: absolute;
-  top: -50%;
-  left: 50%;
-  width: 4px;
-  height: 200%;
-  transform: translateX(-50%);
-  transform-origin: center;
-  background: linear-gradient(180deg,
-    transparent 0%,
-    rgba(255, 102, 204, 0.95) 25%,
-    rgba(255, 240, 200, 1)    50%,
-    rgba(94, 232, 216, 0.95)  75%,
-    transparent 100%);
-  filter: blur(1.5px);
-  box-shadow: 0 0 50px rgba(255, 102, 204, 0.9),
-              0 0 100px rgba(94, 232, 216, 0.5);
-  opacity: 0;
-  z-index: 1;
-}
-.stars-screen__beam--pseudo-vert.is-firing {
-  animation: beam-shot-vert 1.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
-}
-@keyframes beam-shot-vert {
-  0%   { opacity: 0; transform: translateX(-50%) scaleY(0)   scaleX(1); }
-  25%  { opacity: 1; transform: translateX(-50%) scaleY(1)   scaleX(1); }
-  60%  { opacity: 1; transform: translateX(-50%) scaleY(1)   scaleX(20); }
-  100% { opacity: 0; transform: translateX(-50%) scaleY(1)   scaleX(1); }
-}
-
 /* Particelle che esplodono dalle stelle */
 .cinematic-particle {
   position: absolute;
@@ -709,14 +687,15 @@
   z-index: 4;
 }
 .screen-flash.is-active {
-  animation: screen-flash-anim 0.5s ease-out;
+  animation: screen-flash-anim 0.95s ease-out;
 }
-.screen-flash--rare   { background: rgba(200, 168, 255, 0.4); }
-.screen-flash--epic   { background: radial-gradient(circle, rgba(255, 240, 160, 0.55) 0%, rgba(245, 208, 80, 0.3) 50%, transparent 80%); }
-.screen-flash--pseudo { background: radial-gradient(circle, rgba(180, 255, 240, 0.6) 0%, rgba(94, 232, 216, 0.35) 50%, transparent 80%); }
+.screen-flash--rare   { background: radial-gradient(circle, rgba(200, 168, 255, 0.32) 0%, rgba(200, 168, 255, 0.12) 55%, transparent 85%); }
+.screen-flash--epic   { background: radial-gradient(circle, rgba(255, 240, 160, 0.40) 0%, rgba(245, 208, 80, 0.18) 55%, transparent 85%); }
+.screen-flash--pseudo { background: radial-gradient(circle, rgba(180, 255, 240, 0.42) 0%, rgba(94, 232, 216, 0.20) 55%, transparent 85%); }
 @keyframes screen-flash-anim {
   0%   { opacity: 0; }
-  18%  { opacity: 1; }
+  28%  { opacity: 0.85; }
+  55%  { opacity: 0.55; }
   100% { opacity: 0; }
 }
 
@@ -1386,4 +1365,692 @@
     height: min(140px, 32vw);
   }
   .detail-name { font-size: 1.1rem; }
+}
+
+/* ================================================================
+   STINGER TRANSITION — Pokéball
+   La pokéball appare al centro, fa un piccolo wobble (come la cattura
+   classica), poi si "apre" con un flash di luce che cresce e svela
+   il Pokémon. Stelle → pokéball → flash → reveal.
+   ================================================================ */
+
+/* Container — niente dimensioni proprie, i figli si centrano sul container */
+.stinger-pokeball {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 200;
+}
+
+/* Corpo della pokéball — stilizzato (no ombre 3D pesanti) */
+.pball__body {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 130px;
+  height: 130px;
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 50%;
+  overflow: hidden;
+  /* Bordo sottile + un soft drop-shadow colorato per rarità */
+  box-shadow:
+    inset 0 0 0 3px rgba(20, 20, 28, 0.85),
+    0 6px 22px var(--pball-glow, rgba(0, 0, 0, 0.5));
+}
+/* Default: metà superiore color rarità, inferiore bianco-azzurro tenue */
+.pball__top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg,
+    var(--pball-top-light, #d8dde8) 0%,
+    var(--pball-top-dark,  #8e96aa) 100%);
+}
+.pball__bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg,
+    #f4f6fb 0%,
+    #c4cad6 100%);
+}
+.pball__band {
+  position: absolute;
+  top: calc(50% - 4px);
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: #14141c;
+}
+.pball__button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 32px;
+  height: 32px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #14141c;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.9),
+    0 0 8px var(--pball-glow, rgba(255, 255, 255, 0.4));
+  z-index: 3;
+}
+
+/* Variabili per rarità → riusate da top + glow + button */
+.stinger-pokeball--common {
+  --pball-top-light: #d8dde8;
+  --pball-top-dark:  #8e96aa;
+  --pball-glow:      rgba(168, 179, 207, 0.35);
+}
+.stinger-pokeball--uncommon {
+  --pball-top-light: #a8c4ff;
+  --pball-top-dark:  #4868a8;
+  --pball-glow:      rgba(136, 180, 255, 0.45);
+}
+.stinger-pokeball--rare {
+  --pball-top-light: #d4b8ff;
+  --pball-top-dark:  #7038f8;
+  --pball-glow:      rgba(200, 168, 255, 0.5);
+}
+.stinger-pokeball--epic {
+  --pball-top-light: #ffe0a0;
+  --pball-top-dark:  #d07020;
+  --pball-glow:      rgba(245, 208, 80, 0.55);
+}
+/* Pseudo: gradient ciano→magenta sulla metà superiore (multi-colore stile rarità top) */
+.stinger-pokeball--pseudo .pball__top {
+  background: linear-gradient(135deg,
+    #5ee8d8 0%,
+    #b890f0 50%,
+    #ff66cc 100%);
+}
+.stinger-pokeball--pseudo {
+  --pball-glow: rgba(180, 144, 232, 0.6);
+}
+
+/* Flash di luce che esplode dal centro quando la pokéball si apre */
+.pball__flash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200vmax;
+  height: 200vmax;
+  transform: translate(-50%, -50%) scale(0);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255, 252, 220, 0.95) 0%,
+    rgba(255, 230, 160, 0.70) 25%,
+    rgba(255, 190, 100, 0.40) 55%,
+    rgba(255, 140, 60,  0.15) 80%,
+    transparent 100%);
+  opacity: 0;
+  filter: blur(3px);
+  mix-blend-mode: screen;
+  z-index: 2;
+}
+
+/* Glow del flash per rarità (la pokéball resta classica, varia la luce) */
+.stinger-pokeball--epic .pball__flash {
+  background: radial-gradient(circle at 50% 50%,
+    rgba(255, 240, 180, 0.95) 0%,
+    rgba(255, 210, 100, 0.70) 25%,
+    rgba(240, 140, 30,  0.40) 55%,
+    rgba(180, 80,  20,  0.15) 80%,
+    transparent 100%);
+}
+.stinger-pokeball--pseudo .pball__flash {
+  background: radial-gradient(circle at 50% 50%,
+    rgba(220, 240, 255, 0.95) 0%,
+    rgba(180, 160, 240, 0.75) 25%,
+    rgba(220, 100, 200, 0.40) 55%,
+    rgba(120, 50,  140, 0.15) 80%,
+    transparent 100%);
+}
+.stinger-pokeball--rare .pball__flash {
+  background: radial-gradient(circle at 50% 50%,
+    rgba(240, 230, 255, 0.95) 0%,
+    rgba(200, 168, 255, 0.70) 25%,
+    rgba(120, 56,  248, 0.35) 55%,
+    transparent 100%);
+}
+.stinger-pokeball--uncommon .pball__flash {
+  background: radial-gradient(circle at 50% 50%,
+    rgba(220, 235, 255, 0.95) 0%,
+    rgba(136, 180, 255, 0.65) 30%,
+    rgba(64,  96,  176, 0.30) 60%,
+    transparent 100%);
+}
+
+/* ===== FASE 1: la pokéball appare con bounce + wobble ===== */
+.stinger-pokeball.is-active .pball__body {
+  animation: pball-appear 750ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ===== FASE 2: la pokéball si apre, il bottone lampeggia, il flash esplode ===== */
+.stinger-pokeball.is-opening .pball__top {
+  animation: pball-top-open 800ms cubic-bezier(0.4, 0, 0.5, 1) forwards;
+}
+.stinger-pokeball.is-opening .pball__bottom {
+  animation: pball-bottom-open 800ms cubic-bezier(0.4, 0, 0.5, 1) forwards;
+}
+.stinger-pokeball.is-opening .pball__band {
+  animation: pball-band-fade 220ms ease-out forwards;
+}
+.stinger-pokeball.is-opening .pball__button {
+  animation: pball-button-flash 280ms ease-out forwards;
+}
+.stinger-pokeball.is-opening .pball__body {
+  animation: pball-body-fade 500ms 200ms ease-out forwards;
+}
+.stinger-pokeball.is-opening .pball__flash {
+  animation: pball-flash-burst 900ms cubic-bezier(0.35, 0, 0.4, 1) forwards;
+}
+
+/* Bounce + wobble di entrata: la pokéball "cade" e oscilla */
+@keyframes pball-appear {
+  0%   { transform: translate(-50%, -50%) scale(0)    rotate(-25deg); }
+  45%  { transform: translate(-50%, -50%) scale(1.15) rotate(0deg);   }
+  60%  { transform: translate(-50%, -50%) scale(0.92) rotate(7deg);   }
+  72%  { transform: translate(-50%, -50%) scale(1.05) rotate(-5deg);  }
+  84%  { transform: translate(-50%, -50%) scale(0.98) rotate(3deg);   }
+  100% { transform: translate(-50%, -50%) scale(1)    rotate(0deg);   }
+}
+
+/* Metà superiore: vola in alto e ruota a sinistra */
+@keyframes pball-top-open {
+  0%   { transform: translateY(0)      rotate(0deg);   opacity: 1; }
+  30%  { transform: translateY(-40px)  rotate(-12deg); opacity: 1; }
+  100% { transform: translateY(-260px) rotate(-32deg); opacity: 0; }
+}
+
+/* Metà inferiore: vola in basso e ruota a destra */
+@keyframes pball-bottom-open {
+  0%   { transform: translateY(0)     rotate(0deg);  opacity: 1; }
+  30%  { transform: translateY(40px)  rotate(12deg); opacity: 1; }
+  100% { transform: translateY(260px) rotate(32deg); opacity: 0; }
+}
+
+/* La fascia nera collassa subito */
+@keyframes pball-band-fade {
+  to { opacity: 0; transform: scaleY(0); }
+}
+
+/* Il bottone si illumina e viene assorbito dal flash */
+@keyframes pball-button-flash {
+  0%   {
+    background: radial-gradient(circle at 35% 35%, #ffffff 0%, #e0e0e0 60%, #b8b8b8 100%);
+    box-shadow: 0 0 0 rgba(255, 255, 200, 0);
+  }
+  40%  {
+    background: #ffffff;
+    box-shadow: 0 0 30px 12px rgba(255, 255, 200, 0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.5);
+  }
+}
+
+/* La cornice/ombra del corpo svanisce mentre le due metà escono */
+@keyframes pball-body-fade {
+  to {
+    opacity: 0;
+    box-shadow:
+      0 12px 28px rgba(0, 0, 0, 0),
+      inset -12px -12px 28px rgba(0, 0, 0, 0),
+      inset 8px 8px 24px rgba(255, 255, 255, 0);
+  }
+}
+
+/* Il flash esplode dal centro, copre lo schermo, poi svanisce */
+@keyframes pball-flash-burst {
+  0%   { transform: translate(-50%, -50%) scale(0);    opacity: 0;    }
+  15%  { transform: translate(-50%, -50%) scale(0.15); opacity: 0.90; }
+  45%  { transform: translate(-50%, -50%) scale(0.60); opacity: 0.85; }
+  75%  { transform: translate(-50%, -50%) scale(1.00); opacity: 0.50; }
+  100% { transform: translate(-50%, -50%) scale(1.30); opacity: 0;    }
+}
+
+/* ================================================================
+   SUMMON INTRO — "Portale che carica energia"
+   4 tier di intensità che fanno INTUIRE la rarità senza rivelarla:
+     t1 (common/uncommon) → scintille leggere
+     t2 (rare)            → energia visibile
+     t3 (epic)            → fulmini
+     t4 (pseudo)          → distorsione spazio
+   Durata: 1700ms
+   ================================================================ */
+.summon-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+  /* Palette di base (sovrascritta per tier) */
+  --portal-c1: rgba(200, 210, 235, 0.55);
+  --portal-c2: rgba(200, 168, 255, 0.55);
+  --portal-c3: rgba(255, 240, 200, 0.65);
+  --portal-glow: rgba(200, 168, 255, 0.35);
+}
+
+/* Tier 1 — scintille tenui, palette neutra/grigia */
+.summon-intro--t1 {
+  --portal-c1: rgba(168, 179, 207, 0.45);
+  --portal-c2: rgba(200, 210, 230, 0.45);
+  --portal-c3: rgba(230, 234, 246, 0.55);
+  --portal-glow: rgba(168, 179, 207, 0.30);
+}
+
+/* Tier 2 — energia visibile, blu/violetto */
+.summon-intro--t2 {
+  --portal-c1: rgba(136, 180, 255, 0.55);
+  --portal-c2: rgba(168, 200, 255, 0.55);
+  --portal-c3: rgba(220, 230, 255, 0.7);
+  --portal-glow: rgba(136, 180, 255, 0.55);
+}
+
+/* Tier 3 — fulmini, oro/arancio */
+.summon-intro--t3 {
+  --portal-c1: rgba(255, 200, 100, 0.65);
+  --portal-c2: rgba(245, 208, 80, 0.65);
+  --portal-c3: rgba(255, 250, 220, 0.8);
+  --portal-glow: rgba(255, 180, 60, 0.7);
+}
+
+/* Tier 4 — distorsione, ciano/magenta */
+.summon-intro--t4 {
+  --portal-c1: rgba(94, 232, 216, 0.65);
+  --portal-c2: rgba(200, 168, 255, 0.65);
+  --portal-c3: rgba(255, 102, 204, 0.65);
+  --portal-glow: rgba(220, 144, 232, 0.75);
+}
+
+/* Sfondo che si oscura */
+.summon-intro__bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center,
+    rgba(20, 22, 38, 0.88) 0%,
+    rgba(8,  10, 22, 0.96) 60%,
+    rgba(0,  0,  5,  1)   100%);
+  opacity: 0;
+}
+.summon-intro.is-active .summon-intro__bg {
+  animation: si-bg 1700ms ease-out forwards;
+}
+@keyframes si-bg {
+  0%   { opacity: 0; }
+  12%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Distorsione spazio: solo tier 4 */
+.summon-intro__distortion {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 50% 30% at 50% 50%, rgba(94, 232, 216, 0.10) 0%, transparent 70%),
+    radial-gradient(ellipse 30% 50% at 50% 50%, rgba(255, 102, 204, 0.08) 0%, transparent 70%);
+  opacity: 0;
+  display: none;
+  filter: blur(20px);
+}
+.summon-intro--t4 .summon-intro__distortion { display: block; }
+.summon-intro--t4.is-active .summon-intro__distortion {
+  animation: si-distortion 1700ms ease-in-out forwards;
+}
+@keyframes si-distortion {
+  0%   { opacity: 0;   transform: scale(0.6) rotate(0deg);   filter: blur(25px); }
+  30%  { opacity: 1;   transform: scale(1.1) rotate(40deg);  filter: blur(15px); }
+  60%  { opacity: 0.9; transform: scale(1.4) rotate(90deg);  filter: blur(20px); }
+  85%  { opacity: 0.7; transform: scale(1.8) rotate(140deg); filter: blur(28px); }
+  100% { opacity: 0;   transform: scale(2.2) rotate(180deg); }
+}
+
+/* Anelli del portale — 3 cerchi concentrici che ruotano e crescono */
+.summon-intro__portal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+.summon-intro__portal-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  border: 2px solid var(--portal-c2);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  box-shadow:
+    0 0 24px var(--portal-glow),
+    inset 0 0 18px var(--portal-glow);
+}
+.summon-intro__portal-ring--1 {
+  width: 100px; height: 100px;
+  border-color: var(--portal-c1);
+}
+.summon-intro__portal-ring--2 {
+  width: 160px; height: 160px;
+  border-color: var(--portal-c2);
+  border-width: 1.5px;
+  border-style: dashed;
+}
+.summon-intro__portal-ring--3 {
+  width: 220px; height: 220px;
+  border-color: var(--portal-c3);
+}
+
+.summon-intro.is-active .summon-intro__portal-ring--1 {
+  animation: si-ring 1700ms 100ms cubic-bezier(0.3, 0.6, 0.4, 1) forwards;
+}
+.summon-intro.is-active .summon-intro__portal-ring--2 {
+  animation: si-ring-dash 1700ms 250ms cubic-bezier(0.3, 0.6, 0.4, 1) forwards;
+}
+.summon-intro.is-active .summon-intro__portal-ring--3 {
+  animation: si-ring 1700ms 380ms cubic-bezier(0.3, 0.6, 0.4, 1) forwards;
+}
+
+@keyframes si-ring {
+  0%   { transform: translate(-50%, -50%) scale(0)   rotate(0deg);   opacity: 0;    }
+  18%  { transform: translate(-50%, -50%) scale(1)   rotate(40deg);  opacity: 0.95; }
+  65%  { transform: translate(-50%, -50%) scale(1.2) rotate(120deg); opacity: 0.6;  }
+  92%  { transform: translate(-50%, -50%) scale(8)   rotate(220deg); opacity: 0.2;  }
+  100% { transform: translate(-50%, -50%) scale(12)  rotate(240deg); opacity: 0;    }
+}
+/* L'anello dashed ruota in senso opposto per dare profondità */
+@keyframes si-ring-dash {
+  0%   { transform: translate(-50%, -50%) scale(0)   rotate(0deg);    opacity: 0;    }
+  18%  { transform: translate(-50%, -50%) scale(1)   rotate(-40deg);  opacity: 0.85; }
+  65%  { transform: translate(-50%, -50%) scale(1.2) rotate(-120deg); opacity: 0.5;  }
+  92%  { transform: translate(-50%, -50%) scale(8)   rotate(-220deg); opacity: 0.15; }
+  100% { transform: translate(-50%, -50%) scale(12)  rotate(-240deg); opacity: 0;    }
+}
+
+/* Sagome (carte) che orbitano attorno al portale */
+.summon-intro__orbits {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+.summon-intro__orbit-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 20px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--portal-c3) 0%, var(--portal-c2) 100%);
+  box-shadow: 0 0 10px var(--portal-glow);
+  transform: rotate(var(--orbit-angle, 0deg)) translateX(180px) rotate(calc(-1 * var(--orbit-angle, 0deg)));
+  opacity: 0;
+}
+.summon-intro.is-active .summon-intro__orbit-card {
+  animation: si-orbit 1700ms ease-in-out forwards;
+}
+@keyframes si-orbit {
+  0%   {
+    opacity: 0;
+    transform: rotate(var(--orbit-angle, 0deg)) translateX(240px)
+               rotate(calc(-1 * var(--orbit-angle, 0deg))) scale(0.4);
+  }
+  20%  { opacity: 0.85; }
+  /* Spirale verso il centro */
+  55%  {
+    opacity: 0.8;
+    transform: rotate(calc(var(--orbit-angle, 0deg) + 180deg)) translateX(130px)
+               rotate(calc(-1 * (var(--orbit-angle, 0deg) + 180deg))) scale(0.9);
+  }
+  82%  {
+    opacity: 0.5;
+    transform: rotate(calc(var(--orbit-angle, 0deg) + 360deg)) translateX(40px)
+               rotate(calc(-1 * (var(--orbit-angle, 0deg) + 360deg))) scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(calc(var(--orbit-angle, 0deg) + 450deg)) translateX(0)
+               rotate(calc(-1 * (var(--orbit-angle, 0deg) + 450deg))) scale(0);
+  }
+}
+
+/* Fulmini — solo tier 3 / 4 */
+.summon-intro__lightning {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+.summon-intro__arc {
+  position: absolute;
+  top: 0;
+  left: -2px;
+  width: 4px;
+  height: 220px;
+  transform-origin: top center;
+  transform: rotate(var(--arc-angle, 0deg));
+  background: linear-gradient(to bottom,
+    transparent 0%,
+    var(--portal-c3) 20%,
+    rgba(255, 255, 255, 0.95) 45%,
+    var(--portal-c2) 70%,
+    transparent 100%);
+  filter: blur(1.5px);
+  opacity: 0;
+}
+.summon-intro--t3 .summon-intro__arc,
+.summon-intro--t4 .summon-intro__arc {
+  animation: si-arc 280ms forwards;
+}
+@keyframes si-arc {
+  0%   { opacity: 0;   transform: rotate(var(--arc-angle, 0deg)) scaleY(0); }
+  25%  { opacity: 1;   transform: rotate(var(--arc-angle, 0deg)) scaleY(1); }
+  60%  { opacity: 0.7; transform: rotate(var(--arc-angle, 0deg)) scaleY(1); }
+  100% { opacity: 0;   transform: rotate(var(--arc-angle, 0deg)) scaleY(0.85); }
+}
+
+/* Particelle */
+.summon-intro__particles {
+  position: absolute;
+  inset: 0;
+}
+.summon-intro__particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--portal-c3);
+  box-shadow:
+    0 0 6px var(--portal-c3),
+    0 0 12px var(--portal-c2);
+  transform: translate(calc(-50% + var(--sx, 0px)), calc(-50% + var(--sy, 0px)));
+  opacity: 0;
+}
+.summon-intro.is-active .summon-intro__particle {
+  animation: si-particle 1000ms cubic-bezier(0.55, 0, 0.85, 0.5) forwards;
+}
+@keyframes si-particle {
+  0%   {
+    transform: translate(calc(-50% + var(--sx, 0px)), calc(-50% + var(--sy, 0px))) scale(0.6);
+    opacity: 0;
+  }
+  18%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% {
+    transform: translate(-50%, -50%) scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* Nucleo centrale */
+.summon-intro__core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0  20px  4px var(--portal-c3),
+    0 0  50px 14px var(--portal-c2),
+    0 0 110px 32px var(--portal-glow);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+}
+.summon-intro.is-active .summon-intro__core {
+  animation: si-core 1700ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes si-core {
+  0%   { transform: translate(-50%, -50%) scale(0);    opacity: 0;    }
+  20%  { transform: translate(-50%, -50%) scale(0.5);  opacity: 0.6;  }
+  50%  { transform: translate(-50%, -50%) scale(0.9);  opacity: 0.85; }
+  68%  { transform: translate(-50%, -50%) scale(0.75); opacity: 0.95; }
+  84%  { transform: translate(-50%, -50%) scale(2.8);  opacity: 1;    }
+  93%  { transform: translate(-50%, -50%) scale(22);   opacity: 1;    }
+  100% { transform: translate(-50%, -50%) scale(34);   opacity: 0;    }
+}
+
+/* ================================================================
+   SKIP BUTTON — visibile durante l'intera sequenza di pull
+   ================================================================ */
+.pull-skip-btn {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  z-index: 300;
+  padding: 9px 18px;
+  background: rgba(20, 24, 38, 0.72);
+  color: #d8dde8;
+  border: 1px solid rgba(200, 200, 220, 0.32);
+  border-radius: 22px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.86rem;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s,
+    transform 0.15s;
+}
+.pull-skip-btn:hover {
+  background: rgba(40, 46, 64, 0.88);
+  border-color: rgba(200, 200, 220, 0.65);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.pull-skip-btn:active { transform: translateY(0); }
+.pull-skip-btn.hidden { display: none; }
+
+/* ================================================================
+   HOLD-TO-CHARGE GATE — solo per le multi
+   ================================================================ */
+.pull-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: radial-gradient(circle at center,
+    rgba(15, 18, 28, 0.94) 0%,
+    rgba(2,  4,  10, 0.99) 70%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+.pull-gate.hidden { display: none; }
+
+.pull-gate__hint {
+  color: #d8dde8;
+  font-size: 1.05rem;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin: 0;
+  animation: pull-gate-hint 1.8s ease-in-out infinite;
+  text-shadow: 0 0 8px rgba(200, 168, 255, 0.4);
+}
+@keyframes pull-gate-hint {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1;    }
+}
+
+.pull-gate__sub {
+  color: rgba(200, 200, 220, 0.5);
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.pull-gate__circle {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+.pull-gate__circle svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.pull-gate__ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 4;
+}
+.pull-gate__ring-fill {
+  fill: none;
+  stroke: url(#pullGateGrad);
+  stroke: #c8a8ff;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 339.292;
+  stroke-dashoffset: 339.292;
+  filter: drop-shadow(0 0 8px rgba(200, 168, 255, 0.85));
+}
+
+.pull-gate__pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 18px 5px  rgba(255, 250, 220, 0.85),
+    0 0 40px 12px rgba(200, 168, 255, 0.55),
+    0 0 80px 20px rgba(94, 232, 216, 0.35);
+  transform: translate(-50%, -50%) scale(0.5);
+  opacity: 0.35;
+  transition: transform 0.18s ease-out, opacity 0.18s;
+}
+.pull-gate.is-holding .pull-gate__pulse {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  animation: pull-gate-pulse 0.5s ease-in-out infinite alternate;
+}
+@keyframes pull-gate-pulse {
+  from { transform: translate(-50%, -50%) scale(1);    }
+  to   { transform: translate(-50%, -50%) scale(1.18); }
+}
+
+/* Quando si tiene premuto, il ring si carica visivamente di più */
+.pull-gate.is-holding .pull-gate__ring-fill {
+  stroke: #fff;
+  filter: drop-shadow(0 0 14px rgba(200, 168, 255, 1));
 }

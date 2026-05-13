@@ -567,7 +567,7 @@
   50%       { opacity: 1;   transform: scale(1.12) rotate(2deg); }
 }
 
-/* Beam dorato pre-stelle (solo epic) */
+/* Beam dorato pre-stelle (epic, default) */
 .stars-screen__beam {
   position: absolute;
   top: 50%;
@@ -594,6 +594,54 @@
   25%  { opacity: 1; transform: translateY(-50%) scaleX(1)   scaleY(1); }
   60%  { opacity: 1; transform: translateY(-50%) scaleX(1)   scaleY(20); }
   100% { opacity: 0; transform: translateY(-50%) scaleX(1)   scaleY(1); }
+}
+
+/* Beam orizzontale pseudo — multi-colore (ciano → magenta → oro) più drammatico */
+.stars-screen__beam--pseudo {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(94, 232, 216, 0.95) 25%,
+    rgba(255, 240, 200, 1)   50%,
+    rgba(255, 102, 204, 0.95) 75%,
+    transparent 100%);
+  box-shadow: 0 0 50px rgba(94, 232, 216, 0.9),
+              0 0 100px rgba(255, 102, 204, 0.5),
+              0 0 150px rgba(245, 208, 80, 0.3);
+  height: 4px;
+}
+.stars-screen__beam--pseudo.is-firing {
+  animation: beam-shot 1.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+
+/* Beam verticale pseudo — taglia la scena dall'alto in basso */
+.stars-screen__beam--pseudo-vert {
+  position: absolute;
+  top: -50%;
+  left: 50%;
+  width: 4px;
+  height: 200%;
+  transform: translateX(-50%);
+  transform-origin: center;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(255, 102, 204, 0.95) 25%,
+    rgba(255, 240, 200, 1)    50%,
+    rgba(94, 232, 216, 0.95)  75%,
+    transparent 100%);
+  filter: blur(1.5px);
+  box-shadow: 0 0 50px rgba(255, 102, 204, 0.9),
+              0 0 100px rgba(94, 232, 216, 0.5);
+  opacity: 0;
+  z-index: 1;
+}
+.stars-screen__beam--pseudo-vert.is-firing {
+  animation: beam-shot-vert 1.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+@keyframes beam-shot-vert {
+  0%   { opacity: 0; transform: translateX(-50%) scaleY(0)   scaleX(1); }
+  25%  { opacity: 1; transform: translateX(-50%) scaleY(1)   scaleX(1); }
+  60%  { opacity: 1; transform: translateX(-50%) scaleY(1)   scaleX(20); }
+  100% { opacity: 0; transform: translateX(-50%) scaleY(1)   scaleX(1); }
 }
 
 /* Particelle che esplodono dalle stelle */

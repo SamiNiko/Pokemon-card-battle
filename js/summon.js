@@ -219,7 +219,6 @@ async function showNextResult() {
 /* ---- Stars Screen — sequenza cinematica ---- */
 
 async function showStars(entry) {
-  const pkmn       = findPokemon(entry.id);
   const rarity     = entry.rarity;
   const starsCount = { pseudo: 5, epic: 4, rare: 3, uncommon: 2 }[rarity] ?? 2;
 
@@ -228,14 +227,14 @@ async function showStars(entry) {
   const nameEl      = $('starsName');
   $('starsRow').innerHTML = '';
   nameEl.textContent = '';
-  nameEl.className   = 'stars-screen__name';
+  nameEl.className   = 'stars-screen__name';        // niente nome — più suspense
 
   // Rimuovi residui di pull precedenti
   starsScreen.querySelectorAll('.stars-screen__aurora, .stars-screen__beam, .cinematic-particle, .cinematic-ring').forEach(el => el.remove());
 
-  // Aurora di sfondo (rare/epic)
+  // Aurora di sfondo (rare/epic/pseudo)
   let aurora;
-  if (rarity === 'rare' || rarity === 'epic') {
+  if (rarity === 'rare' || rarity === 'epic' || rarity === 'pseudo') {
     aurora = document.createElement('div');
     aurora.className = `stars-screen__aurora stars-screen__aurora--${rarity}`;
     starsScreen.insertBefore(aurora, starsScreen.firstChild);
@@ -244,8 +243,34 @@ async function showStars(entry) {
   $('revealScreen').classList.add('hidden');
   starsScreen.classList.remove('hidden');
 
-  /* === PHASE 1 — Anticipazione (solo epic) === */
-  if (rarity === 'epic') {
+  /* === PHASE 1 — Anticipazione === */
+  if (rarity === 'pseudo') {
+    // PSEUDO: doppio beam multi-colore + flash + shake — il più scenico
+    const beam1 = document.createElement('div');
+    beam1.className = 'stars-screen__beam stars-screen__beam--pseudo';
+    starsScreen.appendChild(beam1);
+    await sleep(80);
+    beam1.classList.add('is-firing');
+    await sleep(500);
+    flashScreen('pseudo');
+    shakeOverlay();
+    await sleep(450);
+    beam1.remove();
+
+    // Secondo beam, verticale, taglia la scena
+    const beam2 = document.createElement('div');
+    beam2.className = 'stars-screen__beam stars-screen__beam--pseudo-vert';
+    starsScreen.appendChild(beam2);
+    await sleep(60);
+    beam2.classList.add('is-firing');
+    aurora.classList.add('is-shown');
+    await sleep(600);
+    flashScreen('pseudo');
+    await sleep(300);
+    beam2.remove();
+
+    await sleep(400);   // pausa di tensione prima delle stelle
+  } else if (rarity === 'epic') {
     const beam = document.createElement('div');
     beam.className = 'stars-screen__beam';
     starsScreen.appendChild(beam);
@@ -256,15 +281,17 @@ async function showStars(entry) {
     await sleep(400);
     beam.remove();
     aurora.classList.add('is-shown');
-    await sleep(280);
+    await sleep(450);
   } else if (rarity === 'rare') {
     aurora.classList.add('is-shown');
-    await sleep(200);
+    await sleep(450);
+  } else if (rarity === 'uncommon') {
+    await sleep(280);
   }
 
-  /* === PHASE 2 — Stelle una alla volta === */
-  const firstDelay = { epic: 280, rare: 220, uncommon: 200 }[rarity] ?? 200;
-  const nextDelay  = { epic: 380, rare: 290, uncommon: 210 }[rarity] ?? 210;
+  /* === PHASE 2 — Stelle una alla volta (delays raddoppiati per suspense) === */
+  const firstDelay = { pseudo: 900,  epic: 700, rare: 480, uncommon: 280 }[rarity] ?? 250;
+  const nextDelay  = { pseudo: 1000, epic: 800, rare: 540, uncommon: 300 }[rarity] ?? 270;
 
   for (let i = 0; i < starsCount; i++) {
     await sleep(i === 0 ? firstDelay : nextDelay);
@@ -276,26 +303,20 @@ async function showStars(entry) {
     s.getBoundingClientRect(); // reflow
     s.classList.add('is-shown');
 
-    if (rarity === 'rare' || rarity === 'epic') {
+    if (rarity === 'rare' || rarity === 'epic' || rarity === 'pseudo') {
       spawnRing(s, rarity);
-      spawnParticles(s, rarity, rarity === 'epic' ? 14 : 9);
+      const particles = { pseudo: 20, epic: 14, rare: 9 }[rarity] ?? 9;
+      spawnParticles(s, rarity, particles);
 
-      if (rarity === 'epic') {
-        flashScreen('epic');
+      if (rarity === 'epic' || rarity === 'pseudo') {
+        flashScreen(rarity);
         shakeOverlay();
       }
     }
   }
 
-  /* === PHASE 3 — Nome === */
-  await sleep(rarity === 'epic' ? 560 : 440);
-  nameEl.textContent = pkmn?.name ?? `#${entry.id}`;
-  nameEl.classList.add('is-shown');
-  if (rarity === 'epic')      nameEl.classList.add('stars-screen__name--epic');
-  else if (rarity === 'rare') nameEl.classList.add('stars-screen__name--rare');
-
-  /* === PHASE 4 — Hold prima del reveal === */
-  const holdMs = { epic: 1700, rare: 1150, uncommon: 700 }[rarity] ?? 700;
+  /* === PHASE 3 — Hold di tensione prima del reveal (NO nome) === */
+  const holdMs = { pseudo: 2400, epic: 1900, rare: 1300, uncommon: 800 }[rarity] ?? 700;
   await sleep(holdMs);
 
   starsScreen.classList.add('hidden');

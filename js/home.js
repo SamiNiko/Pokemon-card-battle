@@ -10,6 +10,7 @@ import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped } from './data/state.js?v=3';
 import { findItem }                    from './data/items.js?v=3';
 import { openCardModal }                from './data/card-modal.js';
+import { initTutorial, isTutorialDone } from './data/tutorial.js';
 
 const $ = sel => document.querySelector(sel);
 const $id = id => document.getElementById(id);
@@ -416,6 +417,15 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModa
     // Welcome overlay (prima apertura del gioco)
     initWelcomeOverlay(gs);
 
+    // Tutorial onboarding: parte SOLO se welcome è già stato fatto
+    // e il tutorial non è mai stato visto. Se siamo nel welcome, il
+    // tutorial parte invece quando l'utente sceglie Login/Ospite
+    // (vedi hideWelcome → maybeStartTutorial).
+    if (localStorage.getItem(ONBOARDING_FLAG) === '1' && !isTutorialDone()) {
+      // Aspetto un attimo dopo il render così la home è già visibile dietro
+      setTimeout(() => initTutorial(), 350);
+    }
+
   } catch (e) {
     console.error(e);
     setStatus('Errore di rete. Riprova.', false);
@@ -644,4 +654,8 @@ function hideWelcome() {
   if (!overlay) return;
   overlay.classList.add('hidden');
   document.body.style.overflow = '';
+  // Subito dopo il welcome, lancia il tutorial onboarding (se mai visto)
+  if (!isTutorialDone()) {
+    setTimeout(() => initTutorial(), 300);
+  }
 }

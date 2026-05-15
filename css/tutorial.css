@@ -1,0 +1,185 @@
+/* ============================================================
+   tutorial.css — Onboarding slide tour overlay
+   ============================================================ */
+
+.tutorial-overlay {
+  --tutorial-accent: #ffcb05;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.tutorial-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tutorial-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(13, 14, 22, 0.78) 0%, rgba(13, 14, 22, 0.94) 75%);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+}
+
+/* Card centrale */
+.tutorial-card {
+  position: relative;
+  z-index: 1;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(22, 28, 48, 0.96) 0%, rgba(15, 19, 32, 0.96) 100%);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-4);
+  padding: var(--sp-7) var(--sp-6) var(--sp-5);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6),
+              0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+              0 0 80px -20px var(--tutorial-accent);
+  transform: scale(0.92);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.tutorial-overlay.is-visible .tutorial-card { transform: scale(1); }
+
+/* Close X */
+.tutorial-card__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.tutorial-card__close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* Icon hero */
+.tutorial-card__icon-wrap {
+  margin: 0 auto var(--sp-4);
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle, color-mix(in srgb, var(--tutorial-accent) 22%, transparent) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: tutorial-icon-pulse 2.5s ease-in-out infinite;
+}
+.tutorial-card__icon {
+  font-size: 4rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 16px color-mix(in srgb, var(--tutorial-accent) 35%, transparent));
+}
+@keyframes tutorial-icon-pulse {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.05); }
+}
+
+/* Step info: numero + dots */
+.tutorial-card__step-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.tutorial-card__step-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.tutorial-card__dots {
+  display: flex;
+  gap: 6px;
+}
+.tutorial-card__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.2s, transform 0.2s;
+}
+.tutorial-card__dot.is-past   { background: color-mix(in srgb, var(--tutorial-accent) 50%, transparent); }
+.tutorial-card__dot.is-active {
+  background: var(--tutorial-accent);
+  transform: scale(1.4);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--tutorial-accent) 60%, transparent);
+}
+
+/* Titolo + body */
+.tutorial-card__title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0 0 var(--sp-3);
+  color: var(--tutorial-accent);
+  letter-spacing: 0.01em;
+}
+.tutorial-card__body {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin: 0 0 var(--sp-6);
+}
+.tutorial-card__body b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* Wrapper testo che fade durante transizione tra step */
+.tutorial-card.is-transitioning .tutorial-card__icon-wrap,
+.tutorial-card.is-transitioning .tutorial-card__title,
+.tutorial-card.is-transitioning .tutorial-card__body {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.15s, transform 0.15s;
+}
+
+/* Actions */
+.tutorial-card__actions {
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: space-between;
+}
+.tutorial-card__btn-back {
+  flex: 0 0 auto;
+  min-width: 110px;
+}
+.tutorial-card__btn-back:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.tutorial-card__btn-next {
+  flex: 1;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Mobile: card più compatta */
+@media (max-width: 480px) {
+  .tutorial-card {
+    padding: var(--sp-6) var(--sp-4) var(--sp-4);
+  }
+  .tutorial-card__icon-wrap { width: 80px; height: 80px; }
+  .tutorial-card__icon      { font-size: 3.2rem; }
+  .tutorial-card__title     { font-size: 1.2rem; }
+  .tutorial-card__body      { font-size: 0.85rem; }
+}

@@ -10,6 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Pokémon card game" />
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
+  <link rel="stylesheet" href="css/tutorial.css?v=1" />
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Impostazioni</title>
@@ -111,6 +112,19 @@
       </div>
     </section>
 
+    <!-- ============ AIUTO ============ -->
+    <section class="settings-section">
+      <h2 class="settings-section__title">❓ Aiuto</h2>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Tutorial</div>
+          <div class="setting-row__hint">Rivedi la guida di benvenuto con le basi del gioco</div>
+        </div>
+        <button class="settings-btn" id="btnReplayTutorial">▶ Avvia tutorial</button>
+      </div>
+    </section>
+
     <!-- ============ DANGER ZONE ============ -->
     <section class="settings-section settings-section--danger">
       <h2 class="settings-section__title">⚠ Zona pericolosa</h2>
@@ -165,6 +179,6 @@
     <span id="toastMsg"></span>
   </div>
 
-  <script type="module" src="js/settings.js?v=2"></script>
+  <script type="module" src="js/settings.js?v=3"></script>
 </body>
 </html>

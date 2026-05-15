@@ -11,6 +11,8 @@ import {
   importSave,
 } from './data/state.js?v=3';
 
+import { initTutorial } from './data/tutorial.js';
+
 /* Supabase + cloud sync caricati dinamicamente. Se la CDN è bloccata
    (es. ad-blocker aggressivo di Opera GX) la pagina resta funzionante
    ma il login viene disabilitato. */
@@ -103,6 +105,11 @@ async function init() {
     } finally {
       e.target.value = '';
     }
+  });
+
+  // ---- Replay tutorial ----
+  $('btnReplayTutorial')?.addEventListener('click', () => {
+    initTutorial({ force: true });
   });
 
   // ---- Reset ----

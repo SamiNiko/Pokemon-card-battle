@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pokémon Card Battle — Combattimento</title>
-  <link rel="stylesheet" href="css/base.css?v=3" />
-  <link rel="stylesheet" href="css/battle.css?v=2" />
+  <link rel="stylesheet" href="css/base.css?v=7" />
+  <link rel="stylesheet" href="css/battle.css?v=10" />
+  <link rel="stylesheet" href="css/card-modal.css?v=1" />
 </head>
 <body class="battle-page">
   <main class="battle">
@@ -41,7 +42,7 @@
 
       <div class="battle-center__timer" id="turnTimer">
         <span class="battle-center__timer-label">Tempo</span>
-        <span class="battle-center__timer-value" id="timerValue">30</span>
+        <span class="battle-center__timer-value" id="timerValue">60</span>
       </div>
 
       <!-- Fase + Speed preview -->
@@ -81,6 +82,17 @@
       <button class="btn btn--ghost" id="btnSpeedUp" title="Velocità animazioni">⏩ 1×</button>
       <a class="battle__exit" href="index.html" aria-label="Torna alla home">← Home</a>
     </div>
+
+    <!-- Combat log: drawer collassabile in basso-sinistra -->
+    <aside class="battle-log" id="battleLog" aria-label="Cronologia battaglia">
+      <button class="battle-log__toggle" id="battleLogToggle" aria-expanded="false" aria-controls="battleLogBody">
+        <span class="battle-log__title">📜 Log</span>
+        <span class="battle-log__chevron" aria-hidden="true">▴</span>
+      </button>
+      <div class="battle-log__body" id="battleLogBody" role="log" aria-live="polite">
+        <!-- entries -->
+      </div>
+    </aside>
   </main>
 
   <!-- Scheda Pokémon (popup tasto destro) -->
@@ -121,6 +133,6 @@
     <p id="loadingMsg">Caricamento Pokémon…</p>
   </div>
 
-  <script type="module" src="js/battle.js?v=3"></script>
+  <script type="module" src="js/battle.js?v=6"></script>
 </body>
 </html>

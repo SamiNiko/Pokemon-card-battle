@@ -3,10 +3,10 @@
    ============================================================ */
 
 // Cloud sync caricato dinamicamente (non bloccante)
-import('./data/cloud-sync.js').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState }                    from './data/state.js';
+import { getState }                    from './data/state.js?v=3';
 import {
   getMatchHistory,
   getLifetimeStats,
@@ -18,6 +18,7 @@ import {
   LEGGENDARI, PSEUDO_LEGGENDARI, EPICI, RARI, NON_COMUNI, COMUNI,
   getRarity, tierLabel, tierStars, tierColor,
 } from './data/rarity.js';
+import { openCardModal } from './data/card-modal.js';
 
 const $ = id => document.getElementById(id);
 
@@ -152,8 +153,10 @@ function renderTopPokemon() {
     const color  = tierColor(rarity);
     const winPct = (entry.winRate * 100).toFixed(0);
 
-    const row = document.createElement('div');
+    const row = document.createElement('button');
+    row.type  = 'button';
     row.className = 'mvp-row';
+    row.title = 'Apri carta';
     row.innerHTML = `
       <span class="mvp-row__rank">#${idx + 1}</span>
       <img class="mvp-row__sprite" src="${pkmn.sprite.default}" alt="${pkmn.name}" />
@@ -166,6 +169,7 @@ function renderTopPokemon() {
         <span class="mvp-row__winrate">${entry.wins} vinte (${winPct}%)</span>
       </div>
     `;
+    row.addEventListener('click', () => openCardModal(entry.id));
     container.appendChild(row);
   });
 }

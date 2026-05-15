@@ -1,0 +1,455 @@
+/* ============================================================
+   shop.css — Negozio oggetti
+   ============================================================ */
+
+.shop-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, rgba(94, 232, 216, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at bottom, rgba(200, 168, 255, 0.05) 0%, transparent 60%),
+    var(--bg-1);
+  padding-bottom: var(--sp-7);
+}
+
+/* ============ HEADER ============ */
+.shop-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  background: linear-gradient(180deg, rgba(10, 14, 34, 0.7) 0%, transparent 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.shop-header__back {
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: var(--r-2);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.shop-header__back:hover { background: rgba(255, 255, 255, 0.14); }
+
+.shop-header__title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  margin: 0;
+  text-align: center;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.shop-header__wallet {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+/* ============ BANNER ============ */
+.shop-banner {
+  position: relative;
+  margin: 0 var(--sp-5) var(--sp-5);
+  padding: var(--sp-5) var(--sp-5);
+  border-radius: var(--r-3);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.shop-banner__bg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(94, 232, 216, 0.18) 0%, transparent 60%),
+    linear-gradient(225deg, rgba(245, 208, 80, 0.14) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-2), var(--bg-1));
+}
+.shop-banner__content {
+  position: relative;
+  z-index: 1;
+}
+.shop-banner__title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.shop-banner__subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* ============ TABS CATEGORIE ============ */
+.shop-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0 var(--sp-5) var(--sp-3);
+  flex-wrap: wrap;
+}
+.shop-tab {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.shop-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+.shop-tab.is-active {
+  background: var(--cat-color, var(--accent));
+  border-color: var(--cat-color, var(--accent));
+  color: #1a1a1a;
+}
+.shop-tab__count {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+/* ============ SEARCH ============ */
+.shop-search {
+  padding: 0 var(--sp-5) var(--sp-4);
+}
+#shopSearch {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  border-radius: var(--r-2);
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+#shopSearch:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(94, 232, 216, 0.18);
+}
+
+/* ============ GRID OGGETTI ============ */
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-4);
+  padding: 0 var(--sp-5);
+}
+
+.shop-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--sp-3);
+  background: var(--bg-2);
+  border: 2px solid var(--item-border, var(--border));
+  border-radius: var(--r-3);
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.shop-item:hover {
+  transform: translateY(-3px);
+  background: var(--bg-3, rgba(255, 255, 255, 0.04));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4), 0 0 18px var(--item-glow, transparent);
+}
+.shop-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Rarità → bordo */
+.shop-item[data-rarity="common"]   { --item-border: rgba(168, 179, 207, 0.5); --item-glow: rgba(168, 179, 207, 0.2); }
+.shop-item[data-rarity="uncommon"] { --item-border: rgba(136, 180, 255, 0.65); --item-glow: rgba(136, 180, 255, 0.3); }
+.shop-item[data-rarity="rare"]     { --item-border: rgba(200, 168, 255, 0.75); --item-glow: rgba(200, 168, 255, 0.4); }
+.shop-item[data-rarity="epic"]     { --item-border: rgba(245, 208, 80, 0.85);  --item-glow: rgba(245, 208, 80, 0.45); }
+
+/* Top: icona + categoria */
+.shop-item__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.shop-item__icon {
+  font-size: 2.6rem;
+  line-height: 1;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.4));
+  border-radius: var(--r-2);
+  border: 1px solid var(--item-border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.shop-item__icon--img {
+  padding: 4px;
+  object-fit: contain;
+}
+.shop-item__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: auto;
+}
+/* Riga "esclusivo" sotto la descrizione */
+.shop-item__restricted {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ff66cc;
+  margin: 0;
+  letter-spacing: 0.03em;
+}
+/* Buy modal icon: img */
+.buy-panel__icon img {
+  width: 90px;
+  height: 90px;
+  object-fit: contain;
+  image-rendering: auto;
+}
+.shop-item__category-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--cat-color, #555);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+/* Nome */
+.shop-item__name {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 900;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.1;
+}
+
+/* Descrizione effetto */
+.shop-item__desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+  flex: 1;
+  margin: 0;
+}
+
+/* Footer: prezzo + bottone */
+.shop-item__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.shop-item__price {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.shop-item__price--cant-afford {
+  color: var(--danger, #e85d5d);
+}
+/* Etichetta "Acquista" (NON è un button — la card stessa è cliccabile) */
+.shop-item__buy-label {
+  padding: 6px 14px;
+  border-radius: var(--r-2);
+  background: var(--accent);
+  color: #1a1a1a;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, color 0.15s;
+}
+.shop-item:hover .shop-item__buy-label {
+  background: var(--accent-dark);
+  color: #fff;
+}
+.shop-item__buy-label--locked {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+.shop-item:hover .shop-item__buy-label--locked {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+}
+.shop-item__buy-label--owned {
+  background: rgba(94, 232, 216, 0.18);
+  color: #5ee8d8;
+}
+.shop-item:hover .shop-item__buy-label--owned {
+  background: rgba(94, 232, 216, 0.25);
+  color: #5ee8d8;
+}
+/* Item posseduto: card più discreta */
+.shop-item[data-owned="true"] {
+  opacity: 0.85;
+}
+.shop-item[data-owned="true"]:hover {
+  opacity: 1;
+}
+
+/* Owned badge: quante copie possiedi */
+.shop-item__owned {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(94, 232, 216, 0.15);
+  color: #5ee8d8;
+  border: 1px solid rgba(94, 232, 216, 0.4);
+  z-index: 1;
+}
+.shop-item__owned.hidden { display: none; }
+
+/* ============ EMPTY STATE ============ */
+.shop-empty {
+  text-align: center;
+  padding: var(--sp-7) var(--sp-4);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+.shop-empty.hidden { display: none; }
+
+/* ============ BUY MODAL ============ */
+.buy-panel {
+  min-width: min(360px, 92vw);
+  text-align: center;
+}
+.buy-panel__icon {
+  font-size: 3.4rem;
+  line-height: 1;
+  margin-bottom: var(--sp-2);
+}
+.buy-panel__name {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  margin: 0 0 var(--sp-2);
+  color: var(--text);
+}
+.buy-panel__desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--sp-3);
+  line-height: 1.4;
+}
+.buy-panel__price-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: var(--sp-3) 0;
+  font-size: 1.05rem;
+}
+.buy-panel__price-label { color: var(--text-muted); }
+.buy-panel__price-value { font-weight: 800; color: #f5d050; }
+.buy-panel__after {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 var(--sp-4);
+}
+.buy-panel__actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+.buy-panel__actions .btn { flex: 1; }
+
+/* ============ TOAST ============ */
+.shop-toast {
+  position: fixed;
+  bottom: var(--sp-5);
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 100;
+  background: rgba(20, 24, 38, 0.95);
+  color: var(--text);
+  padding: 12px 22px;
+  border-radius: var(--r-2);
+  border: 1px solid var(--accent);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(94, 232, 216, 0.25);
+  font-size: 0.9rem;
+  font-weight: 700;
+  animation: shop-toast-in 0.3s ease-out;
+}
+.shop-toast.hidden { display: none; }
+.shop-toast.is-error {
+  border-color: var(--danger, #e85d5d);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(232, 93, 93, 0.25);
+}
+@keyframes shop-toast-in {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ============ S-CURRENCY (riusato da summon) ============ */
+.s-currency {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.s-currency--gems  { color: #c8a8ff; }
+.s-currency--euro  { color: #f5d050; }
+
+/* ============ MOBILE ============ */
+@media (max-width: 600px) {
+  .shop-header {
+    grid-template-columns: auto 1fr;
+    padding: var(--sp-3);
+    gap: var(--sp-2);
+  }
+  .shop-header__wallet {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
+  .shop-header__title { font-size: 1.3rem; }
+  .shop-banner { margin: 0 var(--sp-3) var(--sp-3); padding: var(--sp-3); }
+  .shop-tabs   { padding: 0 var(--sp-3) var(--sp-2); }
+  .shop-search { padding: 0 var(--sp-3) var(--sp-3); }
+  .shop-grid   { padding: 0 var(--sp-3); grid-template-columns: 1fr; gap: var(--sp-3); }
+  .shop-item__icon { width: 54px; height: 54px; font-size: 2.2rem; }
+}

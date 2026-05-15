@@ -458,6 +458,22 @@
   border-color: rgba(94, 232, 216, 0.8);
 }
 
+/* Fakeout: bottone con bordo gradient multi-colore per distinguerlo bene */
+.debug-btn--fakeout {
+  color: #fff;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgba(20, 22, 38, 0.85), rgba(20, 22, 38, 0.85)) padding-box,
+    linear-gradient(135deg, #5ee8d8 0%, #c8a8ff 35%, #ff66cc 70%, #f5d050 100%) border-box;
+  font-weight: 600;
+}
+.debug-btn--fakeout:hover {
+  background:
+    linear-gradient(rgba(40, 44, 60, 0.92), rgba(40, 44, 60, 0.92)) padding-box,
+    linear-gradient(135deg, #5ee8d8 0%, #c8a8ff 35%, #ff66cc 70%, #f5d050 100%) border-box;
+  box-shadow: 0 0 18px rgba(200, 168, 232, 0.4);
+}
+
 /* ================================================================
    CONFIRM MODAL
    ================================================================ */
@@ -757,6 +773,20 @@
              epic-glow 1.4s ease-in-out 0.55s infinite;
 }
 
+/* Pulse di richiamo sulle stelle quando vengono "upgradate" dal fakeout.
+   NB: usa forwards + opacity:1 esplicita in TUTTI i keyframe altrimenti
+   il !important sostituisce la forwards della star-appear originale e la
+   stella torna a opacity:0 a fine pulse (bug delle stelle che spariscono). */
+.star-icon--upgraded {
+  animation: star-upgrade-pulse 0.7s cubic-bezier(0.4, 0, 0.4, 1.2) forwards !important;
+}
+@keyframes star-upgrade-pulse {
+  0%   { opacity: 1; transform: scale(1)    rotate(0deg);   filter: drop-shadow(0 0 8px  currentColor); }
+  35%  { opacity: 1; transform: scale(1.45) rotate(-12deg); filter: drop-shadow(0 0 28px currentColor) drop-shadow(0 0 50px currentColor); }
+  65%  { opacity: 1; transform: scale(0.95) rotate(6deg);   filter: drop-shadow(0 0 18px currentColor); }
+  100% { opacity: 1; transform: scale(1)    rotate(0deg);   filter: drop-shadow(0 0 14px currentColor); }
+}
+
 .stars-screen__name {
   font-family: var(--font-display);
   font-size: 1.8rem;
@@ -821,24 +851,111 @@
 
 /* ---- Reveal Screen ---- */
 
+/* Reveal Screen — wrapper full-overlay che centra la carta */
 .reveal-screen {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
   z-index: 2;
+  /* Default (common): variabili che pilotano la carta */
+  --card-border:     rgba(168, 179, 207, 0.55);
+  --card-glow:       rgba(168, 179, 207, 0.25);
+  --card-shine:      rgba(255, 255, 255, 0.06);
+  --card-bg-tint:    rgba(10, 14, 34, 0.86);
 }
 .reveal-screen.hidden { display: none; }
 
-/* Left: sprite */
+/* Per-rarity styling della carta (controllato da data-rarity sul .reveal-screen) */
+.reveal-screen[data-rarity="uncommon"] {
+  --card-border: rgba(136, 180, 255, 0.65);
+  --card-glow:   rgba(136, 180, 255, 0.35);
+  --card-shine:  rgba(180, 210, 255, 0.10);
+}
+.reveal-screen[data-rarity="rare"] {
+  --card-border: rgba(200, 168, 255, 0.75);
+  --card-glow:   rgba(200, 168, 255, 0.45);
+  --card-shine:  rgba(220, 200, 255, 0.14);
+}
+.reveal-screen[data-rarity="epic"] {
+  --card-border: rgba(245, 208, 80, 0.85);
+  --card-glow:   rgba(245, 208, 80, 0.6);
+  --card-shine:  rgba(255, 230, 160, 0.18);
+}
+.reveal-screen[data-rarity="pseudo"] {
+  --card-border: rgba(94, 232, 216, 0.95);
+  --card-glow:   rgba(200, 168, 255, 0.7);
+  --card-shine:  rgba(255, 200, 240, 0.22);
+}
+
+/* La CARTA — contenitore interno con frame + ombra */
+.reveal-screen__card {
+  position: relative;
+  display: flex;
+  width: min(960px, 96vw);
+  height: min(640px, 92vh);
+  background: var(--card-bg-tint);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 2px var(--card-border),
+    0 0 0 6px rgba(0, 0, 0, 0.4),
+    0 0 30px 4px var(--card-glow),
+    0 24px 60px rgba(0, 0, 0, 0.65);
+  animation: card-appear 600ms cubic-bezier(0.22, 1.2, 0.36, 1) forwards;
+}
+
+@keyframes card-appear {
+  0%   { transform: scale(0.9) translateY(20px); opacity: 0; }
+  60%  { transform: scale(1.02) translateY(0);   opacity: 1; }
+  100% { transform: scale(1)    translateY(0);   opacity: 1; }
+}
+
+/* Holographic shine — banda di luce che attraversa la carta in diagonale */
+.reveal-screen__shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg,
+    transparent 35%,
+    var(--card-shine) 48%,
+    var(--card-shine) 52%,
+    transparent 65%);
+  background-size: 250% 250%;
+  background-position: 100% 100%;
+  z-index: 4;
+  opacity: 0;
+}
+/* Shine animato solo per le rarità medio-alte */
+.reveal-screen[data-rarity="rare"]   .reveal-screen__shine,
+.reveal-screen[data-rarity="epic"]   .reveal-screen__shine,
+.reveal-screen[data-rarity="pseudo"] .reveal-screen__shine {
+  animation: card-shine-sweep 3.5s ease-in-out 0.4s infinite;
+  opacity: 1;
+}
+@keyframes card-shine-sweep {
+  0%   { background-position: 120% 120%; }
+  50%  { background-position: -20% -20%; }
+  100% { background-position: -20% -20%; }
+}
+
+/* Left: artwork del Pokémon */
 .reveal-screen__left {
   flex: 1;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sp-6);
+  padding: var(--sp-5);
   overflow: hidden;
+  background: linear-gradient(160deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    transparent 50%),
+    radial-gradient(ellipse at 30% 30%,
+      var(--card-glow) 0%,
+      transparent 60%);
 }
 
 .reveal-screen__glow {
@@ -870,34 +987,90 @@
   50%       { opacity: 1;  transform: scale(1.18); }
 }
 
-.reveal-screen__sprite {
+/* ARTWORK — immagine grande con bordi smussati come una carta TCG */
+.reveal-screen__artwork {
   position: relative;
   z-index: 1;
-  width: min(260px, 38vw);
-  height: min(260px, 38vw);
+  width:  min(340px, 44vw);
+  height: min(440px, 58vh);
+  object-fit: cover;
+  border-radius: 16px;
+  opacity: 0;
+  transform: translateY(20px) scale(0.92);
+  transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.17, 0.67, 0.34, 1.22);
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.12),
+    0 0 0 4px var(--card-border, rgba(255,255,255,0.2)),
+    0 16px 40px rgba(0, 0, 0, 0.7);
+}
+.reveal-screen__artwork.is-shown {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.reveal-screen__artwork.is-missing {
+  display: none;
+}
+
+/* SPRITE — pixel art floating davanti all'artwork (bottom-right) */
+.reveal-screen__sprite {
+  position: absolute;
+  z-index: 3;
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  width: 150px;
+  height: 150px;
   object-fit: contain;
   image-rendering: pixelated;
   opacity: 0;
-  transform: translateY(24px) scale(0.82);
-  transition: opacity 0.5s ease, transform 0.55s cubic-bezier(0.17, 0.67, 0.34, 1.22);
-  filter: drop-shadow(0 10px 28px rgba(0, 0, 0, 0.65));
+  transform: translateY(20px) scale(0.6);
+  transition:
+    opacity 0.5s ease 0.18s,
+    transform 0.55s cubic-bezier(0.17, 0.67, 0.34, 1.22) 0.18s;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.8));
 }
 .reveal-screen__sprite.is-shown {
   opacity: 1;
   transform: translateY(0) scale(1);
 }
 
-/* Right: details */
+/* Quando l'artwork manca → lo sprite prende il centro come elemento principale */
+.reveal-screen__sprite--solo {
+  position: relative;
+  z-index: 1;
+  right: auto;
+  bottom: auto;
+  width:  min(280px, 38vw);
+  height: min(280px, 38vw);
+}
+
+/* Right: pannello informazioni della carta */
 .reveal-screen__right {
-  flex: 0 0 360px;
+  flex: 0 0 380px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: var(--sp-3);
-  padding: var(--sp-6) var(--sp-5) var(--sp-8) var(--sp-4);
-  background: rgba(10, 14, 34, 0.65);
-  border-left: 1px solid var(--border);
+  padding: var(--sp-5) var(--sp-5) var(--sp-6) var(--sp-5);
+  background:
+    linear-gradient(180deg,
+      rgba(10, 14, 34, 0.85) 0%,
+      rgba(6, 10, 26, 0.92) 100%);
+  border-left: 1px solid var(--card-border);
   overflow-y: auto;
+  position: relative;
+  z-index: 2;
+}
+/* Linea decorativa che richiama il bordo della rarità */
+.reveal-screen__right::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    var(--card-border) 50%,
+    transparent 100%);
+  z-index: 1;
 }
 
 /* Detail panel internals */
@@ -1059,7 +1232,7 @@
 /* "Avanti →" button */
 .reveal-screen__next {
   position: absolute;
-  bottom: var(--sp-5);
+  bottom: var(--sp-4);
   right: var(--sp-5);
   background: var(--accent);
   color: #1a1a1a;
@@ -1069,8 +1242,9 @@
   border-radius: var(--r-2);
   border: none;
   cursor: pointer;
-  transition: background 0.15s, transform 0.1s;
-  z-index: 3;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.2s;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 .reveal-screen__next:hover { background: var(--accent-dark); color: #fff; transform: scale(1.04); }
 .reveal-screen__next:active { transform: scale(0.97); }
@@ -1108,19 +1282,31 @@
 }
 
 .summary-card {
-  width: 88px;
+  width: 110px;
   aspect-ratio: 3 / 4;
   border-radius: var(--r-3);
   overflow: hidden;
   position: relative;
   background: linear-gradient(160deg, var(--bg-2), var(--bg-1));
   border: 2px solid var(--border-strong);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 5px;
+  padding: 0;                              /* fullart edge-to-edge */
   animation: card-appear 0.38s ease both;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+.summary-card:hover {
+  transform: translateY(-3px) scale(1.04);
+  filter: brightness(1.08);
+}
+.summary-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.summary-card:active {
+  transform: translateY(-1px) scale(1.01);
 }
 
 @keyframes card-appear {
@@ -1148,24 +1334,41 @@
   background: linear-gradient(160deg, #101828, #0c1222);
 }
 
-.summary-card img {
+/* Art frame: fullart, copre l'intera carta */
+.summary-card__art-frame {
   position: absolute;
-  top: 4px;
-  left: 0;
-  right: 0;
+  inset: 0;                                /* edge-to-edge */
+  z-index: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+.summary-card__art {
   width: 100%;
-  height: 65%;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;                       /* riempie la carta ritagliando i bordi */
+  image-rendering: auto;
+  display: block;
+}
+/* Fallback sprite: pixelato + contain con padding (per non stretcharlo) */
+.summary-card__art.is-fallback {
   image-rendering: pixelated;
+  object-fit: contain;
+  padding: 6px;
 }
 
 .summary-card__stars {
   position: absolute;
-  top: 4px;
-  right: 5px;
-  font-size: 0.5rem;
+  top: 6px;
+  right: 7px;
+  z-index: 3;
+  font-size: 0.6rem;
   font-weight: 900;
   line-height: 1;
+  letter-spacing: 0.5px;
+  /* Ombra forte + glow scuro per essere leggibili su qualunque sfondo */
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 0 8px rgba(0, 0, 0, 0.55);
 }
 .summary-card--pseudo   .summary-card__stars { color: #5ee8d8; }
 .summary-card--epic     .summary-card__stars { color: #f5d050; }
@@ -1174,17 +1377,27 @@
 .summary-card--common   .summary-card__stars { color: var(--text-muted); }
 
 .summary-card__name {
-  position: relative;
-  font-size: 0.58rem;
-  font-weight: 700;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  /* Gradient overlay scuro per leggibilità sopra qualunque artwork */
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.55) 45%,
+    rgba(0, 0, 0, 0.92) 100%);
+  padding: 18px 6px 7px;
+  font-size: 0.66rem;
+  font-weight: 800;
   text-align: center;
   text-transform: capitalize;
-  color: var(--text);
-  z-index: 1;
-  width: 100%;
+  color: #fff;
+  letter-spacing: 0.3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
 }
 
 .summary-screen__close { margin-top: var(--sp-2); }
@@ -1918,6 +2131,35 @@
   84%  { transform: translate(-50%, -50%) scale(2.8);  opacity: 1;    }
   93%  { transform: translate(-50%, -50%) scale(22);   opacity: 1;    }
   100% { transform: translate(-50%, -50%) scale(34);   opacity: 0;    }
+}
+
+/* ================================================================
+   COMMON GLOW — mini bagliore per i comuni (no stelle, no pokéball)
+   Aggiunge una transizione morbida tra card consecutive nella multi.
+   Durata: ~560ms
+   ================================================================ */
+.common-glow {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%,
+    rgba(230, 234, 246, 0.55) 0%,
+    rgba(200, 210, 230, 0.32) 25%,
+    rgba(168, 179, 207, 0.15) 50%,
+    transparent 75%);
+  opacity: 0;
+  transform: scale(0.6);
+  filter: blur(2px);
+}
+.common-glow.is-active {
+  animation: common-glow-burst 560ms cubic-bezier(0.4, 0, 0.4, 1) forwards;
+}
+@keyframes common-glow-burst {
+  0%   { opacity: 0;    transform: scale(0.6);  }
+  35%  { opacity: 0.95; transform: scale(1);    }
+  60%  { opacity: 0.7;  transform: scale(1.1);  }
+  100% { opacity: 0;    transform: scale(1.35); }
 }
 
 /* ================================================================

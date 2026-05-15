@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pokémon Card Battle — Collezione</title>
-  <link rel="stylesheet" href="css/base.css?v=3" />
-  <link rel="stylesheet" href="css/collection.css?v=2" />
+  <link rel="stylesheet" href="css/base.css?v=7" />
+  <link rel="stylesheet" href="css/collection.css?v=9" />
+  <link rel="stylesheet" href="css/card-modal.css?v=2" />
 </head>
 <body class="collection-page">
   <main class="collection">
@@ -33,11 +34,14 @@
       <!-- Team slot switcher — il team selezionato è quello giocato in battaglia -->
       <div class="team-switcher">
         <div class="team-switcher__tabs" id="teamSlotTabs">
-          <button class="slot-tab is-active" data-slot="0"><span class="slot-tab__letter">A</span></button>
-          <button class="slot-tab"           data-slot="1"><span class="slot-tab__letter">B</span></button>
-          <button class="slot-tab"           data-slot="2"><span class="slot-tab__letter">C</span></button>
-          <button class="slot-tab"           data-slot="3"><span class="slot-tab__letter">D</span></button>
+          <button class="slot-tab is-active" data-slot="0"><span class="slot-tab__letter">1</span></button>
+          <button class="slot-tab"           data-slot="1"><span class="slot-tab__letter">2</span></button>
+          <button class="slot-tab"           data-slot="2"><span class="slot-tab__letter">3</span></button>
+          <button class="slot-tab"           data-slot="3"><span class="slot-tab__letter">4</span></button>
         </div>
+        <button class="btn btn--ghost team-switcher__equip-btn" id="btnQuickEquip" type="button">
+          🎒 Equipaggia oggetto
+        </button>
         <span class="team-switcher__hint">Il team selezionato verrà usato in battaglia</span>
       </div>
 
@@ -91,16 +95,63 @@
 
     <!-- ============ TAB OGGETTI ============ -->
     <section class="tab-panel" data-tab-panel="items">
-      <p class="tab-panel__hint">Sistema oggetti tenuti — coming soon.</p>
+      <div class="inventory">
+        <div class="inventory__header">
+          <h2 class="inventory__title">🎒 Inventario</h2>
+          <span class="inventory__count" id="invCount">0 oggetti</span>
+        </div>
+        <div class="inventory__grid" id="invGrid">
+          <!-- popolato da JS -->
+        </div>
+        <div class="inventory__empty hidden" id="invEmpty">
+          <p>Non hai ancora oggetti. Vai al negozio per acquistarne!</p>
+          <a class="btn btn--primary" href="shop.html">🛒 Vai al Negozio</a>
+        </div>
+      </div>
+
+      <!-- (la modale di equip vive nel tab Team, vedi più sotto) -->
     </section>
 
   </main>
+
+  <!-- ============ ITEM PICKER MODAL (multi-step) ============
+       Step 1: scegli un oggetto
+       Step 2 (solo se non c'è target Pokémon): scegli a quale Pokémon darlo
+  -->
+  <div class="modal hidden" id="itemPicker" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" data-picker-close></div>
+    <div class="modal__panel item-picker">
+      <div class="item-picker__head">
+        <h2 class="item-picker__title" id="pickerTitle">Scegli un oggetto</h2>
+        <p class="item-picker__sub" id="pickerSub"></p>
+      </div>
+
+      <!-- Step 1: griglia oggetti -->
+      <div class="item-picker__items" id="pickerItems">
+        <!-- popolata da JS -->
+      </div>
+      <div class="item-picker__empty hidden" id="pickerEmpty">
+        <p>Non hai ancora oggetti.</p>
+        <a class="btn btn--primary" href="shop.html">🛒 Vai al Negozio</a>
+      </div>
+
+      <!-- Step 2: Pokémon del team (visibile solo se non c'è target) -->
+      <div class="item-picker__pokemons hidden" id="pickerPokemons">
+        <!-- popolata da JS -->
+      </div>
+
+      <div class="item-picker__actions">
+        <button class="btn item-picker__back hidden" id="pickerBack" type="button">← Indietro</button>
+        <button class="btn" data-picker-close type="button">Annulla</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Toast -->
   <div class="toast hidden" id="toast">
     <span id="toastMsg"></span>
   </div>
 
-  <script type="module" src="js/collection.js?v=2"></script>
+  <script type="module" src="js/collection.js?v=10"></script>
 </body>
 </html>

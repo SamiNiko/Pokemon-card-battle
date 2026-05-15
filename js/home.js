@@ -4,10 +4,12 @@
 
 // Cloud sync (Supabase) caricato dinamicamente per non bloccare la pagina
 // se l'utente ha un ad-blocker che impedisce l'accesso alla CDN.
-import('./data/cloud-sync.js').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState, getTeamSlot, setActiveTeam } from './data/state.js';
+import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped } from './data/state.js?v=3';
+import { findItem }                    from './data/items.js?v=3';
+import { openCardModal }                from './data/card-modal.js';
 
 const $ = sel => document.querySelector(sel);
 const $id = id => document.getElementById(id);
@@ -148,7 +150,8 @@ function buildTeam(gs) {
   if (!container) return;
   container.innerHTML = '';
 
-  const ids = getTeamSlot(gs.activeTeam ?? 0);
+  const activeSlot = gs.activeTeam ?? 0;
+  const ids = getTeamSlot(activeSlot);
 
   for (let i = 0; i < 6; i++) {
     const id   = ids[i];
@@ -156,11 +159,36 @@ function buildTeam(gs) {
     const div  = document.createElement('div');
 
     if (pkmn) {
+      // Card full-art (read-only: click apre solo il modal, niente modifiche qui)
       div.className = 'team-slot team-slot--filled';
+      const artUrl = `assets/cards/${String(pkmn.id).padStart(3, '0')}.png`;
+      const heldId = getEquipped(pkmn.id, activeSlot);
+      const heldItem = heldId ? findItem(heldId) : null;
+      const heldBadgeHTML = heldItem
+        ? `<span class="team-slot__item" title="${heldItem.name}">${
+            heldItem.image
+              ? `<img src="${heldItem.image}" alt="${heldItem.name}" onerror="this.outerHTML='${heldItem.icon}'" />`
+              : heldItem.icon
+          }</span>`
+        : '';
       div.innerHTML = `
-        <img src="${pkmn.sprite.default}" alt="${pkmn.name}" loading="lazy" />
+        <div class="team-slot__art">
+          <img class="team-slot__img" src="${artUrl}" alt="${pkmn.name}" loading="lazy" />
+        </div>
         <span class="team-slot__name">${pkmn.name}</span>
+        ${heldBadgeHTML}
       `;
+      // Fallback artwork → sprite
+      const img = div.querySelector('.team-slot__img');
+      img.onerror = () => {
+        img.onerror = null;
+        img.classList.add('is-fallback');
+        img.src = pkmn.sprite.default;
+      };
+      // Click → apre il card modal (read-only, per modifiche → Collezione)
+      div.style.cursor = 'pointer';
+      div.title = 'Apri carta (modifiche dal tab Collezione)';
+      div.addEventListener('click', () => openCardModal(pkmn.id, { teamSlot: activeSlot }));
     } else {
       div.className = 'team-slot team-slot--empty';
       div.innerHTML = `<span style="font-size:1.1rem;color:var(--border-strong)">+</span>`;
@@ -382,8 +410,238 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModa
       });
     }
 
+    // Account: avatar + modal + banner ospite
+    initAccountUI(gs);
+
+    // Welcome overlay (prima apertura del gioco)
+    initWelcomeOverlay(gs);
+
   } catch (e) {
     console.error(e);
     setStatus('Errore di rete. Riprova.', false);
   }
 })();
+
+/* ================================================================
+   ACCOUNT UI — avatar, modal, banner persuasivo
+   ================================================================
+   Il client Supabase si carica dinamicamente: se l'ad-blocker
+   blocca la CDN, il bottone account funziona ancora ma mostra
+   il messaggio "Cloud non disponibile" nel modal. */
+
+let supabaseModule = null;
+
+async function initAccountUI(gs) {
+  // Avatar header
+  refreshAccountAvatar(gs);
+
+  // Click avatar → apre modal
+  const btnAccount = $id('btnAccount');
+  btnAccount?.addEventListener('click', async () => {
+    await openAccountModal(gs);
+  });
+
+  // Banner: chiudi con X (memorizza dismiss in localStorage)
+  $id('accountBannerClose')?.addEventListener('click', () => {
+    localStorage.setItem('pkmn_account_banner_dismissed', '1');
+    $id('accountBanner')?.classList.add('hidden');
+  });
+  // Banner CTA → apre direttamente il modal in stato guest
+  $id('accountBannerCta')?.addEventListener('click', () => openAccountModal(gs));
+
+  // Backdrop / X chiudono il modal
+  document.querySelectorAll('[data-account-close]').forEach(el => {
+    el.addEventListener('click', closeAccountModal);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeAccountModal();
+  });
+
+  // Tenta di caricare la SDK Supabase (può fallire per ad-blocker)
+  try {
+    supabaseModule = await import('./data/supabase.js');
+    // Listener auth: quando login/logout cambia, refresh UI
+    supabaseModule.onAuthChange(async () => {
+      // Aspetta che cloud-sync abbia tempo di fare il pull
+      await new Promise(r => setTimeout(r, 350));
+      const fresh = getState();
+      refreshAccountAvatar(fresh);
+      maybeShowGuestBanner(fresh);
+    });
+  } catch (e) {
+    console.warn('[home] Supabase SDK non disponibile:', e.message);
+  }
+
+  // Banner ospite (se ha già un po' di progressi)
+  maybeShowGuestBanner(gs);
+}
+
+function refreshAccountAvatar(gs) {
+  const avatar = $id('accountAvatar');
+  const dot    = $id('accountDot');
+  if (!avatar) return;
+  const name = gs.userName ?? 'Ospite';
+  avatar.textContent = (name[0] ?? '?').toUpperCase();
+  if (gs.accountType === 'supabase') {
+    dot?.classList.remove('account-btn__dot--guest');
+    dot?.classList.add('account-btn__dot--cloud');
+  } else {
+    dot?.classList.add('account-btn__dot--guest');
+    dot?.classList.remove('account-btn__dot--cloud');
+  }
+}
+
+async function openAccountModal(gs) {
+  const modal      = $id('accountModal');
+  const big        = $id('accountModalAvatar');
+  const guestPane  = $id('accountModalGuest');
+  const userPane   = $id('accountModalUser');
+  const errorPane  = $id('accountModalError');
+
+  guestPane.classList.add('hidden');
+  userPane.classList.add('hidden');
+  errorPane.classList.add('hidden');
+
+  // Avatar grande (iniziale)
+  const fresh = getState();
+  big.textContent = (fresh.userName?.[0] ?? '?').toUpperCase();
+
+  // 1) Se Supabase non è caricato → errore "cloud non disponibile"
+  if (!supabaseModule) {
+    errorPane.classList.remove('hidden');
+    modal.classList.remove('hidden');
+    return;
+  }
+
+  // 2) Verifica se l'utente è loggato
+  const session = await supabaseModule.getSession();
+  if (session) {
+    userPane.classList.remove('hidden');
+    $id('accountModalName').textContent  = fresh.userName ?? 'Allenatore';
+    $id('accountModalEmail').textContent = session.user?.email ?? '—';
+  } else {
+    guestPane.classList.remove('hidden');
+  }
+
+  modal.classList.remove('hidden');
+
+  // Bottoni interni (associati ogni volta che apriamo il modal)
+  $id('btnAccountLogin').onclick = async () => {
+    try {
+      await supabaseModule.signInWithGoogle();
+    } catch (e) {
+      alert('Errore login: ' + e.message);
+    }
+  };
+  $id('btnAccountLogout').onclick = async () => {
+    const ok = confirm(
+      'Sicuro di voler uscire?\n\n' +
+      '✓ I tuoi progressi restano salvati sul cloud — al prossimo login li ritroverai tutti.\n\n' +
+      '⚠ Su questo dispositivo verrà avviato un nuovo profilo Ospite vuoto.'
+    );
+    if (!ok) return;
+
+    try {
+      // Flush dello stato pendente prima del logout (best effort)
+      try {
+        const cs = await import('./data/cloud-sync.js?v=3');
+        await cs.flushSync();
+      } catch {}
+      // signOut → triggera SIGNED_OUT in cloud-sync che fa resetState + reload
+      await supabaseModule.signOut();
+      closeAccountModal();
+    } catch (e) {
+      alert('Errore logout: ' + e.message);
+    }
+  };
+}
+
+function closeAccountModal() {
+  $id('accountModal')?.classList.add('hidden');
+}
+
+function maybeShowGuestBanner(gs) {
+  const banner = $id('accountBanner');
+  if (!banner) return;
+  // Se loggato: niente banner
+  if (gs.accountType === 'supabase') {
+    banner.classList.add('hidden');
+    return;
+  }
+  // Se l'utente l'ha già dismisso: niente banner
+  if (localStorage.getItem('pkmn_account_banner_dismissed') === '1') {
+    banner.classList.add('hidden');
+    return;
+  }
+  // Soglia: ha già un po' di progressi (5+ Pokémon o gemme spese)
+  const owned = (gs.owned ?? []).length;
+  const hasProgress = owned >= 5 || (gs.lifetimeStats?.totalMatches ?? 0) >= 3;
+  banner.classList.toggle('hidden', !hasProgress);
+}
+
+/* ================================================================
+   WELCOME OVERLAY — prima apertura del gioco
+   ================================================================
+   Mostrato solo se:
+   - localStorage 'pkmn_onboarding_done' non è '1'
+   - E non c'è una sessione Supabase già attiva (es. ritorno da OAuth)
+   Dopo la scelta (Login o Ospite), set del flag → la prossima volta
+   l'utente va diretto in home.
+*/
+const ONBOARDING_FLAG = 'pkmn_onboarding_done';
+
+async function initWelcomeOverlay(gs) {
+  const overlay = $id('welcomeOverlay');
+  if (!overlay) return;
+
+  // Già onboardato → niente welcome
+  if (localStorage.getItem(ONBOARDING_FLAG) === '1') return;
+
+  // Se c'è già una sessione Supabase attiva, l'utente è loggato → marca
+  // onboarding fatto e non mostrare nulla
+  if (supabaseModule) {
+    try {
+      const session = await supabaseModule.getSession();
+      if (session) {
+        localStorage.setItem(ONBOARDING_FLAG, '1');
+        return;
+      }
+    } catch {}
+  }
+
+  // Mostra il welcome
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Bottone "Accedi con Google"
+  $id('btnWelcomeLogin').onclick = async () => {
+    // Marca onboarding subito così se il redirect torna qui non rivede l'overlay
+    localStorage.setItem(ONBOARDING_FLAG, '1');
+    if (!supabaseModule) {
+      alert('Login non disponibile (controlla l\'ad-blocker)');
+      // Comunque proceed come ospite
+      hideWelcome();
+      return;
+    }
+    try {
+      await supabaseModule.signInWithGoogle();
+      // Il redirect porta su Google → torno qui dopo
+    } catch (e) {
+      alert('Errore login: ' + e.message);
+      hideWelcome();   // proseguo come ospite se login fallisce
+    }
+  };
+
+  // Bottone "Gioca come Ospite"
+  $id('btnWelcomeGuest').onclick = () => {
+    localStorage.setItem(ONBOARDING_FLAG, '1');
+    hideWelcome();
+  };
+}
+
+function hideWelcome() {
+  const overlay = $id('welcomeOverlay');
+  if (!overlay) return;
+  overlay.classList.add('hidden');
+  document.body.style.overflow = '';
+}

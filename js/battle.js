@@ -5,13 +5,16 @@
    - AI base: schiera i primi 3 Pokémon vivi in front row
    ============================================================ */
 
-import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, getActiveTeam }     from './data/state.js';
-import { resolveTurn }                 from './engine/combat.js';
-import { aiPlaceCards, aiChooseMoves } from './engine/ai.js';
-import { MOVESETS }                    from './data/movesets.js';
-import { createOnlineClient }          from './data/online.js';
-import { recordMatch }                 from './data/match-history.js';
+import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
+import { getState, getActiveTeam, getEquipped } from './data/state.js?v=3';
+import { findItem }                            from './data/items.js?v=3';
+import { resolveTurn }                         from './engine/combat.js';
+import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
+import { MOVESETS }                            from './data/movesets.js';
+import { createOnlineClient }                  from './data/online.js';
+import { recordMatch }                         from './data/match-history.js';
+import { typeLabel }                           from './data/types.js';
+import { openCardModal }                       from './data/card-modal.js';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -28,10 +31,16 @@ if (speedMultiplier === 2) document.body.classList.add('speed-up');
 const sleep = ms => new Promise(res => setTimeout(res, Math.round(ms / speedMultiplier)));
 const cap   = s => s[0].toUpperCase() + s.slice(1);
 
+/** URL artwork fullart per il Pokémon (assets/cards/NNN.png). */
+function getArtworkUrl(pkmn) {
+  if (!pkmn) return '';
+  return `assets/cards/${String(pkmn.id).padStart(3, '0')}.png`;
+}
+
 const COLS          = ['left', 'center', 'right'];
 const PLAYER_MAX_HP = 3000;
 const ENEMY_MAX_HP  = 3000;
-const TURN_SECONDS  = 30;
+const TURN_SECONDS  = 60;
 const FIELD_LIMIT   = 3;   // max carte in campo contemporaneamente
 
 /* ============================================================
@@ -56,6 +65,8 @@ const bs = {
   selectedMoves:  new Map(),    // id → 'auto'|'basic'|'finisher' (default: 'basic')
   playerField:    new Map(),    // slotKey → pkmn
   enemyField:     new Map(),
+  playerHeld:     new Map(),    // pokemonId → item (oggetto tenuto del team attivo)
+  enemyHeld:      new Map(),    // pokemonId → item (vuoto in AI mode, popolato in PvP futuro)
   timeLeft:       TURN_SECONDS,
   timerHandle:    null,
   /* ---- Stato PvP (solo se MODE === 'pvp') ---- */
@@ -162,13 +173,29 @@ async function init() {
     bs.enemyPkmnPP.set(p.id, 0);
   }
 
+  // Oggetti tenuti: carica dall'active team del player (in PvP serve un payload dedicato dal server, TODO)
+  for (const id of bs.playerTeamIds) {
+    const itemId = getEquipped(id);  // null se nessuno
+    if (!itemId) continue;
+    const it = findItem(itemId);
+    if (it) bs.playerHeld.set(id, it);
+  }
+
   renderPlayerBench();
   renderEnemyBench();
   setupSlotDrop();
   setupBenchDrop();
   setupTargetPreview();
+  setupLogToggle();
   updateSpeedPreview();
   startTimer();
+
+  // Log iniziale: oggetti tenuti
+  log(`Battaglia iniziata — ${bs.pvp ? 'PvP' : 'vs CPU'}`, 'turn');
+  for (const [pkmnId, item] of bs.playerHeld) {
+    const p = findPokemon(pkmnId);
+    if (p) log(`${p.name} tiene ${item.name}`, 'item');
+  }
 
   $('#btnConfirm').addEventListener('click', confirmTurn);
   $$('[data-close-modal]').forEach(el => el.addEventListener('click', closeAllModals));
@@ -261,7 +288,7 @@ function renderPlayerBench() {
     const p = findPokemon(id);
     if (!p) continue;
 
-    const card = makeCard(p, 'self');
+    const card = makeCard(p, 'self', 'field');
 
     if (bs.playerDeadIds.has(p.id)) {
       card.classList.add('is-fainted');
@@ -286,7 +313,7 @@ function renderEnemyBench() {
     const p = findPokemon(id);
     if (!p) continue;
 
-    const card = makeCard(p, 'enemy');
+    const card = makeCard(p, 'enemy', 'field');
 
     if (bs.enemyDeadIds.has(p.id)) {
       card.classList.add('is-fainted');
@@ -305,7 +332,7 @@ function renderField() {
   $$('#playerGrid .grid__slot').forEach(slot => {
     slot.querySelectorAll('.card').forEach(c => c.remove());
     const pkmn = bs.playerField.get(slot.dataset.slotKey);
-    if (pkmn) slot.appendChild(makeCard(pkmn, 'self'));
+    if (pkmn) slot.appendChild(makeCard(pkmn, 'self', 'field'));
   });
   renderPlayerBench();
   updateSpeedPreview();
@@ -325,7 +352,7 @@ function renderEnemyField() {
   $$('#enemyGrid .grid__slot').forEach(slot => {
     slot.querySelectorAll('.card').forEach(c => c.remove());
     const pkmn = bs.enemyField.get(slot.dataset.slotKey);
-    if (pkmn) slot.appendChild(makeCard(pkmn, 'enemy'));
+    if (pkmn) slot.appendChild(makeCard(pkmn, 'enemy', 'field'));
   });
   renderEnemyBench();
 }
@@ -354,40 +381,81 @@ function updateCardMove(id, htmlSide) {
 
 /* ============================================================
    CARD — costruzione elemento DOM
+   variant: 'bench' (sprite compatta) | 'field' (fullart in campo)
    ============================================================ */
-function makeCard(pkmn, side) {
+function makeCard(pkmn, side, variant = 'bench') {
   const el  = document.createElement('div');
-  el.className         = 'card';
+  el.className         = variant === 'field' ? 'card card--battle card--fullart' : 'card card--battle';
   el.dataset.pokemonId = pkmn.id;
   el.dataset.side      = side;
+  el.dataset.variant   = variant;
 
   const hpMap  = side === 'self' ? bs.playerPkmnHP  : bs.enemyPkmnHP;
   const ppMap  = side === 'self' ? bs.playerPkmnPP  : bs.enemyPkmnPP;
+  const heldMap = side === 'self' ? bs.playerHeld   : bs.enemyHeld;
   const curHP  = hpMap.get(pkmn.id) ?? pkmn.stats.hp;
   const curPP  = ppMap.get(pkmn.id) ?? 0;
   const moveLabel = getMoveLabel(pkmn.id, side);
+  const held   = heldMap.get(pkmn.id) ?? null;
 
-  el.innerHTML = `
-    <span class="card__hp" data-hp="${pkmn.id}" data-hp-side="${side}">${curHP}</span>
-    <span class="card__pp" data-pp="${pkmn.id}" data-pp-side="${side}">PP ${curPP}</span>
-    <div class="card__sprite">
-      <img src="${pkmn.sprite.default}" alt="${pkmn.name}" loading="lazy" />
-    </div>
-    <div class="card__name">${pkmn.name}</div>
-    <div class="card__types">
-      ${pkmn.types.map(t => `<span class="type-badge" data-type="${t}">${t}</span>`).join('')}
-    </div>
-    <div class="card__move" data-move="${pkmn.id}" data-move-side="${side}">${moveLabel}</div>
-  `;
+  // Icona oggetto tenuto (solo se equipaggiato)
+  const heldHTML = held
+    ? `<span class="card__held" title="${held.name}">
+         ${held.image
+           ? `<img src="${held.image}" alt="${held.name}" onerror="this.outerHTML='${held.icon}'" />`
+           : held.icon}
+       </span>`
+    : '';
 
-  // Tasto destro → scheda Pokémon
-  el.addEventListener('contextmenu', e => { e.preventDefault(); openSheet(pkmn, side); });
+  if (variant === 'field') {
+    // Variante fullart in campo: artwork con fallback sprite
+    el.innerHTML = `
+      <span class="card__hp card__hp--field" data-hp="${pkmn.id}" data-hp-side="${side}">${curHP}</span>
+      <span class="card__pp card__pp--field" data-pp="${pkmn.id}" data-pp-side="${side}">PP ${curPP}</span>
+      ${heldHTML}
+      <div class="card__sprite">
+        <img class="card__img" src="${getArtworkUrl(pkmn)}" alt="${pkmn.name}"
+             onerror="this.onerror=null;this.classList.add('is-fallback');this.src='${pkmn.sprite.default}';" />
+      </div>
+      <div class="card__name">${pkmn.name}</div>
+      <div class="card__types">
+        ${pkmn.types.map(t => `<span class="type-badge" data-type="${t}">${typeLabel(t)}</span>`).join('')}
+      </div>
+      <div class="card__move card__move--field" data-move="${pkmn.id}" data-move-side="${side}">${moveLabel}</div>
+    `;
+  } else {
+    // Bench compatta — sprite + info essenziali
+    el.innerHTML = `
+      <span class="card__hp" data-hp="${pkmn.id}" data-hp-side="${side}">${curHP}</span>
+      <span class="card__pp" data-pp="${pkmn.id}" data-pp-side="${side}">PP ${curPP}</span>
+      ${heldHTML}
+      <div class="card__sprite">
+        <img src="${pkmn.sprite.default}" alt="${pkmn.name}" loading="lazy" />
+      </div>
+      <div class="card__name">${pkmn.name}</div>
+      <div class="card__types">
+        ${pkmn.types.map(t => `<span class="type-badge" data-type="${t}">${typeLabel(t)}</span>`).join('')}
+      </div>
+      <div class="card__move" data-move="${pkmn.id}" data-move-side="${side}">${moveLabel}</div>
+    `;
+  }
+
+  // Click sx → apre modal dettaglio (riusa quello della collezione)
+  // Soppresso durante il drag (vedi onDragEnd).
+  el.addEventListener('click', e => {
+    if (el.classList.contains('was-dragged')) return;   // distingui drag da click
+    openCardModal(pkmn.id);
+  });
 
   // Drag & drop solo per carte del giocatore (non morte, non in fase resolving)
   if (side === 'self' && !bs.playerDeadIds.has(pkmn.id)) {
     el.draggable = true;
     el.addEventListener('dragstart', onDragStart);
     el.addEventListener('dragend',   onDragEnd);
+    // Supporto touch / pen (mobile): long-press 180ms → drag manuale con ghost
+    attachTouchDrag(el, pkmn);
+    // touch-action: none impedisce lo scroll della pagina durante il drag
+    el.style.touchAction = 'none';
   }
 
   return el;
@@ -409,8 +477,146 @@ function onDragStart(e) {
 }
 
 function onDragEnd(e) {
-  e.currentTarget.classList.remove('is-dragging');
+  const card = e.currentTarget;
+  card.classList.remove('is-dragging');
+  // Marca brevemente la carta come "was-dragged" così il click sintetico finale viene ignorato
+  card.classList.add('was-dragged');
+  setTimeout(() => card.classList.remove('was-dragged'), 100);
   $$('.grid__slot').forEach(s => s.classList.remove('is-drop-target'));
+  dragId       = null;
+  dragFromSlot = null;
+}
+
+/* ============================================================
+   TOUCH DRAG & DROP (mobile)
+   HTML5 DnD non funziona su touch. Implementiamo un drag manuale
+   con pointer events: long-press 180ms su una carta del player
+   inizia il drag, dito che si muove sposta un "ghost" della carta,
+   rilascio piazza nello slot sottostante (o bench se valido).
+   ============================================================ */
+let touchGhost   = null;     // elemento clone che segue il dito
+let touchSrcCard = null;     // card originale in trascinamento
+let touchPress   = null;     // timer del long-press
+let touchActive  = false;    // true mentre il drag è in corso
+
+function attachTouchDrag(cardEl, pkmn) {
+  cardEl.addEventListener('pointerdown', e => {
+    // Solo touch / pen — il mouse usa HTML5 DnD nativo
+    if (e.pointerType === 'mouse') return;
+    if (bs.phase !== 'placement') return;
+    if (bs.playerDeadIds.has(pkmn.id)) return;
+
+    const startX = e.clientX, startY = e.clientY;
+
+    // Long-press: dopo 180ms inizia il drag (evita drag accidentali su tap)
+    touchPress = setTimeout(() => {
+      touchPress = null;
+      startTouchDrag(cardEl, pkmn, startX, startY);
+    }, 180);
+
+    // Cancella il long-press se il dito si muove troppo prima dei 180ms (è uno scroll/swipe)
+    const onEarlyMove = ev => {
+      if (Math.abs(ev.clientX - startX) > 8 || Math.abs(ev.clientY - startY) > 8) {
+        clearTimeout(touchPress); touchPress = null;
+        cardEl.removeEventListener('pointermove', onEarlyMove);
+      }
+    };
+    cardEl.addEventListener('pointermove', onEarlyMove, { once: false });
+    cardEl.addEventListener('pointerup',   () => {
+      clearTimeout(touchPress); touchPress = null;
+      cardEl.removeEventListener('pointermove', onEarlyMove);
+    }, { once: true });
+  });
+}
+
+function startTouchDrag(cardEl, pkmn, x, y) {
+  touchActive  = true;
+  touchSrcCard = cardEl;
+  dragId       = pkmn.id;
+  dragFromSlot = cardEl.closest('[data-slot-key]')?.dataset.slotKey ?? 'bench';
+
+  cardEl.classList.add('is-dragging');
+
+  // Crea il ghost: clone della card, posizionato dove il dito è
+  const rect = cardEl.getBoundingClientRect();
+  touchGhost = cardEl.cloneNode(true);
+  touchGhost.classList.add('touch-drag-ghost');
+  touchGhost.classList.remove('is-dragging');
+  Object.assign(touchGhost.style, {
+    position: 'fixed',
+    left:     `${x - rect.width / 2}px`,
+    top:      `${y - rect.height / 2}px`,
+    width:    `${rect.width}px`,
+    height:   `${rect.height}px`,
+    margin:   '0',
+    zIndex:   '9999',
+    pointerEvents: 'none',
+    opacity:  '0.92',
+    transform: 'scale(1.06)',
+  });
+  document.body.appendChild(touchGhost);
+
+  // Listener globali per move/up
+  document.addEventListener('pointermove', onTouchDragMove);
+  document.addEventListener('pointerup',   onTouchDragEnd);
+  document.addEventListener('pointercancel', onTouchDragEnd);
+}
+
+function onTouchDragMove(e) {
+  if (!touchActive || !touchGhost) return;
+  e.preventDefault();
+  const rect = touchGhost.getBoundingClientRect();
+  touchGhost.style.left = `${e.clientX - rect.width / 2}px`;
+  touchGhost.style.top  = `${e.clientY - rect.height / 2}px`;
+
+  // Trova lo slot sotto al dito (nascondi temporaneamente il ghost)
+  touchGhost.style.display = 'none';
+  const below = document.elementFromPoint(e.clientX, e.clientY);
+  touchGhost.style.display = '';
+
+  $$('.grid__slot.is-drop-target').forEach(s => s.classList.remove('is-drop-target'));
+  const slot = below?.closest('#playerGrid .grid__slot');
+  if (slot) {
+    const occ = bs.playerField.get(slot.dataset.slotKey);
+    if (!occ || occ.id === dragId) slot.classList.add('is-drop-target');
+  }
+}
+
+function onTouchDragEnd(e) {
+  if (!touchActive) return;
+  touchActive = false;
+
+  // Trova target finale
+  touchGhost && (touchGhost.style.display = 'none');
+  const below = document.elementFromPoint(e.clientX, e.clientY);
+  const slot  = below?.closest('#playerGrid .grid__slot');
+  const bench = below?.closest('#playerBench');
+
+  // Cleanup visivo
+  touchGhost?.remove();
+  touchGhost = null;
+  touchSrcCard?.classList.remove('is-dragging');
+  // Marca was-dragged per sopprimere il click sintetico finale (analogo a HTML5 DnD)
+  if (touchSrcCard) {
+    touchSrcCard.classList.add('was-dragged');
+    const c = touchSrcCard;
+    setTimeout(() => c.classList.remove('was-dragged'), 150);
+  }
+  touchSrcCard = null;
+  $$('.grid__slot.is-drop-target').forEach(s => s.classList.remove('is-drop-target'));
+
+  document.removeEventListener('pointermove',   onTouchDragMove);
+  document.removeEventListener('pointerup',     onTouchDragEnd);
+  document.removeEventListener('pointercancel', onTouchDragEnd);
+
+  // Applica il drop
+  if (slot) {
+    placeCardOnSlot(dragId, slot.dataset.slotKey, dragFromSlot);
+  } else if (bench && dragFromSlot !== 'bench') {
+    bs.playerField.delete(dragFromSlot);
+    renderField();
+  }
+
   dragId       = null;
   dragFromSlot = null;
 }
@@ -576,6 +782,7 @@ async function confirmTurn() {
   await sleep(600);
   bs.turn++;
   $('#turnNumber').textContent = bs.turn;
+  log(`— Turno ${bs.turn} —`, 'turn');
 
   bs.phase = 'placement';
   btn.disabled = false;
@@ -762,14 +969,31 @@ function waitForOpponent() {
 
 /* ============================================================
    ANIMAZIONE EVENTI
+   Pacing: tutti i tempi centralizzati in ANIM. 1.4× più lenti
+   rispetto alla v1, con una pausa di lettura tra ogni evento
+   significativo per dare tempo al giocatore di capire cosa è
+   successo. speedMultiplier (1× / 2×) li scala tutti.
    ============================================================ */
+const ANIM = {
+  speedCheck:    1900,   // era 1400
+  attackBuildup:  220,   // era 150 — attaccante "carica"
+  hitImpact:      450,   // era 700 — durata visiva del colpo
+  faintReveal:    520,   // era 350 — pausa prima del fade KO
+  damageFloat:   1300,   // era 950 — il numero del danno resta più a lungo
+  ppFloat:       1150,   // era 850
+  hpShake:        500,   // era 350 — shake della HP bar su danno diretto
+  betweenEvents:  300,   // PAUSA DI LETTURA tra eventi consecutivi
+  finisherCharge: 480,   // pre-carica dorata prima del lunge per la mossa Finisher
+};
+
 async function playEvents(events) {
   for (const ev of events) {
 
     if (ev.type === 'speed_check') {
       const label = ev.first === 'player' ? 'Vai per primo! ▶' : '◀ Avversario va per primo!';
       setPhase(`⚡ Speed Tu: ${ev.playerSpeed} — Avversario: ${ev.enemySpeed} — ${label}`);
-      await sleep(1400);
+      log(`Velocità — Tu ${ev.playerSpeed} vs Avversario ${ev.enemySpeed} (${ev.first === 'player' ? 'tu attacchi prima' : 'loro attaccano prima'})`, 'speed');
+      await sleep(ANIM.speedCheck);
     }
 
     else if (ev.type === 'attack') {
@@ -783,23 +1007,62 @@ async function playEvents(events) {
       const atkEl = findCardEl(ev.attackerSide, ev.attackerSlot);
       const defEl = findCardEl(ev.defenderSide, ev.defenderSlot);
 
-      // Animazione attaccante
+      // FINISHER: carica preliminare prima dell'attacco
+      if (ev.isFinisher && atkEl) {
+        atkEl.classList.add('is-finisher');
+        await sleep(ANIM.finisherCharge);
+        atkEl.classList.remove('is-finisher');
+      }
+
+      // Animazione attaccante (lunge)
       if (atkEl) {
         atkEl.classList.add('is-attacking');
-        await sleep(150);
+        await sleep(ANIM.attackBuildup);
       }
 
       // Danno + effetto tipo
+      const effText  = ev.typeEff >= 2 ? ' ×2!' : ev.typeEff === 0 ? '' : ev.typeEff < 1 ? ' ×½' : '';
+      const effLabel = ev.typeEff >= 2 ? ' SUPER EFFICACE!'
+                     : ev.typeEff === 0 ? ' (immune)'
+                     : ev.typeEff < 1   ? ' (poco efficace)'
+                     : '';
+      const fin = ev.isFinisher ? '★ ' : '';
+      const kind = ev.typeEff === 0 ? 'immune'
+                 : ev.typeEff >= 2 ? 'super'
+                 : ev.typeEff < 1  ? 'weak'
+                 : 'attack';
+      log(`${fin}${pkmnName} attacca ${defName} — ${ev.damage > 0 ? `−${ev.damage} HP` : 'nessun danno'}${effLabel}`, kind);
+
       if (defEl) {
-        const effText = ev.typeEff >= 2 ? ' ×2!' : ev.typeEff === 0 ? '' : ev.typeEff < 1 ? ' ×½' : '';
+        // Shake + flash overlay sul bersaglio
+        const flashKind = ev.typeEff >= 2 ? 'is-hit-super'
+                        : ev.typeEff === 0 ? 'is-hit-immune'
+                        : ev.typeEff < 1   ? 'is-hit-weak'
+                        : '';
+        defEl.classList.add('is-hit');
+        if (flashKind) defEl.classList.add(flashKind);
+        setTimeout(() => defEl.classList.remove('is-hit', 'is-hit-super', 'is-hit-weak', 'is-hit-immune'), 460);
+
+        // Screen flash su super-effective
+        if (ev.typeEff >= 2) {
+          document.body.classList.add('is-super-flash');
+          setTimeout(() => document.body.classList.remove('is-super-flash'), 560);
+        }
+
         showDamageFloat(defEl, ev.damage, ev.typeEff, effText);
         updateCardHP(ev.targetId, ev.targetHPAfter, ev.defenderSide);
 
         if (ev.targetDied) {
           if (ev.defenderSide === 'player') bs.playerDeadIds.add(ev.targetId);
           else                              bs.enemyDeadIds.add(ev.targetId);
-          await sleep(350);
-          defEl.classList.add('is-fainted');
+          log(`${defName} è stato messo KO!`, 'ko');
+          await sleep(ANIM.faintReveal);
+          defEl.classList.add('is-ko-anim');
+          // Dopo l'animazione di KO, lascia lo stato fainted permanente
+          setTimeout(() => {
+            defEl.classList.remove('is-ko-anim');
+            defEl.classList.add('is-fainted');
+          }, 960);
         }
       }
 
@@ -816,8 +1079,9 @@ async function playEvents(events) {
         if (atkEl) showPPFloat(atkEl);
       }
 
-      await sleep(700);
+      await sleep(ANIM.hitImpact);
       if (atkEl) atkEl.classList.remove('is-attacking');
+      await sleep(ANIM.betweenEvents);
     }
 
     else if (ev.type === 'direct_damage') {
@@ -826,7 +1090,7 @@ async function playEvents(events) {
       const atkEl = findCardEl(ev.attackerSide, ev.attackerSlot);
       if (atkEl) {
         atkEl.classList.add('is-attacking');
-        await sleep(150);
+        await sleep(ANIM.attackBuildup);
       }
 
       if (ev.defenderSide === 'player') bs.playerHP = ev.hpAfter;
@@ -836,10 +1100,12 @@ async function playEvents(events) {
       const hpBarEl  = $(`.hp-bar[data-side="${sideAttr}"]`);
       if (hpBarEl) {
         hpBarEl.classList.add('is-shaking');
-        setTimeout(() => hpBarEl.classList.remove('is-shaking'), 350);
+        setTimeout(() => hpBarEl.classList.remove('is-shaking'), ANIM.hpShake);
       }
 
-      setPhase(`💥 Colonna vuota! −${ev.damage} HP ${ev.defenderSide === 'player' ? 'a te' : "all'avversario"}`);
+      const targetLabel = ev.defenderSide === 'player' ? 'a te' : "all'avversario";
+      setPhase(`💥 Colonna vuota! −${ev.damage} HP ${targetLabel}`);
+      log(`Colonna vuota — danno diretto −${ev.damage} HP ${targetLabel}`, 'direct');
       updateHPBar('player');
       updateHPBar('enemy');
 
@@ -854,8 +1120,9 @@ async function playEvents(events) {
       updateCardPP(ev.attackerId, newPP2, atkHtmlSide2);
       if (atkEl) showPPFloat(atkEl);
 
-      await sleep(700);
+      await sleep(ANIM.hitImpact);
       if (atkEl) atkEl.classList.remove('is-attacking');
+      await sleep(ANIM.betweenEvents);
     }
 
     else if (ev.type === 'turn_end') {
@@ -946,6 +1213,7 @@ function endGame(result) {
   bs.phase = 'ended';
   stopTimer();
   setPhase(result === 'win' ? '🏆 Hai vinto!' : '💀 Hai perso!');
+  log(result === 'win' ? 'Hai vinto la battaglia!' : 'Hai perso la battaglia.', result === 'win' ? 'win' : 'lose');
 
   // Registra il risultato nella cronologia (una sola volta)
   if (!bs.matchRecorded) {
@@ -981,6 +1249,54 @@ function endGame(result) {
 function setPhase(text) {
   const el = $('#phaseLabel');
   if (el) el.textContent = text;
+}
+
+/* ============================================================
+   COMBAT LOG — drawer in basso-sinistra
+   ============================================================ */
+const LOG_MAX = 80;
+const LOG_KIND_ICON = {
+  info:   '·',
+  attack: '⚔',
+  super:  '💥',
+  weak:   '🛡',
+  immune: '∅',
+  ko:     '☠',
+  turn:   '🔁',
+  speed:  '⚡',
+  direct: '🎯',
+  item:   '🎒',
+  win:    '🏆',
+  lose:   '💀',
+};
+
+/** Aggiunge una riga al combat log. kind controlla l'icona e il colore. */
+function log(message, kind = 'info') {
+  const body = $('#battleLogBody');
+  if (!body) return;
+  const row = document.createElement('div');
+  row.className = `battle-log__row battle-log__row--${kind}`;
+  const icon = LOG_KIND_ICON[kind] ?? '·';
+  row.innerHTML = `<span class="battle-log__icon">${icon}</span><span class="battle-log__msg">${message}</span>`;
+  body.appendChild(row);
+  // Cap entries per evitare DOM gonfio
+  while (body.children.length > LOG_MAX) body.firstChild.remove();
+  body.scrollTop = body.scrollHeight;
+}
+
+function clearLog() {
+  const body = $('#battleLogBody');
+  if (body) body.innerHTML = '';
+}
+
+function setupLogToggle() {
+  const drawer = $('#battleLog');
+  const toggle = $('#battleLogToggle');
+  if (!drawer || !toggle) return;
+  toggle.addEventListener('click', () => {
+    const open = drawer.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', String(open));
+  });
 }
 
 /* ============================================================
@@ -1040,7 +1356,7 @@ function renderSheetTab(tab) {
         <span class="stat-list__value" style="color:var(--accent)">${curPP}</span>
       </div>
       <div style="margin-top:16px;display:flex;gap:8px;">
-        ${p.types.map(t => `<span class="type-badge" data-type="${t}">${t}</span>`).join('')}
+        ${p.types.map(t => `<span class="type-badge" data-type="${t}">${typeLabel(t)}</span>`).join('')}
       </div>
     `;
   } else if (tab === 'moves') {
@@ -1060,7 +1376,7 @@ function renderSheetTab(tab) {
         <div class="move-row${isSelected ? ' move-row--active' : ''}"${dimmed}>
           ${stab ? '<div class="move-row__header"><span class="move-row__stab">STAB</span></div>' : ''}
           <div class="move-row__name">
-            <span class="type-badge" data-type="${move.type}">${move.type}</span>
+            <span class="type-badge" data-type="${move.type}">${typeLabel(move.type)}</span>
             ${catIcon(move.cat)} ${move.name}
             <span class="move-row__meta">${catLabel(move.cat)} · PWR ${move.power}</span>
           </div>

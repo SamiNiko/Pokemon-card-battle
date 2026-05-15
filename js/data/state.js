@@ -3,6 +3,8 @@
    Predisposto per cloud sync futuro (vedi onSave + identity).
    ============================================================ */
 
+import { isItemAllowedForPokemon } from './items.js?v=2';
+
 const STATE_KEY    = 'pkmn_player_state_v1';
 const SAVE_FORMAT  = 'pokemon-card-battle/v1';
 
@@ -22,13 +24,20 @@ const DEFAULT_STATE = {
   /* ---- Progressi ---- */
   owned: [],                          // vuoto all'inizio: si popola via summon / storia
   stars: {},
-  teams: [[], [], [], []],            // 4 slot team (A, B, C, D) — sempre 4
+  teams: [[], [], [], []],            // 4 slot team (1, 2, 3, 4) — sempre 4
   activeTeam: 0,                      // indice del team correntemente visualizzato/usato in battaglia
-  gear: {},
+  /* gearByTeam: 4 mappe { pokemonId: itemId }, una per ogni team slot.
+     Un Pokémon può tenere un oggetto DIVERSO in team diversi (es. Alakazam
+     ha Cucchiaio Torto in team 1 ma niente in team 2). */
+  gearByTeam: [{}, {}, {}, {}],
 
   /* ---- Valute ---- */
   gems:    0,
   pokeuro: 0,
+
+  /* ---- Inventario oggetti acquistati ----
+     { itemId: quantity }. Si popola dallo shop. */
+  inventory: {},
 
   /* ---- Cronologia battaglie + statistiche aggregate ----
      matchHistory : ultime ~50 battaglie (le più vecchie vengono droppate)
@@ -135,6 +144,14 @@ export function addToTeamSlot(slot, id) {
 export function removeFromTeamSlot(slot, id) {
   const current = getTeamSlot(slot);
   setTeamSlot(slot, current.filter(x => x !== id));
+  // Stacca anche l'eventuale oggetto equipaggiato a questo Pokémon in QUESTO team
+  const s = getState();
+  if (Array.isArray(s.gearByTeam) && s.gearByTeam[slot]) {
+    if (s.gearByTeam[slot][id] != null) {
+      delete s.gearByTeam[slot][id];
+      saveState();
+    }
+  }
 }
 
 export function getActiveTeam() {
@@ -159,6 +176,143 @@ export function isOwned(id) {
 
 export function getStars(id) {
   return getState().stars[id] ?? 1;
+}
+
+/* ================================================================
+   INVENTORY (oggetti tenuti)
+   ================================================================
+   Regola: 1 copia max per oggetto. Lo state.inventory è { itemId: true }.
+*/
+
+export function ownsItem(itemId) {
+  const s = getState();
+  return !!(s.inventory && s.inventory[itemId]);
+}
+
+export function addItem(itemId) {
+  if (!itemId) return false;
+  const s = getState();
+  if (!s.inventory) s.inventory = {};
+  if (s.inventory[itemId]) return false;            // già posseduto, no-op
+  s.inventory[itemId] = true;
+  saveState();
+  return true;
+}
+
+export function removeItem(itemId) {
+  const s = getState();
+  if (!s.inventory || !s.inventory[itemId]) return false;
+  // Rimuovi da tutti i team in cui era equipaggiato
+  _ensureGearByTeam(s);
+  for (let t = 0; t < 4; t++) {
+    const gear = s.gearByTeam[t];
+    for (const [pkId, it] of Object.entries(gear)) {
+      if (it === itemId) delete gear[pkId];
+    }
+  }
+  delete s.inventory[itemId];
+  saveState();
+  return true;
+}
+
+export function getOwnedItems() {
+  const inv = getState().inventory || {};
+  return Object.keys(inv).filter(k => inv[k]);
+}
+
+/* ================================================================
+   GEAR (oggetti equipaggiati per-team-per-Pokémon)
+   ================================================================
+   state.gearByTeam[slotIdx] = { pokemonId: itemId }
+   Regole:
+   - Un oggetto può essere su UN solo Pokémon all'interno dello stesso team
+     (no duplicati intra-team).
+   - Cross-team OK: Alakazam può tenere Cucchiaio Torto in team 1 e
+     un altro oggetto (o niente) in team 2.
+   Tutte le API accettano un teamSlot opzionale; default = activeTeam.
+*/
+
+function _resolveTeamSlot(s, teamSlot) {
+  if (teamSlot == null) teamSlot = s.activeTeam ?? 0;
+  return Math.max(0, Math.min(3, teamSlot));
+}
+function _ensureGearByTeam(s) {
+  if (!Array.isArray(s.gearByTeam) || s.gearByTeam.length !== 4) {
+    s.gearByTeam = [{}, {}, {}, {}];
+  }
+  for (let i = 0; i < 4; i++) {
+    if (!s.gearByTeam[i] || typeof s.gearByTeam[i] !== 'object') s.gearByTeam[i] = {};
+  }
+}
+
+export function getEquipped(pokemonId, teamSlot = null) {
+  const s = getState();
+  _ensureGearByTeam(s);
+  const slot = _resolveTeamSlot(s, teamSlot);
+  return s.gearByTeam[slot][pokemonId] ?? null;
+}
+
+export function getPokemonHoldingItem(itemId, teamSlot = null) {
+  const s = getState();
+  _ensureGearByTeam(s);
+  const slot = _resolveTeamSlot(s, teamSlot);
+  for (const [pkId, it] of Object.entries(s.gearByTeam[slot])) {
+    if (it === itemId) return Number(pkId);
+  }
+  return null;
+}
+
+/** Tutti gli usi (per-team) di un oggetto. Restituisce [{teamSlot, pokemonId}, ...]. */
+export function getItemUsages(itemId) {
+  const s = getState();
+  _ensureGearByTeam(s);
+  const out = [];
+  for (let t = 0; t < 4; t++) {
+    for (const [pkId, it] of Object.entries(s.gearByTeam[t])) {
+      if (it === itemId) out.push({ teamSlot: t, pokemonId: Number(pkId) });
+    }
+  }
+  return out;
+}
+
+/** Equipaggia itemId su pokemonId nel team specificato (default = active).
+ *  Se nello stesso team l'oggetto era su un altro Pokémon, lo stacca da lì.
+ *  Rifiuta se l'oggetto è esclusivo di altri Pokémon. */
+export function equipItem(pokemonId, itemId, teamSlot = null) {
+  if (!pokemonId || !itemId) return false;
+  const s = getState();
+  if (!s.inventory || !s.inventory[itemId]) return false;   // non posseduto
+  // Vincolo restrictedTo (oggetti esclusivi)
+  if (!isItemAllowedForPokemon(itemId, pokemonId)) return false;
+  _ensureGearByTeam(s);
+  const slot = _resolveTeamSlot(s, teamSlot);
+  const gear = s.gearByTeam[slot];
+  // Stacca eventuale possessore precedente NELLO STESSO team
+  const prev = getPokemonHoldingItem(itemId, slot);
+  if (prev != null && prev !== pokemonId) delete gear[prev];
+  gear[pokemonId] = itemId;
+  saveState();
+  return true;
+}
+
+/** Toglie l'oggetto da un Pokémon nel team specificato.
+ *  Se passi un itemId (string), libera il Pokémon che lo tiene in quel team. */
+export function unequipItem(pokemonIdOrItemId, teamSlot = null) {
+  const s = getState();
+  _ensureGearByTeam(s);
+  const slot = _resolveTeamSlot(s, teamSlot);
+  const gear = s.gearByTeam[slot];
+  if (typeof pokemonIdOrItemId === 'string') {
+    const holder = getPokemonHoldingItem(pokemonIdOrItemId, slot);
+    if (holder == null) return false;
+    delete gear[holder];
+    saveState();
+    return true;
+  }
+  if (gear[pokemonIdOrItemId] == null) return false;
+  delete gear[pokemonIdOrItemId];
+  saveState();
+  return true;
 }
 
 /* ================================================================
@@ -250,6 +404,26 @@ function readAndMigrate() {
   while (merged.teams.length < 4) merged.teams.push([]);
   merged.teams = merged.teams.slice(0, 4).map(t => Array.isArray(t) ? t : []);
   if (typeof merged.activeTeam !== 'number') merged.activeTeam = 0;
+
+  // Migrazione: inventory (save pre-shop)
+  if (!merged.inventory || typeof merged.inventory !== 'object') merged.inventory = {};
+
+  // Migrazione: gearByTeam (save pre-loadout-per-team).
+  // Il vecchio `gear` globale viene riversato nel team attivo, gli altri 3 partono vuoti.
+  if (!Array.isArray(merged.gearByTeam) || merged.gearByTeam.length !== 4) {
+    const oldGear = (merged.gear && typeof merged.gear === 'object') ? merged.gear : {};
+    const initial = [{}, {}, {}, {}];
+    const idx = (typeof merged.activeTeam === 'number') ? merged.activeTeam : 0;
+    initial[Math.max(0, Math.min(3, idx))] = { ...oldGear };
+    merged.gearByTeam = initial;
+  } else {
+    // Garantisce che tutti e 4 i team siano oggetti validi
+    for (let i = 0; i < 4; i++) {
+      if (!merged.gearByTeam[i] || typeof merged.gearByTeam[i] !== 'object') {
+        merged.gearByTeam[i] = {};
+      }
+    }
+  }
 
   // Migrazione: aggiungi matchHistory + lifetimeStats se mancano (save pre-stats)
   if (!Array.isArray(merged.matchHistory)) merged.matchHistory = [];

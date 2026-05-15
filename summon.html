@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pokémon Card Battle — Summon</title>
-  <link rel="stylesheet" href="css/base.css?v=3" />
-  <link rel="stylesheet" href="css/summon.css?v=17" />
+  <link rel="stylesheet" href="css/base.css?v=7" />
+  <link rel="stylesheet" href="css/summon.css?v=23" />
 </head>
 <body class="summon-page">
 
@@ -76,9 +76,10 @@
   <!-- Debug: forza rarità per test animazioni -->
   <div class="debug-actions">
     <span class="debug-actions__label">🧪 Debug animazioni:</span>
-    <button class="debug-btn debug-btn--rare"   id="btnDebug3">Forza ★★★ Raro</button>
-    <button class="debug-btn debug-btn--epic"   id="btnDebug4">Forza ★★★★ Epico</button>
-    <button class="debug-btn debug-btn--pseudo" id="btnDebug5">Forza ★★★★★ Pseudo Leggendario</button>
+    <button class="debug-btn debug-btn--rare"    id="btnDebug3">Forza ★★★ Raro</button>
+    <button class="debug-btn debug-btn--epic"    id="btnDebug4">Forza ★★★★ Epico</button>
+    <button class="debug-btn debug-btn--pseudo"  id="btnDebug5">Forza ★★★★★ Pseudo Leggendario</button>
+    <button class="debug-btn debug-btn--fakeout" id="btnDebugFakeout">🎭 Forza Fakeout 5★</button>
   </div>
 
   <!-- ================================================================
@@ -125,14 +126,18 @@
       <div class="stars-screen__name" id="starsName"></div>
     </div>
 
-    <!-- Screen 2: Pokémon + dettagli (PC landscape) -->
+    <!-- Screen 2: Carta del Pokémon — artwork + dettagli -->
     <div class="reveal-screen hidden" id="revealScreen">
-      <div class="reveal-screen__left" id="revealLeft">
-        <div class="reveal-screen__glow" id="revealGlow"></div>
-        <img class="reveal-screen__sprite" id="revealSprite" alt="" />
-      </div>
-      <div class="reveal-screen__right" id="revealRight">
-        <!-- riempito da JS -->
+      <div class="reveal-screen__card" id="revealCard">
+        <div class="reveal-screen__shine" aria-hidden="true"></div>
+        <div class="reveal-screen__left" id="revealLeft">
+          <div class="reveal-screen__glow" id="revealGlow"></div>
+          <img class="reveal-screen__artwork" id="revealArtwork" alt="" />
+          <img class="reveal-screen__sprite" id="revealSprite" alt="" />
+        </div>
+        <div class="reveal-screen__right" id="revealRight">
+          <!-- riempito da JS -->
+        </div>
       </div>
       <button class="reveal-screen__next" id="revealNext">Avanti →</button>
     </div>
@@ -165,6 +170,6 @@
     <p>Caricamento Pokémon…</p>
   </div>
 
-  <script type="module" src="js/summon.js?v=16"></script>
+  <script type="module" src="js/summon.js?v=24"></script>
 </body>
 </html>

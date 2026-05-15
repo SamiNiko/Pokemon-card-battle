@@ -9,7 +9,7 @@ import {
   setUserName,
   exportSave,
   importSave,
-} from './data/state.js';
+} from './data/state.js?v=3';
 
 /* Supabase + cloud sync caricati dinamicamente. Se la CDN è bloccata
    (es. ad-blocker aggressivo di Opera GX) la pagina resta funzionante
@@ -20,7 +20,7 @@ async function loadCloudModules() {
   try {
     [supabaseModule, cloudSyncModule] = await Promise.all([
       import('./data/supabase.js'),
-      import('./data/cloud-sync.js'),
+      import('./data/cloud-sync.js?v=3'),
     ]);
     return true;
   } catch (e) {
@@ -152,10 +152,16 @@ async function handleAuthClick() {
   const session = await supabaseModule.getSession();
   if (session) {
     // Logout
+    const ok = confirm(
+      'Sicuro di voler uscire?\n\n' +
+      '✓ I tuoi progressi restano salvati sul cloud.\n\n' +
+      '⚠ Su questo dispositivo verrà avviato un nuovo profilo Ospite vuoto.'
+    );
+    if (!ok) return;
     try {
       await cloudSyncModule.flushSync();
       await supabaseModule.signOut();
-      toast('Disconnesso. I salvataggi locali sono intatti.', 'success');
+      // signOut triggera SIGNED_OUT in cloud-sync che fa reset + reload
     } catch (e) {
       toast('Errore durante il logout: ' + e.message, 'error');
     }
@@ -210,7 +216,7 @@ function labelForAccountType(type) {
     case 'supabase': return 'Cloud';
     case 'google':   return 'Google';
     case 'guest':
-    default:         return 'Guest';
+    default:         return 'Ospite';
   }
 }
 

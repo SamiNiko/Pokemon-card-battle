@@ -4,10 +4,60 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pokémon Card Battle — Home</title>
-  <link rel="stylesheet" href="css/base.css?v=3" />
-  <link rel="stylesheet" href="css/home.css?v=2" />
+  <link rel="stylesheet" href="css/base.css?v=7" />
+  <link rel="stylesheet" href="css/home.css?v=7" />
+  <link rel="stylesheet" href="css/card-modal.css?v=2" />
 </head>
 <body class="home-page">
+
+  <!-- ================================================================
+       WELCOME OVERLAY — prima apertura del gioco, scelta Login/Ospite
+       ================================================================ -->
+  <div class="welcome-overlay hidden" id="welcomeOverlay" aria-modal="true" role="dialog">
+    <div class="welcome-overlay__bg"></div>
+    <div class="welcome-overlay__orb welcome-overlay__orb--1"></div>
+    <div class="welcome-overlay__orb welcome-overlay__orb--2"></div>
+
+    <div class="welcome-overlay__content">
+      <div class="welcome-overlay__logo">
+        <span class="welcome-overlay__ball" aria-hidden="true"></span>
+      </div>
+
+      <h1 class="welcome-overlay__title">Card Battle</h1>
+      <p class="welcome-overlay__subtitle">Hero Colosseum × Marvel Snap × Gen I</p>
+
+      <div class="welcome-overlay__intro">
+        <h2 class="welcome-overlay__greeting">Benvenuto, allenatore!</h2>
+        <p class="welcome-overlay__lead">
+          Pronto a costruire il tuo team e dominare il Colosseo?
+          Scegli come vuoi giocare.
+        </p>
+      </div>
+
+      <div class="welcome-overlay__actions">
+        <button class="welcome-btn welcome-btn--primary" id="btnWelcomeLogin" type="button">
+          <span class="welcome-btn__icon">🔑</span>
+          <span class="welcome-btn__body">
+            <span class="welcome-btn__title">Accedi con Google</span>
+            <span class="welcome-btn__hint">Sincronizza su tutti i dispositivi · Niente progressi persi</span>
+          </span>
+          <span class="welcome-btn__badge">Consigliato</span>
+        </button>
+
+        <button class="welcome-btn" id="btnWelcomeGuest" type="button">
+          <span class="welcome-btn__icon">▶️</span>
+          <span class="welcome-btn__body">
+            <span class="welcome-btn__title">Gioca come Ospite</span>
+            <span class="welcome-btn__hint">Solo su questo dispositivo · Puoi creare un account quando vuoi</span>
+          </span>
+        </button>
+      </div>
+
+      <p class="welcome-overlay__footer">
+        Puoi cambiare modalità in ogni momento dall'icona del profilo in alto a destra.
+      </p>
+    </div>
+  </div>
 
   <!-- Decorazioni sfondo -->
   <div class="home-bg" aria-hidden="true">
@@ -33,7 +83,26 @@
         <span class="home__wallet-loading">…</span>
       </div>
       <button class="refill-btn" id="btnRefill" title="Debug: aggiungi 9 999 gemme">+ 💎</button>
+
+      <!-- Avatar account: click → modal login/logout -->
+      <button class="account-btn" id="btnAccount" type="button" aria-label="Account">
+        <span class="account-btn__avatar" id="accountAvatar">?</span>
+        <span class="account-btn__dot account-btn__dot--guest" id="accountDot"></span>
+      </button>
     </header>
+
+    <!-- Banner persuasivo: appare solo se ospite con progressi -->
+    <div class="account-banner hidden" id="accountBanner">
+      <span class="account-banner__icon">💾</span>
+      <div class="account-banner__text">
+        <strong>Non perdere i tuoi progressi!</strong>
+        Sei in modalità Ospite — i salvataggi vivono solo su questo dispositivo.
+      </div>
+      <button class="btn btn--primary account-banner__cta" id="accountBannerCta" type="button">
+        🔑 Accedi con Google
+      </button>
+      <button class="account-banner__close" id="accountBannerClose" type="button" aria-label="Chiudi">✕</button>
+    </div>
 
     <!-- ── BODY: 2 colonne su desktop ── -->
     <div class="home__body">
@@ -73,12 +142,11 @@
               <span class="menu-btn__hint">Audio, grafica, account</span>
             </span>
           </button>
-          <button class="menu-btn menu-btn--shop" disabled>
+          <button class="menu-btn menu-btn--shop" onclick="location.href='shop.html'">
             <span class="menu-btn__text">
               <span class="menu-btn__label">🛍 Negozio</span>
-              <span class="menu-btn__hint">Oggetti, pacchetti, cosmetici</span>
+              <span class="menu-btn__hint">Oggetti tenuti per i tuoi Pokémon</span>
             </span>
-            <span class="menu-btn__soon">In arrivo</span>
           </button>
         </nav>
 
@@ -105,10 +173,10 @@
 
         <!-- Team switcher A / B / C / D — il team selezionato è quello giocato -->
         <div class="team-tabs" id="teamTabs">
-          <button class="team-tab is-active" data-slot="0">A</button>
-          <button class="team-tab"           data-slot="1">B</button>
-          <button class="team-tab"           data-slot="2">C</button>
-          <button class="team-tab"           data-slot="3">D</button>
+          <button class="team-tab is-active" data-slot="0">1</button>
+          <button class="team-tab"           data-slot="1">2</button>
+          <button class="team-tab"           data-slot="2">3</button>
+          <button class="team-tab"           data-slot="3">4</button>
         </div>
 
         <!-- Slot Pokémon (3×2 grid) — dimensioni fisse -->
@@ -176,6 +244,55 @@
     </div>
   </div>
 
-  <script type="module" src="js/home.js?v=2"></script>
+  <!-- ================================================================
+       MODAL ACCOUNT
+       ================================================================ -->
+  <div class="modal hidden" id="accountModal" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" data-account-close></div>
+    <div class="modal__panel account-modal">
+      <button class="modal__close account-modal__x" data-account-close aria-label="Chiudi">✕</button>
+
+      <!-- Avatar grande -->
+      <div class="account-modal__avatar" id="accountModalAvatar">?</div>
+
+      <!-- Contenuto guest: invita al login -->
+      <div class="account-modal__guest" id="accountModalGuest">
+        <h2 class="account-modal__title">Ciao, Ospite!</h2>
+        <p class="account-modal__sub">
+          I tuoi progressi sono salvati solo su questo dispositivo.
+          Accedi con Google per averli su tutti i tuoi schermi.
+        </p>
+        <button class="btn btn--primary account-modal__login" id="btnAccountLogin" type="button">
+          <span style="font-size:1.1em">🔑</span> Accedi con Google
+        </button>
+        <p class="account-modal__hint">
+          Non serve creare nessun account: usiamo solo il tuo Google esistente per
+          ritrovare i salvataggi.
+        </p>
+      </div>
+
+      <!-- Contenuto loggato -->
+      <div class="account-modal__user hidden" id="accountModalUser">
+        <h2 class="account-modal__title" id="accountModalName">—</h2>
+        <p class="account-modal__email" id="accountModalEmail">—</p>
+        <span class="settings-badge account-modal__badge">☁️ Cloud sync attivo</span>
+        <div class="account-modal__actions">
+          <a class="btn" href="settings.html">⚙ Impostazioni</a>
+          <button class="btn account-modal__logout" id="btnAccountLogout" type="button">🚪 Logout</button>
+        </div>
+      </div>
+
+      <!-- Stato "cloud non disponibile" -->
+      <div class="account-modal__error hidden" id="accountModalError">
+        <h2 class="account-modal__title">Cloud non disponibile</h2>
+        <p class="account-modal__sub">
+          La connessione al servizio cloud è bloccata (probabilmente un ad-blocker).
+          Disabilitalo per questo sito o usa il browser predefinito.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/home.js?v=7"></script>
 </body>
 </html>

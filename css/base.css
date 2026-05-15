@@ -373,6 +373,92 @@ a:hover { text-decoration: underline; }
   text-overflow: ellipsis;
 }
 
+/* ============================================================
+   .card--fullart — variante FULL-ART (collection + home team)
+   L'artwork riempie tutta la card edge-to-edge, le info vanno
+   in overlay sopra (HP top-right, nome in basso su gradient,
+   tipi in basso-sinistra).
+   ============================================================ */
+.card--fullart {
+  padding: 0;
+  overflow: hidden;
+}
+.card--fullart .card__sprite {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 0;
+}
+.card--fullart .card__sprite img,
+.card--fullart .card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;       /* artwork riempie tutto */
+  object-position: center;
+  /* Forza downscale alta qualità anche quando l'artwork sorgente è enorme:
+     - high-quality   → Chrome/Edge (bicubic+)
+     - smooth         → fallback
+     - auto           → default */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: smooth;
+  image-rendering: high-quality;
+}
+.card--fullart .card__img.is-fallback {
+  object-fit: contain;
+  image-rendering: pixelated;
+  padding: 6px;
+}
+/* Nelle card fullart fuori dalla battaglia non mostriamo HP:
+   - in pool/pokédex non ha senso (HP base lo vedi nella card modal)
+   - nei team slot si sovrapporrebbe con il bottone "×" remove */
+.card--fullart .card__hp { display: none; }
+/* Nome in basso, su gradient scuro per leggibilità sopra qualsiasi artwork.
+   Lascia un po' di spazio in basso per i tipi (padding-bottom maggiore). */
+.card--fullart .card__name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  z-index: 2;
+  padding: 24px 6px 22px;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.55) 35%,
+    rgba(0, 0, 0, 0.94) 100%);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Tipi in basso, centrati sopra il gradient */
+.card--fullart .card__types {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  flex-wrap: nowrap;
+  padding: 0 4px;
+}
+.card--fullart .card__types .type-badge {
+  font-size: 0.48rem;
+  padding: 2px 5px;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  line-height: 1;
+}
+
 /* ---- Moves tab — scheda Pokémon ---- */
 .moves-list {
   display: flex;

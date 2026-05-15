@@ -40,3 +40,48 @@ export function getTypeEffectiveness(attackType, defendTypes) {
   }
   return mult;
 }
+
+/* ============================================================
+   ETICHETTE ITALIANE — traduzione ufficiale dei tipi
+   Le chiavi (es. 'fire') restano in inglese perché vengono da
+   PokéAPI. Le label sono per la UI.
+   ============================================================ */
+
+export const TYPE_LABELS_IT = {
+  normal:   'Normale',
+  fire:     'Fuoco',
+  water:    'Acqua',
+  grass:    'Erba',
+  electric: 'Elettro',
+  ice:      'Ghiaccio',
+  fighting: 'Lotta',
+  poison:   'Veleno',
+  ground:   'Terra',
+  flying:   'Volante',
+  psychic:  'Psico',
+  bug:      'Coleottero',
+  rock:     'Roccia',
+  ghost:    'Spettro',
+  dragon:   'Drago',
+  dark:     'Buio',
+  steel:    'Acciaio',
+  fairy:    'Folletto',
+};
+
+export const TYPE_COLORS = {
+  normal:   '#a8a878',  fire:     '#f08030',  water:    '#6890f0',  grass:    '#78c850',
+  electric: '#f8d030',  ice:      '#98d8d8',  fighting: '#c03028',  poison:   '#a040a0',
+  ground:   '#e0c068',  flying:   '#a890f0',  psychic:  '#f85888',  bug:      '#a8b820',
+  rock:     '#b8a038',  ghost:    '#705898',  dragon:   '#7038f8',  dark:     '#705848',
+  steel:    '#b8b8d0',  fairy:    '#ee99ac',
+};
+
+/** Label italiano di un tipo. Se sconosciuto, ritorna la chiave originale. */
+export function typeLabel(typeKey) {
+  return TYPE_LABELS_IT[typeKey] ?? typeKey;
+}
+
+/** Colore di un tipo, fallback grigio se sconosciuto. */
+export function typeColor(typeKey) {
+  return TYPE_COLORS[typeKey] ?? '#888';
+}

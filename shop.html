@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokémon Card Battle — Negozio</title>
+  <link rel="stylesheet" href="css/base.css?v=7" />
+  <link rel="stylesheet" href="css/shop.css?v=4" />
+</head>
+<body class="shop-page">
+
+  <!-- Header -->
+  <header class="shop-header">
+    <a class="shop-header__back" href="index.html">← Home</a>
+    <h1 class="shop-header__title">🛒 Negozio</h1>
+    <div class="shop-header__wallet">
+      <div class="s-currency s-currency--euro">
+        <span>🪙</span><span id="walletEuro">—</span>
+      </div>
+      <div class="s-currency s-currency--gems">
+        <span>💎</span><span id="walletGems">—</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sottotitolo / banner -->
+  <section class="shop-banner">
+    <div class="shop-banner__bg"></div>
+    <div class="shop-banner__content">
+      <h2 class="shop-banner__title">Oggetti tenuti</h2>
+      <p class="shop-banner__subtitle">Equipaggia i tuoi Pokémon per cambiare le sorti della battaglia.</p>
+    </div>
+  </section>
+
+  <!-- Categorie -->
+  <div class="shop-tabs" id="shopTabs">
+    <!-- popolato da JS -->
+  </div>
+
+  <!-- Search bar -->
+  <div class="shop-search">
+    <input type="search" id="shopSearch" placeholder="Cerca un oggetto…" autocomplete="off" />
+  </div>
+
+  <!-- Griglia oggetti -->
+  <section class="shop-grid" id="shopGrid">
+    <!-- popolata da JS -->
+  </section>
+
+  <!-- Empty state -->
+  <div class="shop-empty hidden" id="shopEmpty">
+    <p>Nessun oggetto corrisponde al filtro.</p>
+  </div>
+
+  <!-- Modal conferma acquisto -->
+  <div class="modal hidden" id="buyModal" role="dialog" aria-modal="true">
+    <div class="modal__backdrop" data-buy-close></div>
+    <div class="modal__panel buy-panel">
+      <div class="buy-panel__icon" id="buyIcon">🎁</div>
+      <h2 class="buy-panel__name" id="buyName">—</h2>
+      <p class="buy-panel__desc" id="buyDesc">—</p>
+      <div class="buy-panel__price-row">
+        <span class="buy-panel__price-label">Costo:</span>
+        <span class="buy-panel__price-value" id="buyPrice">— 🪙</span>
+      </div>
+      <p class="buy-panel__after" id="buyAfter"></p>
+      <div class="buy-panel__actions">
+        <button class="btn" data-buy-close>Annulla</button>
+        <button class="btn btn--primary" id="buyConfirm">✓ Acquista</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast feedback acquisto -->
+  <div class="shop-toast hidden" id="shopToast">
+    <span id="shopToastMsg"></span>
+  </div>
+
+  <script type="module" src="js/shop.js?v=4"></script>
+</body>
+</html>

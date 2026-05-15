@@ -3,12 +3,13 @@
    ============================================================ */
 
 // Cloud sync dinamico: se la CDN Supabase è bloccata, la pagina funziona lo stesso
-import('./data/cloud-sync.js').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState }         from './data/state.js';
+import { getState, saveState }         from './data/state.js?v=3';
 import { MOVESETS }                    from './data/movesets.js';
 import { getSummonablePool, PULL_RATES, tierLabel } from './data/rarity.js';
+import { typeLabel }                                from './data/types.js';
 
 const $ = id => document.getElementById(id);
 
@@ -74,7 +75,36 @@ function doPulls(n) {
       results[Math.floor(Math.random() * 10)] = pool[Math.floor(Math.random() * pool.length)];
     }
   }
-  return results;
+  // Cloniamo le entry così possiamo arricchirle con la fakeout chain
+  // senza mutare il pool del banner
+  return results.map(r => ({ ...r, fakeoutChain: planRarityChain(r.rarity) }));
+}
+
+/* ================================================================
+   FAKEOUT — pianifica la catena di rarità da mostrare per un drop
+   ================================================================
+   Se il drop è epic (4★) o pseudo (5★), c'è una % di chance di
+   mostrare una rarità più bassa, fare una pausa di tensione, poi
+   "upgradare" alla rarità superiore (anche più volte di seguito).
+*/
+const FAKEOUT = {
+  pseudo: { chance: 0.25 },   // 25% sui 5★
+  epic:   { chance: 0.20 },   // 20% sui 4★
+};
+const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic', 'pseudo'];
+
+function planRarityChain(realRarity, forceFakeout = false) {
+  const realIdx = RARITY_ORDER.indexOf(realRarity);
+  const cfg = FAKEOUT[realRarity];
+  if (!cfg) return [realRarity];
+  if (!forceFakeout && Math.random() >= cfg.chance) return [realRarity];
+  // Partenza random uniforme tra 'uncommon' (idx 1) e (realIdx - 1)
+  const minStart = 1;
+  const maxStart = realIdx - 1;
+  const startIdx = minStart + Math.floor(Math.random() * (maxStart - minStart + 1));
+  const chain = [];
+  for (let i = startIdx; i <= realIdx; i++) chain.push(RARITY_ORDER[i]);
+  return chain;
 }
 
 /* ================================================================
@@ -163,17 +193,20 @@ $('btnPull10').addEventListener('click', () => {
    DEBUG — pull forzato per testare animazioni
    ================================================================ */
 
-$('btnDebug3').addEventListener('click', () => debugForcePull('rare'));
-$('btnDebug4').addEventListener('click', () => debugForcePull('epic'));
-$('btnDebug5').addEventListener('click', () => debugForcePull('pseudo'));
+$('btnDebug3').addEventListener('click',       () => debugForcePull('rare'));
+$('btnDebug4').addEventListener('click',       () => debugForcePull('epic'));
+$('btnDebug5').addEventListener('click',       () => debugForcePull('pseudo'));
+$('btnDebugFakeout').addEventListener('click', () => debugForcePull('pseudo', /* forceFakeout */ true));
 
-async function debugForcePull(rarity) {
+async function debugForcePull(rarity, forceFakeout = false) {
   const pool = BANNER_POOL.filter(p => p.rarity === rarity);
   if (pool.length === 0) {
     alert(`Nessun Pokémon ${rarity} nel pool`);
     return;
   }
-  const entry = pool[Math.floor(Math.random() * pool.length)];
+  // Clono l'entry e aggiungo la fakeoutChain (force o random secondo config)
+  const raw   = pool[Math.floor(Math.random() * pool.length)];
+  const entry = { ...raw, fakeoutChain: planRarityChain(raw.rarity, forceFakeout) };
 
   pullSkipRequested = false;
 
@@ -296,9 +329,13 @@ async function pullGate() {
    ================================================================ */
 
 async function summonIntro() {
-  /* Determino il tier dell'intro dal massimo della batch */
-  const order = ['common', 'uncommon', 'rare', 'epic', 'pseudo'];
-  const maxIdx = Math.max(0, ...pullAll.map(r => order.indexOf(r.rarity)));
+  /* Determino il tier dell'intro dalla rarità VISIBILE (chain[0]) per non
+     spoilerare il fakeout: se un pseudo è in fakeout da "uncommon",
+     l'intro mostrerà tier 1 invece di tier 4. */
+  const maxIdx = Math.max(0, ...pullAll.map(r => {
+    const visible = (r.fakeoutChain && r.fakeoutChain[0]) || r.rarity;
+    return RARITY_ORDER.indexOf(visible);
+  }));
   let tier;
   if      (maxIdx <= 1) tier = 't1';   // common / uncommon → scintille leggere
   else if (maxIdx === 2) tier = 't2';  // rare              → energia
@@ -420,7 +457,9 @@ async function showNextResult() {
   const entry = pullQueue.shift();
 
   if (entry.rarity === 'common') {
-    // Comuni: vai direttamente al reveal (senza schermata stelle)
+    // Comuni: mini bagliore (no stelle, no pokéball) → reveal
+    await showCommonGlow();
+    if (pullSkipRequested) { showSummary(); return; }
     await showReveal(entry);
   } else {
     // ★★ e oltre: prima stelle, poi reveal
@@ -428,24 +467,83 @@ async function showNextResult() {
   }
 }
 
+/* ---- Mini bagliore per i comuni (transizione card→card nella multi) ---- */
+
+async function showCommonGlow() {
+  if (pullSkipRequested) return;
+  // Nascondi il reveal precedente PRIMA del bagliore, così non si vede
+  // il Pokémon precedente trasparire sotto l'animazione
+  $('revealScreen').classList.add('hidden');
+  const overlay = $('pullOverlay');
+  const glow = document.createElement('div');
+  glow.className = 'common-glow';
+  overlay.appendChild(glow);
+  void glow.offsetWidth;
+  glow.classList.add('is-active');
+  await sleep(560);
+  glow.remove();
+}
+
 /* ---- Stars Screen — sequenza cinematica ---- */
 
 async function showStars(entry) {
   if (pullSkipRequested) return;
-  const rarity     = entry.rarity;
-  const starsCount = { pseudo: 5, epic: 4, rare: 3, uncommon: 2 }[rarity] ?? 2;
 
-  // Reset
   const starsScreen = $('starsScreen');
   const nameEl      = $('starsName');
   $('starsRow').innerHTML = '';
   nameEl.textContent = '';
-  nameEl.className   = 'stars-screen__name';        // niente nome — più suspense
+  nameEl.className   = 'stars-screen__name';
 
-  // Rimuovi residui di pull precedenti
-  starsScreen.querySelectorAll('.stars-screen__aurora, .stars-screen__beam, .cinematic-particle, .cinematic-ring').forEach(el => el.remove());
+  // Pulisco residui di pull precedenti
+  starsScreen.querySelectorAll(
+    '.stars-screen__aurora, .stars-screen__beam, .cinematic-particle, .cinematic-ring'
+  ).forEach(el => el.remove());
 
-  // Aurora di sfondo (rare/epic/pseudo)
+  $('revealScreen').classList.add('hidden');
+  starsScreen.classList.remove('hidden');
+  starsScreen.classList.remove('is-fading-out');
+
+  // Catena rarità: [realRarity] se nessun fakeout, altrimenti es. ['rare','epic','pseudo']
+  const chain = (entry.fakeoutChain && entry.fakeoutChain.length > 0)
+              ? entry.fakeoutChain
+              : [entry.rarity];
+
+  /* === PRIMA TAPPA: anticipazione + stelle "normali" === */
+  await playStarsStage(chain[0]);
+  if (pullSkipRequested) return;
+
+  /* === UPGRADE successivi (fakeout) === */
+  for (let i = 1; i < chain.length; i++) {
+    if (pullSkipRequested) return;
+    await sleep(1000);                                   // pausa fra fakeout (+0.5s)
+    if (pullSkipRequested) return;
+    await playStarsUpgrade(chain[i - 1], chain[i]);
+  }
+
+  /* === Hold finale + stinger sulla rarità REALE === */
+  if (pullSkipRequested) return;
+  const finalRarity = chain[chain.length - 1];
+  const holdMs = { pseudo: 1500, epic: 1200, rare: 900, uncommon: 600 }[finalRarity] ?? 600;
+  await sleep(holdMs);
+
+  starsScreen.classList.add('is-fading-out');
+  await sleep(380);
+
+  await stingerTransition(finalRarity, async () => {
+    starsScreen.classList.add('hidden');
+    starsScreen.classList.remove('is-fading-out');
+    await showReveal(entry);
+  });
+}
+
+/* ---- Helper: anticipazione + apparizione stelle per una rarità ---- */
+async function playStarsStage(rarity) {
+  const starsScreen = $('starsScreen');
+  const starsRow    = $('starsRow');
+  const starsCount  = { pseudo: 5, epic: 4, rare: 3, uncommon: 2 }[rarity] ?? 2;
+
+  // Aurora di sfondo
   let aurora;
   if (rarity === 'rare' || rarity === 'epic' || rarity === 'pseudo') {
     aurora = document.createElement('div');
@@ -453,12 +551,8 @@ async function showStars(entry) {
     starsScreen.insertBefore(aurora, starsScreen.firstChild);
   }
 
-  $('revealScreen').classList.add('hidden');
-  starsScreen.classList.remove('hidden');
-
   /* === PHASE 1 — Anticipazione === */
   if (rarity === 'pseudo') {
-    // PSEUDO: beam multi-colore + flash + shake + aurora che sale forte
     const beam1 = document.createElement('div');
     beam1.className = 'stars-screen__beam stars-screen__beam--pseudo';
     starsScreen.appendChild(beam1);
@@ -469,9 +563,8 @@ async function showStars(entry) {
     shakeOverlay();
     await sleep(400);
     beam1.remove();
-
     aurora.classList.add('is-shown');
-    await sleep(550);   // aurora respira prima delle stelle
+    await sleep(550);
   } else if (rarity === 'epic') {
     const beam = document.createElement('div');
     beam.className = 'stars-screen__beam';
@@ -491,47 +584,97 @@ async function showStars(entry) {
     await sleep(280);
   }
 
-  /* === PHASE 2 — Stelle una alla volta (delays raddoppiati per suspense) === */
+  /* === PHASE 2 — Stelle una alla volta === */
   const firstDelay = { pseudo: 900,  epic: 700, rare: 480, uncommon: 280 }[rarity] ?? 250;
   const nextDelay  = { pseudo: 1000, epic: 800, rare: 540, uncommon: 300 }[rarity] ?? 270;
 
   for (let i = 0; i < starsCount; i++) {
+    if (pullSkipRequested) return;
     await sleep(i === 0 ? firstDelay : nextDelay);
 
     const s = document.createElement('span');
     s.className = `star-icon star-icon--${rarity}`;
     s.textContent = '★';
-    $('starsRow').appendChild(s);
-    s.getBoundingClientRect(); // reflow
+    starsRow.appendChild(s);
+    s.getBoundingClientRect();
     s.classList.add('is-shown');
 
     if (rarity === 'rare' || rarity === 'epic' || rarity === 'pseudo') {
       spawnRing(s, rarity);
       const particles = { pseudo: 20, epic: 14, rare: 9 }[rarity] ?? 9;
       spawnParticles(s, rarity, particles);
-
       if (rarity === 'epic' || rarity === 'pseudo') {
         flashScreen(rarity);
         shakeOverlay();
       }
     }
   }
+}
 
-  /* === PHASE 3 — Pausa di 1.5 secondi per "respirare" sulle stelle === */
-  await sleep(1500);
+/* ---- Helper: upgrade fakeout — sospensione poi TUTTO INSIEME (sfondo, stelle, nuova) ---- */
+async function playStarsUpgrade(fromRarity, toRarity) {
+  const starsScreen = $('starsScreen');
+  const starsRow    = $('starsRow');
 
-  /* === PHASE 3b — Le stelle e l'aurora svaniscono prima della pokéball ===
-     Così la pokéball appare su una "tela pulita", non sovrapposta. */
-  starsScreen.classList.add('is-fading-out');
-  await sleep(380);
+  // 1) Segnale iniziale: solo flash + shake. Nessun cambio aurora/stelle qui.
+  flashScreen(toRarity);
+  shakeOverlay();
 
-  /* === PHASE 4 — Transizione stinger (pokéball) ===
-     Cambio scena (stars → reveal) dentro lo switchSceneFn, nascosto sotto al flash. */
-  await stingerTransition(rarity, async () => {
-    starsScreen.classList.add('hidden');
-    starsScreen.classList.remove('is-fading-out');   // reset per il prossimo pull
-    await showReveal(entry);
+  // 2) SOSPENSIONE — silenzio teso. Lo sfondo è ancora quello "fake",
+  //    le stelle sono ancora del colore vecchio. Tutto è fermo.
+  if (pullSkipRequested) return;
+  await sleep(900);
+  if (pullSkipRequested) return;
+
+  // 3) MOMENTO DEL REVEAL — TUTTO DI BOTTO in un solo frame:
+  //    a) Aurora vecchia svanisce + nuova appare (cross-fade)
+  //    b) Stelle esistenti cambiano colore + pulse
+  //    c) Stella nuova viene aggiunta
+  //    d) Flash + shake della rarità finale
+  //    e) Ring + particelle
+
+  // a) Aurora: cross-fade SIMULTANEO al pulse delle stelle
+  starsScreen.querySelectorAll('.stars-screen__aurora').forEach(a => {
+    a.classList.remove('is-shown');
+    setTimeout(() => a.remove(), 700);
   });
+  if (toRarity === 'rare' || toRarity === 'epic' || toRarity === 'pseudo') {
+    const newAurora = document.createElement('div');
+    newAurora.className = `stars-screen__aurora stars-screen__aurora--${toRarity}`;
+    starsScreen.insertBefore(newAurora, starsScreen.firstChild);
+    requestAnimationFrame(() => newAurora.classList.add('is-shown'));
+  }
+
+  // b) Stelle esistenti: cambio classe + pulse
+  starsRow.querySelectorAll('.star-icon').forEach(el => {
+    el.classList.remove(`star-icon--${fromRarity}`);
+    el.classList.add(`star-icon--${toRarity}`);
+    el.classList.remove('star-icon--upgraded');
+    void el.offsetWidth;                              // reflow per re-trigger
+    el.classList.add('star-icon--upgraded');
+  });
+
+  // c) Stella nuova — appare nello stesso frame
+  const s = document.createElement('span');
+  s.className = `star-icon star-icon--${toRarity}`;
+  s.textContent = '★';
+  starsRow.appendChild(s);
+  s.getBoundingClientRect();
+  s.classList.add('is-shown');
+
+  // d/e) Effetti contestuali sulla stella nuova
+  if (toRarity === 'rare' || toRarity === 'epic' || toRarity === 'pseudo') {
+    spawnRing(s, toRarity);
+    const particles = { pseudo: 22, epic: 16, rare: 11 }[toRarity] ?? 11;
+    spawnParticles(s, toRarity, particles);
+    if (toRarity === 'epic' || toRarity === 'pseudo') {
+      flashScreen(toRarity);
+      shakeOverlay();
+    }
+  }
+
+  // 4) Aspetto che pulse (700ms) + star-appear (500ms) finiscano
+  await sleep(750);
 }
 
 /* ---- Stinger transition (stile Twitch) ---- */
@@ -627,23 +770,55 @@ function shakeOverlay() {
 
 /* ---- Reveal Screen ---- */
 
+/* ---- Artwork loader: artwork dedicata se presente, altrimenti sprite ---- */
+function getArtworkUrl(pkmn) {
+  if (!pkmn) return '';
+  const id3 = String(pkmn.id).padStart(3, '0');
+  return `assets/cards/${id3}.png`;
+}
+
 async function showReveal(entry) {
   if (pullSkipRequested) return;
-  const pkmn   = findPokemon(entry.id);
-  const sprite = $('revealSprite');
-  const glow   = $('revealGlow');
-  const right  = $('revealRight');
+  const pkmn    = findPokemon(entry.id);
+  const artwork = $('revealArtwork');
+  const sprite  = $('revealSprite');
+  const glow    = $('revealGlow');
+  const right   = $('revealRight');
+  const screen  = $('revealScreen');
 
-  // Reset animazioni
-  sprite.classList.remove('is-shown');
-  glow.classList.remove('is-shown', 'is-pulsing--rare', 'is-pulsing--epic');
+  // Reset
+  artwork.classList.remove('is-shown', 'is-missing');
+  sprite.classList.remove('is-shown', 'reveal-screen__sprite--solo');
+  glow.classList.remove('is-shown', 'is-pulsing--rare', 'is-pulsing--epic', 'is-pulsing--pseudo');
+  screen.dataset.rarity = entry.rarity;
 
-  // Imposta sprite
-  sprite.src = pkmn ? pkmn.sprite.default : '';
-  sprite.alt = pkmn ? pkmn.name : '';
+  if (pkmn) {
+    // SPRITE (sempre, carica subito da PokéAPI cache)
+    sprite.src = pkmn.sprite.default;
+    sprite.alt = pkmn.name;
+
+    // ARTWORK (può mancare → in tal caso sprite diventa "solo" e ingrandisce)
+    artwork.alt = pkmn.name;
+    artwork.onerror = () => {
+      artwork.onerror = null;
+      artwork.onload  = null;
+      artwork.classList.add('is-missing');
+      sprite.classList.add('reveal-screen__sprite--solo');
+    };
+    artwork.onload = () => {
+      artwork.onerror = null;
+      artwork.classList.remove('is-missing');
+      sprite.classList.remove('reveal-screen__sprite--solo');
+    };
+    artwork.src = getArtworkUrl(pkmn);
+  } else {
+    artwork.src = '';
+    sprite.src  = '';
+  }
 
   // Glow colore per rarità
   const glowColors = {
+    pseudo:   'radial-gradient(circle, rgba(94,232,216,0.7) 0%, rgba(255,102,204,0.4) 40%, transparent 75%)',
     epic:     'radial-gradient(circle, rgba(245,208,80,0.65) 0%, transparent 70%)',
     rare:     'radial-gradient(circle, rgba(200,168,255,0.55) 0%, transparent 70%)',
     uncommon: 'radial-gradient(circle, rgba(136,180,255,0.42) 0%, transparent 70%)',
@@ -655,14 +830,16 @@ async function showReveal(entry) {
   right.innerHTML = buildDetailHTML(entry, pkmn);
 
   // Mostra la schermata
-  $('revealScreen').classList.remove('hidden');
+  screen.classList.remove('hidden');
 
-  // Piccolo delay poi anima sprite + glow
+  // Piccolo delay poi anima artwork + sprite + glow
   await sleep(60);
+  artwork.classList.add('is-shown');
   sprite.classList.add('is-shown');
   glow.classList.add('is-shown');
-  if (entry.rarity === 'epic')      glow.classList.add('is-pulsing--epic');
-  else if (entry.rarity === 'rare') glow.classList.add('is-pulsing--rare');
+  if      (entry.rarity === 'pseudo') glow.classList.add('is-pulsing--pseudo');
+  else if (entry.rarity === 'epic')   glow.classList.add('is-pulsing--epic');
+  else if (entry.rarity === 'rare')   glow.classList.add('is-pulsing--rare');
 
   // Anima le barre stat dopo che lo sprite è comparso
   await sleep(380);
@@ -688,7 +865,7 @@ function buildDetailHTML(entry, pkmn) {
   };
 
   const typeBadges = (pkmn.types ?? []).map(t =>
-    `<span class="detail-type-badge" style="background:${typeColors[t] ?? '#888'}">${t}</span>`
+    `<span class="detail-type-badge" style="background:${typeColors[t] ?? '#888'}">${typeLabel(t)}</span>`
   ).join('');
 
   const s = pkmn.stats ?? {};
@@ -716,7 +893,7 @@ function buildDetailHTML(entry, pkmn) {
     <div class="detail-move">
       <span class="detail-move__role">${roles[i] ?? ''}</span>
       <span class="detail-move__name">${m.name}</span>
-      <span class="detail-move__type" style="background:${typeColors[m.type] ?? '#888'}">${m.type}</span>
+      <span class="detail-move__type" style="background:${typeColors[m.type] ?? '#888'}">${typeLabel(m.type)}</span>
       <span class="detail-move__power">${m.power > 0 ? m.power : '—'}</span>
     </div>`
   ).join('');
@@ -739,8 +916,26 @@ function buildDetailHTML(entry, pkmn) {
   `;
 }
 
-// Bottone "Avanti →" nella schermata reveal
-$('revealNext').addEventListener('click', () => showNextResult());
+/* ---- Detail mode dal rewind: il bottone "Avanti →" diventa "✕ Chiudi" ---- */
+let isShowingDetailFromSummary = false;
+
+$('revealNext').addEventListener('click', () => {
+  if (isShowingDetailFromSummary) {
+    isShowingDetailFromSummary = false;
+    $('revealNext').textContent = 'Avanti →';
+    $('revealScreen').classList.add('hidden');
+    $('summaryScreen').classList.remove('hidden');
+  } else {
+    showNextResult();
+  }
+});
+
+async function showCardDetail(entry) {
+  isShowingDetailFromSummary = true;
+  $('summaryScreen').classList.add('hidden');
+  $('revealNext').textContent = '✕ Chiudi';
+  await showReveal(entry);
+}
 
 /* ---- Summary Screen ---- */
 
@@ -754,6 +949,7 @@ function showSummary() {
   $('starsScreen').classList.add('hidden');
   $('starsScreen').classList.remove('is-fading-out');
   $('summaryScreen').classList.remove('hidden');
+  $('revealNext').textContent = 'Avanti →';     // reset etichetta
 
   const container = $('summaryCards');
   container.innerHTML = '';
@@ -762,14 +958,35 @@ function showSummary() {
 
   pullAll.forEach((entry, i) => {
     const pkmn = findPokemon(entry.id);
-    const card = document.createElement('div');
+    // Bottone per accessibilità (cliccabile + focus visible + keyboard)
+    const card = document.createElement('button');
+    card.type  = 'button';
     card.className = `summary-card summary-card--${entry.rarity}`;
     card.style.animationDelay = `${i * 45}ms`;
+    card.dataset.rarity = entry.rarity;
+    card.setAttribute('aria-label', `${pkmn?.name ?? '#' + entry.id} — apri carta`);
     card.innerHTML = `
-      ${pkmn ? `<img src="${pkmn.sprite.default}" alt="${pkmn.name}" />` : ''}
+      <div class="summary-card__art-frame">
+        <img class="summary-card__art" alt="${pkmn?.name ?? ''}" />
+      </div>
       <span class="summary-card__stars">${starsMap[entry.rarity]}</span>
       <span class="summary-card__name">${pkmn?.name ?? `#${entry.id}`}</span>
     `;
+
+    // Carica artwork con fallback allo sprite
+    const img = card.querySelector('.summary-card__art');
+    if (pkmn) {
+      img.onerror = () => {
+        img.onerror = null;
+        img.classList.add('is-fallback');
+        img.src = pkmn.sprite.default;
+      };
+      img.src = getArtworkUrl(pkmn);
+    }
+
+    // Click → apri detail
+    card.addEventListener('click', () => showCardDetail(entry));
+
     container.appendChild(card);
   });
 }

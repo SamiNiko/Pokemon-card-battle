@@ -1,5 +1,5 @@
 /* ============================================================
-   Service Worker — Stile Hero Colosseum
+   Service Worker — Pokémon card game
    ------------------------------------------------------------
    Strategie:
      - "Network first" per HTML (così aggiornamenti del codice arrivano
@@ -12,7 +12,7 @@
    Versioning: bumpa CACHE_VERSION quando vuoi forzare un refresh
    completo della cache (es. dopo cambi major).
    ============================================================ */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE  = `shc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `shc-runtime-${CACHE_VERSION}`;
 
@@ -71,6 +71,12 @@ self.addEventListener('fetch', event => {
 
   // HTML → network first (sempre il più aggiornato quando online)
   if (req.mode === 'navigate' || req.destination === 'document') {
+    event.respondWith(networkFirst(req));
+    return;
+  }
+
+  // manifest.json → network first (così cambi di nome/icone PWA arrivano subito)
+  if (url.pathname.endsWith('/manifest.json') || url.pathname === '/manifest.json') {
     event.respondWith(networkFirst(req));
     return;
   }

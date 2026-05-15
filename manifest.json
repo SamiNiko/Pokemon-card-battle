@@ -1,7 +1,7 @@
 {
-  "name": "Stile Hero Colosseum",
-  "short_name": "Hero Colosseum",
-  "description": "Pokémon Card Battle — colleziona, evoca, combatti",
+  "name": "Pokémon card game",
+  "short_name": "Pokémon card game",
+  "description": "Colleziona, evoca, combatti — Pokémon card battle",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

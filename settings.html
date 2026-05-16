@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Impostazioni</title>
   <link rel="stylesheet" href="css/base.css?v=7" />
-  <link rel="stylesheet" href="css/settings.css?v=2" />
+  <link rel="stylesheet" href="css/settings.css?v=3" />
   <script src="js/register-sw.js?v=1" defer></script>
 </head>
 <body class="settings-page">
@@ -95,20 +95,39 @@
     <section class="settings-section">
       <h2 class="settings-section__title">🔊 Audio</h2>
 
-      <div class="setting-row setting-row--coming">
+      <div class="setting-row">
         <div class="setting-row__info">
-          <div class="setting-row__label">Volume musica</div>
-          <div class="setting-row__hint">In arrivo</div>
+          <div class="setting-row__label">Audio</div>
+          <div class="setting-row__hint">Abilita o disabilita tutti i suoni</div>
         </div>
-        <input type="range" class="setting-row__slider" min="0" max="100" value="50" disabled />
+        <label class="audio-toggle">
+          <input type="checkbox" id="audioEnabled" />
+          <span class="audio-toggle__track"><span class="audio-toggle__thumb"></span></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Volume generale</div>
+          <div class="setting-row__hint" id="masterVolHint">80%</div>
+        </div>
+        <input type="range" class="setting-row__slider" id="masterVol" min="0" max="100" value="80" />
+      </div>
+
+      <div class="setting-row">
+        <div class="setting-row__info">
+          <div class="setting-row__label">Volume effetti</div>
+          <div class="setting-row__hint" id="sfxVolHint">80% · tocca lo slider per anteprima</div>
+        </div>
+        <input type="range" class="setting-row__slider" id="sfxVol" min="0" max="100" value="80" />
       </div>
 
       <div class="setting-row setting-row--coming">
         <div class="setting-row__info">
-          <div class="setting-row__label">Volume effetti</div>
+          <div class="setting-row__label">Musica di sottofondo</div>
           <div class="setting-row__hint">In arrivo</div>
         </div>
-        <input type="range" class="setting-row__slider" min="0" max="100" value="70" disabled />
+        <input type="range" class="setting-row__slider" min="0" max="100" value="50" disabled />
       </div>
     </section>
 

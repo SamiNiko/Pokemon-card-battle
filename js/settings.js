@@ -11,7 +11,8 @@ import {
   importSave,
 } from './data/state.js?v=3';
 
-import { initTutorial } from './data/tutorial.js';
+import { initTutorial }     from './data/tutorial.js';
+import { SFX, getVolume, setVolume, unlockAudio } from './data/sfx.js';
 
 /* Supabase + cloud sync caricati dinamicamente. Se la CDN è bloccata
    (es. ad-blocker aggressivo di Opera GX) la pagina resta funzionante
@@ -111,6 +112,9 @@ async function init() {
   $('btnReplayTutorial')?.addEventListener('click', () => {
     initTutorial({ force: true });
   });
+
+  // ---- Audio (master + sfx + toggle) ----
+  initAudioControls();
 
   // ---- Reset ----
   $('btnReset').addEventListener('click',        () => $('resetModal').classList.remove('hidden'));
@@ -242,6 +246,46 @@ function toast(msg, type = 'success') {
     el.classList.remove('is-shown');
     setTimeout(() => el.classList.add('hidden'), 250);
   }, 2400);
+}
+
+/* ================================================================
+   AUDIO CONTROLS — toggle + slider master + slider SFX (preview)
+   ================================================================ */
+function initAudioControls() {
+  const enabledEl = $('audioEnabled');
+  const masterEl  = $('masterVol');
+  const sfxEl     = $('sfxVol');
+  const masterHint = $('masterVolHint');
+  const sfxHint    = $('sfxVolHint');
+  if (!enabledEl || !masterEl || !sfxEl) return;
+
+  // Carica valori salvati
+  const v = getVolume();
+  enabledEl.checked = v.enabled;
+  masterEl.value    = v.master;
+  sfxEl.value       = v.sfx;
+  masterHint.textContent = `${v.master}%`;
+  sfxHint.textContent    = `${v.sfx}% · tocca lo slider per anteprima`;
+
+  // Toggle abilitato/disabilitato
+  enabledEl.addEventListener('change', () => {
+    setVolume({ enabled: enabledEl.checked });
+    if (enabledEl.checked) { unlockAudio(); SFX.confirm(); }
+  });
+
+  // Slider master: anteprima al rilascio
+  masterEl.addEventListener('input', () => {
+    setVolume({ master: parseInt(masterEl.value, 10) });
+    masterHint.textContent = `${masterEl.value}%`;
+  });
+  masterEl.addEventListener('change', () => { unlockAudio(); SFX.click(); });
+
+  // Slider SFX: anteprima al rilascio con suono "hit" rappresentativo
+  sfxEl.addEventListener('input', () => {
+    setVolume({ sfx: parseInt(sfxEl.value, 10) });
+    sfxHint.textContent = `${sfxEl.value}% · tocca lo slider per anteprima`;
+  });
+  sfxEl.addEventListener('change', () => { unlockAudio(); SFX.hit(); });
 }
 
 init();

@@ -15,6 +15,7 @@ import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js';
+import { SFX, unlockAudio }                    from './data/sfx.js';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -688,6 +689,7 @@ function placeCardOnSlot(pokemonId, targetSlotKey, fromSlotKey) {
   }
 
   bs.playerField.set(targetSlotKey, pkmn);
+  SFX.cardPlace();
   renderField();
 }
 
@@ -724,6 +726,7 @@ async function confirmTurn() {
   const btn = $('#btnConfirm');
   btn.disabled = true;
   setPhase('Risoluzione in corso…');
+  SFX.confirm();
 
   // ---- Acquisisce campo + mosse avversario (AI o player remoto) ----
   let enemySelectedMoves;
@@ -993,6 +996,7 @@ async function playEvents(events) {
       const label = ev.first === 'player' ? 'Vai per primo! ▶' : '◀ Avversario va per primo!';
       setPhase(`⚡ Speed Tu: ${ev.playerSpeed} — Avversario: ${ev.enemySpeed} — ${label}`);
       log(`Velocità — Tu ${ev.playerSpeed} vs Avversario ${ev.enemySpeed} (${ev.first === 'player' ? 'tu attacchi prima' : 'loro attaccano prima'})`, 'speed');
+      SFX.speedCheck();
       await sleep(ANIM.speedCheck);
     }
 
@@ -1010,6 +1014,7 @@ async function playEvents(events) {
       // FINISHER: carica preliminare prima dell'attacco
       if (ev.isFinisher && atkEl) {
         atkEl.classList.add('is-finisher');
+        SFX.finisherCharge();
         await sleep(ANIM.finisherCharge);
         atkEl.classList.remove('is-finisher');
       }
@@ -1043,11 +1048,18 @@ async function playEvents(events) {
         if (flashKind) defEl.classList.add(flashKind);
         setTimeout(() => defEl.classList.remove('is-hit', 'is-hit-super', 'is-hit-weak', 'is-hit-immune'), 460);
 
-        // Screen flash su super-effective
+        // Screen flash + sound su super-effective
         if (ev.typeEff >= 2) {
           document.body.classList.add('is-super-flash');
           setTimeout(() => document.body.classList.remove('is-super-flash'), 560);
         }
+
+        // SFX impact a seconda di efficacia / finisher
+        if (ev.isFinisher)            SFX.finisherHit();
+        else if (ev.typeEff >= 2)      SFX.superHit();
+        else if (ev.typeEff === 0)     SFX.immune();
+        else if (ev.typeEff < 1)       SFX.weakHit();
+        else                           SFX.hit();
 
         showDamageFloat(defEl, ev.damage, ev.typeEff, effText);
         updateCardHP(ev.targetId, ev.targetHPAfter, ev.defenderSide);
@@ -1058,6 +1070,7 @@ async function playEvents(events) {
           log(`${defName} è stato messo KO!`, 'ko');
           await sleep(ANIM.faintReveal);
           defEl.classList.add('is-ko-anim');
+          SFX.ko();
           // Dopo l'animazione di KO, lascia lo stato fainted permanente
           setTimeout(() => {
             defEl.classList.remove('is-ko-anim');
@@ -1106,6 +1119,7 @@ async function playEvents(events) {
       const targetLabel = ev.defenderSide === 'player' ? 'a te' : "all'avversario";
       setPhase(`💥 Colonna vuota! −${ev.damage} HP ${targetLabel}`);
       log(`Colonna vuota — danno diretto −${ev.damage} HP ${targetLabel}`, 'direct');
+      SFX.directHit();
       updateHPBar('player');
       updateHPBar('enemy');
 
@@ -1214,6 +1228,7 @@ function endGame(result) {
   stopTimer();
   setPhase(result === 'win' ? '🏆 Hai vinto!' : '💀 Hai perso!');
   log(result === 'win' ? 'Hai vinto la battaglia!' : 'Hai perso la battaglia.', result === 'win' ? 'win' : 'lose');
+  if (result === 'win') SFX.victory(); else SFX.defeat();
 
   // Registra il risultato nella cronologia (una sola volta)
   if (!bs.matchRecorded) {

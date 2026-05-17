@@ -8,7 +8,7 @@ import {
   setUserName,
   exportSave,
   importSave,
-} from './data/state.js?v=3';
+} from './data/state.js?v=4';
 
 import { initTutorial }     from './data/tutorial.js';
 import { SFX, getVolume, setVolume, unlockAudio } from './data/sfx.js';

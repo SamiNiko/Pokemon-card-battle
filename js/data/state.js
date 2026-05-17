@@ -165,17 +165,8 @@ export function setActiveTeam(slot) {
   saveState();
 }
 
-/* Compat: operano sul team correntemente attivo */
-export function setTeam(ids)       { setTeamSlot(getState().activeTeam ?? 0, ids); }
-export function addToTeam(id)      { return addToTeamSlot(getState().activeTeam ?? 0, id); }
-export function removeFromTeam(id) { removeFromTeamSlot(getState().activeTeam ?? 0, id); }
-
 export function isOwned(id) {
   return getState().owned.includes(id);
-}
-
-export function getStars(id) {
-  return getState().stars[id] ?? 1;
 }
 
 /* ================================================================
@@ -195,22 +186,6 @@ export function addItem(itemId) {
   if (!s.inventory) s.inventory = {};
   if (s.inventory[itemId]) return false;            // già posseduto, no-op
   s.inventory[itemId] = true;
-  saveState();
-  return true;
-}
-
-export function removeItem(itemId) {
-  const s = getState();
-  if (!s.inventory || !s.inventory[itemId]) return false;
-  // Rimuovi da tutti i team in cui era equipaggiato
-  _ensureGearByTeam(s);
-  for (let t = 0; t < 4; t++) {
-    const gear = s.gearByTeam[t];
-    for (const [pkId, it] of Object.entries(gear)) {
-      if (it === itemId) delete gear[pkId];
-    }
-  }
-  delete s.inventory[itemId];
   saveState();
   return true;
 }
@@ -291,26 +266,6 @@ export function equipItem(pokemonId, itemId, teamSlot = null) {
   const prev = getPokemonHoldingItem(itemId, slot);
   if (prev != null && prev !== pokemonId) delete gear[prev];
   gear[pokemonId] = itemId;
-  saveState();
-  return true;
-}
-
-/** Toglie l'oggetto da un Pokémon nel team specificato.
- *  Se passi un itemId (string), libera il Pokémon che lo tiene in quel team. */
-export function unequipItem(pokemonIdOrItemId, teamSlot = null) {
-  const s = getState();
-  _ensureGearByTeam(s);
-  const slot = _resolveTeamSlot(s, teamSlot);
-  const gear = s.gearByTeam[slot];
-  if (typeof pokemonIdOrItemId === 'string') {
-    const holder = getPokemonHoldingItem(pokemonIdOrItemId, slot);
-    if (holder == null) return false;
-    delete gear[holder];
-    saveState();
-    return true;
-  }
-  if (gear[pokemonIdOrItemId] == null) return false;
-  delete gear[pokemonIdOrItemId];
   saveState();
   return true;
 }

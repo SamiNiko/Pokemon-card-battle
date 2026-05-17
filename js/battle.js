@@ -6,7 +6,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
-import { getState, getActiveTeam, getEquipped } from './data/state.js?v=3';
+import { getState, getActiveTeam, getEquipped } from './data/state.js?v=4';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
@@ -1255,7 +1255,10 @@ function endGame(result) {
   const btn = $('#btnConfirm');
   btn.textContent = 'Torna alla Home';
   btn.disabled    = false;
-  btn.onclick     = () => { window.location.href = 'index.html'; };
+  // Rimuove il listener confirmTurn registrato in init() e lo sostituisce
+  // con la navigazione alla home. Evita che doppio click triggeri entrambi.
+  btn.removeEventListener('click', confirmTurn);
+  btn.addEventListener('click', () => { window.location.href = 'index.html'; }, { once: true });
 }
 
 /* ============================================================

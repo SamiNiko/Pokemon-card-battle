@@ -1170,6 +1170,5 @@
   .story-topbar__subtitle { font-size: 0.66rem; }
   .dialog { font-size: 0.92rem; }
   .dialog__text { font-size: 0.95rem; }
-  .deco--house, .deco--lab { transform-origin: top left; scale: 0.75; }
   .deco--note { font-size: 0.82rem; max-width: 90%; }
 }

@@ -6,7 +6,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState }         from './data/state.js?v=3';
+import { getState, saveState }         from './data/state.js?v=4';
 import { MOVESETS }                    from './data/movesets.js';
 import { getSummonablePool, PULL_RATES, tierLabel } from './data/rarity.js';
 import { typeLabel }                                from './data/types.js';
@@ -40,6 +40,18 @@ const COST_MULTI  = 1600;
 */
 const BANNER_POOL = getSummonablePool();
 const RATE_PCT    = PULL_RATES;   // { pseudo, epic, rare, uncommon, common }
+
+// Validazione invariante: la somma dei tier deve essere 100.
+// Se non lo fosse, alcuni tier verrebbero saturati silenziosamente in
+// weightedPull(). Loggo un warning una sola volta all'avvio.
+{
+  const sum = (RATE_PCT.pseudo ?? 0) + (RATE_PCT.epic ?? 0) +
+              (RATE_PCT.rare ?? 0)   + (RATE_PCT.uncommon ?? 0) +
+              (RATE_PCT.common ?? 0);
+  if (Math.abs(sum - 100) > 0.001) {
+    console.warn(`[summon] PULL_RATES somma ${sum}% invece di 100% — bilanciamento sbagliato`, RATE_PCT);
+  }
+}
 
 const FEATURED_IDS = [94, 130, 149, 131]; // Gengar, Gyarados, Dragonite, Lapras
 

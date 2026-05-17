@@ -623,19 +623,6 @@
   color: var(--accent);
 }
 
-/* deprecato (label rimossa dall'HTML, mantengo per compat se serve) */
-.team-tabs__active-label {
-  display: none;
-  font-size: 0.67rem;
-  color: var(--text-muted);
-  margin-left: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  min-width: 0;
-  font-weight: 500;
-}
 
 /* ---- Team grid ---- */
 
@@ -799,7 +786,6 @@
   cursor: pointer;
 }
 .play-option:hover:not(:disabled) { background: var(--bg-3); border-color: var(--accent); transform: translateX(3px); }
-.play-option--disabled { opacity: 0.4; cursor: not-allowed; }
 .play-option__icon { font-size: 1.8rem; width:36px; text-align:center; flex-shrink:0; }
 .play-option__text { display:flex; flex-direction:column; gap:4px; flex:1; }
 .play-option__label { font-size:1.1rem; font-weight:700; color:var(--text); }

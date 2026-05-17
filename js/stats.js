@@ -6,7 +6,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState }                    from './data/state.js?v=3';
+import { getState }                    from './data/state.js?v=4';
 import {
   getMatchHistory,
   getLifetimeStats,

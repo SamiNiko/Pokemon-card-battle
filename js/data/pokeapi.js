@@ -126,14 +126,3 @@ export function findPokemon(idOrName) {
   return _all.find(p => p.name === lower) ?? null;
 }
 
-/** Sprite URL helper */
-export function spriteUrl(id, variant = 'default') {
-  if (variant === 'shiny') return `${SPRITE_BASE}/shiny/${id}.png`;
-  return `${SPRITE_BASE}/${id}.png`;
-}
-
-/** Drop completo della cache (utile per debug / "ricarica dati") */
-export function clearCache() {
-  localStorage.removeItem(CACHE_KEY);
-  _all = null;
-}

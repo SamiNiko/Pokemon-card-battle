@@ -15,7 +15,7 @@ import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js';
-import { SFX, unlockAudio }                    from './data/sfx.js';
+import { SFX }                                 from './data/sfx.js';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -32,10 +32,10 @@ if (speedMultiplier === 2) document.body.classList.add('speed-up');
 const sleep = ms => new Promise(res => setTimeout(res, Math.round(ms / speedMultiplier)));
 const cap   = s => s[0].toUpperCase() + s.slice(1);
 
-/** URL artwork fullart per il Pokémon (assets/cards/NNN.png). */
+/** URL artwork fullart per il Pokémon (assets/cards/NNN.webp). */
 function getArtworkUrl(pkmn) {
   if (!pkmn) return '';
-  return `assets/cards/${String(pkmn.id).padStart(3, '0')}.png`;
+  return `assets/cards/${String(pkmn.id).padStart(3, '0')}.webp`;
 }
 
 const COLS          = ['left', 'center', 'right'];
@@ -1299,11 +1299,6 @@ function log(message, kind = 'info') {
   body.scrollTop = body.scrollHeight;
 }
 
-function clearLog() {
-  const body = $('#battleLogBody');
-  if (body) body.innerHTML = '';
-}
-
 function setupLogToggle() {
   const drawer = $('#battleLog');
   const toggle = $('#battleLogToggle');
@@ -1314,134 +1309,9 @@ function setupLogToggle() {
   });
 }
 
-/* ============================================================
-   SCHEDA POKÉMON (popup tasto destro)
-   ============================================================ */
-const sheet      = $('#pokeSheet');
-const sheetTitle = $('#pokeSheetTitle');
-const sheetBody  = $('#sheetBody');
-let sheetPkmn    = null;
-let sheetHtmlSide = 'self'; // 'self' | 'enemy'
-
-function openSheet(pkmn, htmlSide = 'self') {
-  sheetPkmn     = pkmn;
-  sheetHtmlSide = htmlSide;
-  sheetTitle.textContent = pkmn.name;
-  renderSheetTab('stats');
-  sheet.classList.remove('hidden');
-
-  $$('.sheet__tab').forEach(t => {
-    t.classList.toggle('is-active', t.dataset.sheetTab === 'stats');
-    t.onclick = () => {
-      $$('.sheet__tab').forEach(x => x.classList.remove('is-active'));
-      t.classList.add('is-active');
-      renderSheetTab(t.dataset.sheetTab);
-    };
-  });
-}
-
-function renderSheetTab(tab) {
-  if (!sheetPkmn) return;
-  const p = sheetPkmn;
-
-  if (tab === 'stats') {
-    const ppMap = sheetHtmlSide === 'self' ? bs.playerPkmnPP : bs.enemyPkmnPP;
-    const curPP = ppMap.get(p.id) ?? 0;
-    const stats = [
-      ['HP',     p.stats.hp,    255, 'hp'],
-      ['ATK',    p.stats.atk,   190, 'atk'],
-      ['DEF',    p.stats.def,   230, 'def'],
-      ['SP.ATK', p.stats.spAtk, 194, 'spatk'],
-      ['SP.DEF', p.stats.spDef, 230, 'spdef'],
-      ['SPEED',  p.stats.speed, 180, 'speed'],
-    ];
-    sheetBody.innerHTML = `
-      <div class="stat-list">
-        ${stats.map(([n, v, mx, cls]) => `
-          <span class="stat-list__name">${n}</span>
-          <span class="stat-list__bar">
-            <span class="stat-list__bar-fill stat-list__bar-fill--${cls}" style="width:${Math.min(100, (v / mx) * 100)}%"></span>
-          </span>
-          <span class="stat-list__value">${v}</span>
-        `).join('')}
-        <span class="stat-list__name" style="color:var(--accent)">PP</span>
-        <span class="stat-list__bar">
-          <span class="stat-list__bar-fill stat-list__bar-fill--pp" style="width:${Math.min(100, (curPP / 3) * 100)}%"></span>
-        </span>
-        <span class="stat-list__value" style="color:var(--accent)">${curPP}</span>
-      </div>
-      <div style="margin-top:16px;display:flex;gap:8px;">
-        ${p.types.map(t => `<span class="type-badge" data-type="${t}">${typeLabel(t)}</span>`).join('')}
-      </div>
-    `;
-  } else if (tab === 'moves') {
-    const set     = MOVESETS[p.id];
-    const ppMap   = sheetHtmlSide === 'self' ? bs.playerPkmnPP : bs.enemyPkmnPP;
-    const pp      = ppMap.get(p.id) ?? 0;
-    const selMove = bs.selectedMoves.get(p.id) ?? 'basic';
-    const isPlayerCard = sheetHtmlSide === 'self';
-
-    const catIcon  = cat => cat === 'physical' ? '⚔' : cat === 'special' ? '✨' : '◎';
-    const catLabel = cat => cat === 'physical' ? 'Fisico' : cat === 'special' ? 'Speciale' : 'Stato';
-
-    const renderMove = (move, key, isSelected, canUse) => {
-      const stab   = p.types.includes(move.type);
-      const dimmed = !canUse ? ' style="opacity:0.45"' : '';
-      return `
-        <div class="move-row${isSelected ? ' move-row--active' : ''}"${dimmed}>
-          ${stab ? '<div class="move-row__header"><span class="move-row__stab">STAB</span></div>' : ''}
-          <div class="move-row__name">
-            <span class="type-badge" data-type="${move.type}">${typeLabel(move.type)}</span>
-            ${catIcon(move.cat)} ${move.name}
-            <span class="move-row__meta">${catLabel(move.cat)} · PWR ${move.power}</span>
-          </div>
-          ${isPlayerCard && canUse
-            ? `<button class="btn btn--sm${isSelected ? ' btn--primary' : ''}" data-select-move="${key}">
-                 ${isSelected ? '✓ Selezionata' : 'Seleziona'}
-               </button>`
-            : ''}
-        </div>
-      `;
-    };
-
-    const autoMove = {
-      name: 'Attacco Base', type: p.types[0],
-      cat:  p.stats.atk >= p.stats.spAtk ? 'physical' : 'special',
-      power: 50,
-    };
-
-    // sel 'auto' trattato come 'basic' visivamente — entrambe le opzioni libere
-    const effSel = (selMove === 'auto') ? 'basic' : selMove;
-
-    const rows = set
-      ? [
-          renderMove(set[0],  'basic',    effSel === 'basic',    true),
-          renderMove(set[1],  'finisher', effSel === 'finisher', pp >= 3),
-        ]
-      : [renderMove(autoMove, 'basic', true, true)];
-
-    sheetBody.innerHTML = `<div class="moves-list">${rows.join('')}</div>`;
-
-    sheetBody.querySelectorAll('[data-select-move]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        bs.selectedMoves.set(p.id, btn.dataset.selectMove);
-        updateCardMove(p.id, sheetHtmlSide);
-        renderSheetTab('moves');
-      });
-    });
-  } else if (tab === 'gear') {
-    sheetBody.innerHTML = `
-      <p style="color:var(--text-dim);margin-bottom:12px;">Ogni Pokémon può tenere 1 oggetto.</p>
-      <div style="width:96px;aspect-ratio:1;">
-        <div class="grid__slot" style="width:100%;height:100%;min-height:0;"></div>
-      </div>
-    `;
-  }
-}
-
+/* Chiude tutte le modal aperte (usato anche dal listener Escape) */
 function closeAllModals() {
   $$('.modal').forEach(m => m.classList.add('hidden'));
-  sheetPkmn = null;
 }
 
 /* ============================================================

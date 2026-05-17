@@ -4,7 +4,6 @@
 
 import {
   getState,
-  saveState,
   resetState,
   setUserName,
   exportSave,

@@ -3,7 +3,7 @@
    Predisposto per cloud sync futuro (vedi onSave + identity).
    ============================================================ */
 
-import { isItemAllowedForPokemon } from './items.js?v=2';
+import { isItemAllowedForPokemon } from './items.js?v=3';
 
 const STATE_KEY    = 'pkmn_player_state_v1';
 const SAVE_FORMAT  = 'pokemon-card-battle/v1';

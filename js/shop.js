@@ -6,7 +6,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { getState, saveState, ownsItem, addItem } from './data/state.js?v=3';
-import { ITEMS, ITEM_CATEGORIES, findItem, categoryColor } from './data/items.js?v=3';
+import { ITEMS, ITEM_CATEGORIES, findItem } from './data/items.js?v=3';
 
 const $ = id => document.getElementById(id);
 

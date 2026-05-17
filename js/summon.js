@@ -774,7 +774,7 @@ function shakeOverlay() {
 function getArtworkUrl(pkmn) {
   if (!pkmn) return '';
   const id3 = String(pkmn.id).padStart(3, '0');
-  return `assets/cards/${id3}.png`;
+  return `assets/cards/${id3}.webp`;
 }
 
 async function showReveal(entry) {

@@ -162,7 +162,7 @@ function buildTeam(gs) {
     if (pkmn) {
       // Card full-art (read-only: click apre solo il modal, niente modifiche qui)
       div.className = 'team-slot team-slot--filled';
-      const artUrl = `assets/cards/${String(pkmn.id).padStart(3, '0')}.png`;
+      const artUrl = `assets/cards/${String(pkmn.id).padStart(3, '0')}.webp`;
       const heldId = getEquipped(pkmn.id, activeSlot);
       const heldItem = heldId ? findItem(heldId) : null;
       const heldBadgeHTML = heldItem

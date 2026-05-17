@@ -14,8 +14,8 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Combattimento</title>
   <link rel="stylesheet" href="css/base.css?v=7" />
-  <link rel="stylesheet" href="css/battle.css?v=10" />
-  <link rel="stylesheet" href="css/card-modal.css?v=1" />
+  <link rel="stylesheet" href="css/battle.css?v=11" />
+  <link rel="stylesheet" href="css/card-modal.css?v=2" />
   <script src="js/register-sw.js?v=1" defer></script>
 </head>
 <body class="battle-page">
@@ -105,25 +105,6 @@
     </aside>
   </main>
 
-  <!-- Scheda Pokémon (popup tasto destro) -->
-  <div class="modal hidden" id="pokeSheet" role="dialog" aria-modal="true" aria-labelledby="pokeSheetTitle">
-    <div class="modal__backdrop" data-close-modal></div>
-    <div class="modal__panel modal__panel--sheet">
-      <header class="sheet__header">
-        <h2 class="sheet__name" id="pokeSheetTitle">Pokémon</h2>
-        <button class="modal__close" data-close-modal aria-label="Chiudi">×</button>
-      </header>
-      <nav class="sheet__tabs">
-        <button class="sheet__tab is-active" data-sheet-tab="stats">Stat</button>
-        <button class="sheet__tab" data-sheet-tab="moves">Mosse</button>
-        <button class="sheet__tab" data-sheet-tab="gear">Gear</button>
-      </nav>
-      <div class="sheet__body" id="sheetBody">
-        <!-- contenuto pagina attiva -->
-      </div>
-    </div>
-  </div>
-
   <!-- Modal conferma uscita partita (4a-4) -->
   <div class="modal hidden" id="exitModal" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
     <div class="modal__backdrop" id="exitModalBackdrop"></div>
@@ -143,6 +124,6 @@
     <p id="loadingMsg">Caricamento Pokémon…</p>
   </div>
 
-  <script type="module" src="js/battle.js?v=7"></script>
+  <script type="module" src="js/battle.js?v=8"></script>
 </body>
 </html>

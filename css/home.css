@@ -466,13 +466,6 @@
   box-shadow: 0 8px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(244,160,23,0.4);
 }
 
-.menu-btn__soon {
-  margin-left: auto;
-  font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.07em; color: var(--text-muted);
-  border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px;
-  flex-shrink: 0;
-}
 
 /* ================================================================
    NOTIZIE
@@ -966,7 +959,6 @@
   }
   .home__logo { flex: 1 1 auto; }
   .home__title { font-size: 1.6rem; }
-  .home__subtitle { font-size: 0.78rem; }
 
   /* Wallet: righe compatte, no a capo del numero */
   .home__wallet {
@@ -1319,13 +1311,6 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-.welcome-overlay__subtitle {
-  color: var(--text-muted);
-  font-size: 0.84rem;
-  letter-spacing: 0.06em;
-  margin: 0 0 var(--sp-7);
-}
-
 .welcome-overlay__intro {
   margin-bottom: var(--sp-7);
 }

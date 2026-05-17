@@ -10,7 +10,6 @@ import {
   getState,
   isOwned,
   getTeamSlot,
-  setTeamSlot,
   addToTeamSlot,
   removeFromTeamSlot,
   setActiveTeam,
@@ -19,8 +18,6 @@ import {
   getPokemonHoldingItem,
   getItemUsages,
   equipItem,
-  unequipItem,
-  removeItem,
 } from './data/state.js?v=3';
 import { openCardModal }                       from './data/card-modal.js';
 import { findItem, ITEM_CATEGORIES, isItemAllowedForPokemon } from './data/items.js?v=3';
@@ -360,7 +357,7 @@ function makeCard(pkmn) {
   const el = document.createElement('div');
   el.className = 'card card--fullart';
   el.dataset.pokemonId = pkmn.id;
-  const artUrl = `assets/cards/${String(pkmn.id).padStart(3, '0')}.png`;
+  const artUrl = `assets/cards/${String(pkmn.id).padStart(3, '0')}.webp`;
   el.innerHTML = `
     <span class="card__hp">${pkmn.stats.hp}</span>
     <div class="card__sprite">

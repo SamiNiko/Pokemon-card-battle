@@ -31,7 +31,7 @@ const GLOW_PER_RARITY = {
 
 function getArtworkUrl(pkmn) {
   if (!pkmn) return '';
-  return `assets/cards/${String(pkmn.id).padStart(3, '0')}.png`;
+  return `assets/cards/${String(pkmn.id).padStart(3, '0')}.webp`;
 }
 
 let modalEl = null;

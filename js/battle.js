@@ -14,7 +14,7 @@ import { MOVESETS }                            from './data/movesets.js';
 import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
-import { openCardModal }                       from './data/card-modal.js';
+import { openCardModal }                       from './data/card-modal.js?v=2';
 import { SFX }                                 from './data/sfx.js';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */

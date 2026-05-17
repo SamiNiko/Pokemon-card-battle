@@ -19,7 +19,7 @@ import {
   getItemUsages,
   equipItem,
 } from './data/state.js?v=3';
-import { openCardModal }                       from './data/card-modal.js';
+import { openCardModal }                       from './data/card-modal.js?v=2';
 import { findItem, ITEM_CATEGORIES, isItemAllowedForPokemon } from './data/items.js?v=3';
 import { typeLabel }                            from './data/types.js';
 

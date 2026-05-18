@@ -874,8 +874,68 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
 .battle-log__row--speed  { color: var(--type-electric); }
 .battle-log__row--direct { color: var(--danger); }
 .battle-log__row--item   { color: var(--type-psychic); }
+.battle-log__row--passive { color: #5ee8d8; font-style: italic; }
 .battle-log__row--win    { color: var(--success); font-weight: 800; }
 .battle-log__row--lose   { color: var(--danger); font-weight: 800; }
+
+/* ============================================================
+   ANIMAZIONI PASSIVE — Rigenerazione + Velocitàscatto
+   ============================================================ */
+
+/* Rigenerazione: anello verde pulsante che gira intorno alla card */
+.card.is-regen-anim {
+  animation: card-regen-pulse 0.85s ease-out 1;
+  position: relative;
+}
+.card.is-regen-anim::after {
+  content: '+';
+  position: absolute;
+  top: 8px; left: 50%;
+  transform: translateX(-50%);
+  color: #6fdc7f;
+  font-size: 1.8rem;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(111, 220, 127, 0.85),
+               0 2px 4px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  animation: card-regen-plus 0.85s ease-out 1;
+  z-index: 10;
+}
+@keyframes card-regen-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(111, 220, 127, 0.55); }
+  50%  { box-shadow: 0 0 20px 8px rgba(111, 220, 127, 0.55); }
+  100% { box-shadow: 0 0 0 0 rgba(111, 220, 127, 0); }
+}
+@keyframes card-regen-plus {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(8px)  scale(0.6); }
+  35%  { opacity: 1; transform: translateX(-50%) translateY(-2px) scale(1.2); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-22px) scale(1);   }
+}
+
+/* Velocitàscatto: lampo giallo veloce */
+.card.is-speed-stack-anim {
+  animation: card-speed-flash 0.6s ease-out 1;
+  position: relative;
+}
+.card.is-speed-stack-anim::before {
+  content: '⚡';
+  position: absolute;
+  top: 6px; right: 6px;
+  font-size: 1.4rem;
+  filter: drop-shadow(0 0 6px rgba(248, 208, 48, 0.95));
+  pointer-events: none;
+  animation: card-speed-pop 0.6s ease-out 1;
+  z-index: 10;
+}
+@keyframes card-speed-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 208, 48, 0); }
+  40%      { box-shadow: 0 0 18px 6px rgba(248, 208, 48, 0.65); }
+}
+@keyframes card-speed-pop {
+  0%   { opacity: 0; transform: scale(0.5) rotate(-15deg); }
+  40%  { opacity: 1; transform: scale(1.25) rotate(8deg); }
+  100% { opacity: 0; transform: scale(1) rotate(0deg);    }
+}
 
 /* Mobile: log più stretto e leggermente più in alto per non finire dietro l'avatar player */
 @media (max-width: 768px) {

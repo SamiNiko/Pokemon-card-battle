@@ -22,6 +22,8 @@ import {
 import { openCardModal }                       from './data/card-modal.js?v=9';
 import { findItem, ITEM_CATEGORIES, isItemAllowedForPokemon } from './data/items.js?v=3';
 import { typeLabel }                            from './data/types.js';
+import { levelLabel }                           from './data/stats-scaling.js?v=3';
+import { getRarity, LEGGENDARI }                from './data/rarity.js';
 
 const $  = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
@@ -409,8 +411,17 @@ function makeCard(pkmn) {
   el.className = 'card card--fullart';
   el.dataset.pokemonId = pkmn.id;
   const artUrl = `assets/cards/${String(pkmn.id).padStart(3, '0')}.webp`;
+  // Badge livello: "LV. 50/60/.../100" o "MAX" per i leggendari.
+  // Lo mostro solo se il Pokemon è in collezione (state.owned), altrimenti
+  // sarebbe fuorviante (silhouette "?" non posseduto).
+  const owned = isOwned(pkmn.id);
+  const isLeg = LEGGENDARI.includes(pkmn.id);
+  const lvBadge = owned
+    ? `<span class="card__lv${isLeg ? ' card__lv--max' : ''}">${isLeg ? 'MAX' : levelLabel(pkmn.id)}</span>`
+    : '';
   el.innerHTML = `
     <span class="card__hp">${pkmn.stats.hp}</span>
+    ${lvBadge}
     <div class="card__sprite">
       <img class="card__img" src="${artUrl}" alt="${pkmn.name}" loading="lazy" />
     </div>

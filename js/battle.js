@@ -64,6 +64,10 @@ const bs = {
   enemyDeadIds:   new Set(),
   playerPkmnPP:   new Map(),    // id → PP accumulati lato player (evita collisioni ID)
   enemyPkmnPP:    new Map(),    // id → PP accumulati lato enemy
+  /* Stato passive cross-turn (mutato da resolveTurn):
+       - endureUsed  : Set<pokemonId> già "salvati" da Vigore (endure_once)
+       - speedStacks : Map<`${side}:${id}`, stacks> per Velocitàscatto */
+  passiveState:   { endureUsed: new Set(), speedStacks: new Map() },
   selectedMoves:  new Map(),    // id → 'auto'|'basic'|'finisher' (default: 'basic')
   playerField:    new Map(),    // slotKey → pkmn
   enemyField:     new Map(),
@@ -776,6 +780,7 @@ async function confirmTurn() {
     enemySelectedMoves,
     playerPkmnPP:       bs.playerPkmnPP,
     enemyPkmnPP:        bs.enemyPkmnPP,
+    passiveState:       bs.passiveState,
   });
 
   // Anima la sequenza
@@ -1089,17 +1094,29 @@ async function playEvents(events) {
         }
       }
 
-      // PP: deduzione Finisher (costo 3) poi guadagno per colpo a segno
-      const atkPPMap  = ev.attackerSide === 'player' ? bs.playerPkmnPP : bs.enemyPkmnPP;
+      // PP: ora calcolato dall'engine (ev.ppAfter). L'engine ha già applicato:
+      //   - costo finisher (-3)
+      //   - +1 hit a segno (typeEff > 0 e non immune)
+      //   - blocco da Statico (pp_block_chance) → emette ev.ppBlockedBy
+      //   - extra cost da Pressione (extra_pp_cost) → emette ev.ppExtraCostBy
+      const atkPPMap    = ev.attackerSide === 'player' ? bs.playerPkmnPP : bs.enemyPkmnPP;
       const atkHtmlSide = ev.attackerSide === 'player' ? 'self' : 'enemy';
-      if (ev.isFinisher) {
-        atkPPMap.set(ev.attackerId, Math.max(0, (atkPPMap.get(ev.attackerId) ?? 0) - 3));
+      if (ev.ppAfter != null) {
+        atkPPMap.set(ev.attackerId, ev.ppAfter);
+        updateCardPP(ev.attackerId, ev.ppAfter, atkHtmlSide);
+        if (atkEl && (ev.ppDelta ?? 0) > 0) showPPFloat(atkEl);
       }
-      if (ev.typeEff > 0) {
-        const newPP = (atkPPMap.get(ev.attackerId) ?? 0) + 1;
-        atkPPMap.set(ev.attackerId, newPP);
-        updateCardPP(ev.attackerId, newPP, atkHtmlSide);
-        if (atkEl) showPPFloat(atkEl);
+      if (ev.ppBlockedBy) {
+        const atkName = findPokemon(ev.attackerId)?.name ?? 'Pokémon';
+        log(`${cap(ev.ppBlockedBy)}: ${cap(atkName)} non ha guadagnato PP!`, 'passive');
+      }
+      if (ev.ppExtraCostBy) {
+        const atkName = findPokemon(ev.attackerId)?.name ?? 'Pokémon';
+        log(`${cap(ev.ppExtraCostBy)}: ${cap(atkName)} consuma 1 PP extra.`, 'passive');
+      }
+      if (ev.enduredByPassive) {
+        const defName = findPokemon(ev.targetId)?.name ?? 'Pokémon';
+        log(`${cap(ev.enduredByPassive)}! ${cap(defName)} sopravvive con 1 HP!`, 'passive');
       }
 
       await sleep(ANIM.hitImpact);
@@ -1133,25 +1150,59 @@ async function playEvents(events) {
       updateHPBar('player');
       updateHPBar('enemy');
 
-      // PP: deduzione Finisher poi guadagno (danno diretto conta come hit)
-      const atkPPMap2   = ev.attackerSide === 'player' ? bs.playerPkmnPP : bs.enemyPkmnPP;
+      // PP: ora viene dall'engine (ev.ppAfter è già aggiornato)
+      const atkPPMap2    = ev.attackerSide === 'player' ? bs.playerPkmnPP : bs.enemyPkmnPP;
       const atkHtmlSide2 = ev.attackerSide === 'player' ? 'self' : 'enemy';
-      if (ev.isFinisher) {
-        atkPPMap2.set(ev.attackerId, Math.max(0, (atkPPMap2.get(ev.attackerId) ?? 0) - 3));
+      if (ev.ppAfter != null) {
+        atkPPMap2.set(ev.attackerId, ev.ppAfter);
+        updateCardPP(ev.attackerId, ev.ppAfter, atkHtmlSide2);
+        if (atkEl && (ev.ppDelta ?? 0) > 0) showPPFloat(atkEl);
       }
-      const newPP2 = (atkPPMap2.get(ev.attackerId) ?? 0) + 1;
-      atkPPMap2.set(ev.attackerId, newPP2);
-      updateCardPP(ev.attackerId, newPP2, atkHtmlSide2);
-      if (atkEl) showPPFloat(atkEl);
 
       await sleep(ANIM.hitImpact);
       if (atkEl) atkEl.classList.remove('is-attacking');
       await sleep(ANIM.betweenEvents);
     }
 
+    else if (ev.type === 'regen') {
+      // Rigenerazione: il Pokemon recupera HP a fine turno
+      const htmlSide = ev.side === 'player' ? 'self' : 'enemy';
+      const cardEl   = findCardEl(ev.side, ev.slotKey);
+      const name     = findPokemon(ev.pokemonId)?.name ?? 'Pokémon';
+      log(`${cap(ev.passiveName)}: ${cap(name)} recupera ${ev.healed} HP.`, 'passive');
+      // Aggiorna la mappa HP locale e l'UI della card
+      const hpMap = ev.side === 'player' ? bs.playerPkmnHP : bs.enemyPkmnHP;
+      hpMap.set(ev.pokemonId, ev.hpAfter);
+      updateCardHP(ev.pokemonId, ev.hpAfter, htmlSide);
+      if (cardEl) {
+        cardEl.classList.add('is-regen-anim');
+        setTimeout(() => cardEl.classList.remove('is-regen-anim'), 900);
+      }
+      await sleep(420);
+    }
+
+    else if (ev.type === 'speed_stack') {
+      // Velocitàscatto: +1 stack di velocità (display nel log)
+      const name = findPokemon(ev.pokemonId)?.name ?? 'Pokémon';
+      log(`${cap(ev.passiveName)}: ${cap(name)} +${Math.round(15 * ev.stacks)}% Velocità (${ev.stacks}/${ev.maxStacks}).`, 'passive');
+      const cardEl = findCardEl(ev.side, ev.slotKey);
+      if (cardEl) {
+        cardEl.classList.add('is-speed-stack-anim');
+        setTimeout(() => cardEl.classList.remove('is-speed-stack-anim'), 700);
+      }
+      await sleep(220);
+    }
+
     else if (ev.type === 'turn_end') {
       bs.playerHP = ev.playerHP;
       bs.enemyHP  = ev.enemyHP;
+      // Allineiamo le mappe HP/PP locali con quelle aggiornate dall'engine
+      // (regen + speed_stack non emettono cambi diretti di HP nelle hit events,
+      // ma applyRegen le ha mutate nello scope di resolveTurn).
+      if (ev.updatedPlayerPkmnHP) bs.playerPkmnHP = ev.updatedPlayerPkmnHP;
+      if (ev.updatedEnemyPkmnHP)  bs.enemyPkmnHP  = ev.updatedEnemyPkmnHP;
+      if (ev.updatedPlayerPkmnPP) bs.playerPkmnPP = ev.updatedPlayerPkmnPP;
+      if (ev.updatedEnemyPkmnPP)  bs.enemyPkmnPP  = ev.updatedEnemyPkmnPP;
       updateHPBar('player');
       updateHPBar('enemy');
     }
@@ -1284,18 +1335,19 @@ function setPhase(text) {
    ============================================================ */
 const LOG_MAX = 80;
 const LOG_KIND_ICON = {
-  info:   '·',
-  attack: '⚔',
-  super:  '💥',
-  weak:   '🛡',
-  immune: '∅',
-  ko:     '☠',
-  turn:   '🔁',
-  speed:  '⚡',
-  direct: '🎯',
-  item:   '🎒',
-  win:    '🏆',
-  lose:   '💀',
+  info:    '·',
+  attack:  '⚔',
+  super:   '💥',
+  weak:    '🛡',
+  immune:  '∅',
+  ko:      '☠',
+  turn:    '🔁',
+  speed:   '⚡',
+  direct:  '🎯',
+  item:    '🎒',
+  passive: '✨',
+  win:     '🏆',
+  lose:    '💀',
 };
 
 /** Aggiunge una riga al combat log. kind controlla l'icona e il colore. */

@@ -117,14 +117,30 @@ export function calcDamage(attacker, move, defender, opts = {}) {
     if (m.kind === 'first_hit_resist' && opts.isFullHP)                       damage *= (1 - (m.amount ?? 0));
   }
 
+  // ENDURE_ONCE (Vigore): se il danno ucciderebbe e il difensore non ha ancora
+  // attivato questa passiva, taglia il danno per lasciare 1 HP e marca usata.
+  let finalDamage = Math.max(1, Math.round(damage));
+  let enduredByPassive = null;
+  const prevHP = opts.prevHP ?? null;
+  const endureUsedSet = opts.endureUsedSet ?? null;
+  if (defPassive?.meta?.kind === 'endure_once'
+      && prevHP != null
+      && finalDamage >= prevHP
+      && endureUsedSet && !endureUsedSet.has(defender.id)) {
+    finalDamage = Math.max(0, prevHP - 1);   // lascia esattamente 1 HP
+    endureUsedSet.add(defender.id);
+    enduredByPassive = defPassive.name;
+  }
+
   return {
-    damage:   Math.max(1, Math.round(damage)),
+    damage:   finalDamage,
     typeEff,
     stab:     effStab > 1,
     moveType: move.type,
     category: move.cat,
     atkPassive: atkPassive?.name ?? null,
     defPassive: defPassive?.name ?? null,
+    enduredByPassive,
   };
 }
 
@@ -176,21 +192,34 @@ export function resolveTurn({
   playerHP, enemyHP,
   movesets, selectedMoves, enemySelectedMoves,
   playerPkmnPP, enemyPkmnPP,
+  passiveState,
 }) {
   const pHP   = new Map(playerPkmnHP);
   const eHP   = new Map(enemyPkmnHP);
+  const pPP   = new Map(playerPkmnPP);
+  const ePP   = new Map(enemyPkmnPP);
   const pDead = new Set(playerDeadIds);
   const eDead = new Set(enemyDeadIds);
+
+  // Stato passive cross-turn (mutato dentro resolveTurn).
+  //   endureUsed  : Set<pokemonId> (player + enemy uniti — gli ID Pokémon sono distinti tra owned)
+  //   speedStacks : Map<`${side}:${pokemonId}`, stacks>
+  const ps = passiveState ?? {};
+  if (!ps.endureUsed)  ps.endureUsed  = new Set();
+  if (!ps.speedStacks) ps.speedStacks = new Map();
 
   const hp     = { player: playerHP, enemy: enemyHP };
   const events = [];
 
-  const moveCtx = { movesets, selectedMoves, enemySelectedMoves, playerPkmnPP, enemyPkmnPP };
+  const moveCtx = { movesets, selectedMoves, enemySelectedMoves, playerPkmnPP: pPP, enemyPkmnPP: ePP };
 
   const getHP    = (side, id, base) => (side === 'player' ? pHP : eHP).get(id) ?? base;
   const setHP    = (side, id, val)  => (side === 'player' ? pHP : eHP).set(id, val);
+  const getPP    = (side, id)       => ((side === 'player' ? pPP : ePP).get(id) ?? 0);
+  const setPP    = (side, id, val)  => (side === 'player' ? pPP : ePP).set(id, Math.max(0, val));
   const isDead   = (side, id)       =>  side === 'player' ? pDead.has(id) : eDead.has(id);
   const markDead = (side, id)       => (side === 'player' ? pDead : eDead).add(id);
+  const speedKey = (side, id)       => `${side}:${id}`;
 
   const aliveEntries = (field, side) =>
     [...field.entries()].filter(([, p]) => !isDead(side, p.id));
@@ -198,14 +227,27 @@ export function resolveTurn({
   const playerAlive = aliveEntries(playerField, 'player');
   const enemyAlive  = aliveEntries(enemyField,  'enemy');
 
-  const playerSpeed = playerAlive.reduce((s, [, p]) => s + p.stats.speed, 0);
-  const enemySpeed  = enemyAlive.reduce((s, [, p])  => s + p.stats.speed, 0);
+  // ---- SPEED con stacking da Velocitàscatto -----------------------------
+  // La velocità "effettiva" di un Pokemon è: base.speed * (1 + 0.15 * stacks).
+  // stacks è 0 al primo turno e cresce a fine turno se la passiva è attiva.
+  function effectiveSpeed(side, slotKey, p) {
+    const base = p.stats.speed ?? 0;
+    const stacks = ps.speedStacks.get(speedKey(side, p.id)) ?? 0;
+    const pass = getActivePassive(p, slotKey);
+    const per  = pass?.meta?.kind === 'speed_stack' ? (pass.meta.percent ?? 0) : 0;
+    return base * (1 + per * stacks);
+  }
+
+  const playerSpeed = playerAlive.reduce((s, [k, p]) => s + effectiveSpeed('player', k, p), 0);
+  const enemySpeed  = enemyAlive .reduce((s, [k, p]) => s + effectiveSpeed('enemy',  k, p), 0);
   const firstTeam   = playerSpeed >= enemySpeed ? 'player' : 'enemy';
 
   events.push({ type: 'speed_check', playerSpeed, enemySpeed, first: firstTeam });
 
-  const playerOrder = [...playerAlive].sort(([, a], [, b]) => b.stats.speed - a.stats.speed);
-  const enemyOrder  = [...enemyAlive].sort(([, a], [, b])  => b.stats.speed - a.stats.speed);
+  const playerOrder = [...playerAlive].sort(([ka, a], [kb, b]) =>
+    effectiveSpeed('player', kb, b) - effectiveSpeed('player', ka, a));
+  const enemyOrder  = [...enemyAlive ].sort(([ka, a], [kb, b]) =>
+    effectiveSpeed('enemy',  kb, b) - effectiveSpeed('enemy',  ka, a));
 
   function findTarget(field, col, defSide) {
     for (const row of ROWS) {
@@ -214,6 +256,33 @@ export function resolveTurn({
       if (pkmn && !isDead(defSide, pkmn.id)) return { slotKey: key, pkmn };
     }
     return null;
+  }
+
+  /* Calcola la variazione di PP per l'attaccante dopo un colpo a segno.
+     +1 base, -3 se finisher (costo). Modificato da passive del difensore:
+       - pp_block_chance (Statico): RNG, può azzerare il +1 di gain
+       - extra_pp_cost (Pressione): -1 PP extra (= netto 0 invece di +1) */
+  function computePPDelta(move, isFinisher, defenderPassive, hitLanded, ppEvents) {
+    let delta = 0;
+    if (isFinisher) delta -= 3;
+    if (!hitLanded) return { delta, ppBlocked: null, extraCost: null };
+
+    let ppGain = 1;
+    let blocked = null;
+    let extra   = null;
+    if (defenderPassive) {
+      const m = defenderPassive.meta;
+      if (m.kind === 'pp_block_chance' && Math.random() < (m.chance ?? 0)) {
+        ppGain = 0;
+        blocked = defenderPassive.name;
+      }
+      if (m.kind === 'extra_pp_cost') {
+        ppGain -= (m.amount ?? 1);
+        extra = defenderPassive.name;
+      }
+    }
+    delta += ppGain;
+    return { delta, ppBlocked: blocked, extraCost: extra };
   }
 
   function doAttacks(attackers, defenderField, atkSide, defSide) {
@@ -227,7 +296,8 @@ export function resolveTurn({
 
       if (target) {
         // Calcolo passive-aware: serve sapere se il bersaglio è a HP pieno
-        // (per Multiscaglia) e gli slot di entrambi
+        // (per Multiscaglia) e gli slot di entrambi. PrevHP + endureUsedSet
+        // servono a Vigore per "endure_once" (sopravvive a 1 HP una volta).
         const maxHPDef  = getScaledStats(target.pkmn).hp;
         const prevHP    = getHP(defSide, target.pkmn.id, maxHPDef);
         const isFullHP  = prevHP >= maxHPDef;
@@ -235,10 +305,18 @@ export function resolveTurn({
           attackerSlot: slotKey,
           defenderSlot: target.slotKey,
           isFullHP,
+          prevHP,
+          endureUsedSet: ps.endureUsed,
         });
         const newHP  = Math.max(0, prevHP - res.damage);
         setHP(defSide, target.pkmn.id, newHP);
         if (newHP === 0) markDead(defSide, target.pkmn.id);
+
+        // PP delta: gain/loss in base a passive del difensore
+        const defPass = getActivePassive(target.pkmn, target.slotKey);
+        const hitLanded = res.typeEff > 0 && !res.immuneByPassive;
+        const ppRes = computePPDelta(move, move.isFinisher, defPass, hitLanded, events);
+        setPP(atkSide, attacker.id, getPP(atkSide, attacker.id) + ppRes.delta);
 
         events.push({
           type:          'attack',
@@ -263,10 +341,22 @@ export function resolveTurn({
           atkPassive:    res.atkPassive,
           defPassive:    res.defPassive,
           immuneByPassive: res.immuneByPassive ?? null,
+          enduredByPassive: res.enduredByPassive ?? null,
+          ppDelta:         ppRes.delta,
+          ppBlockedBy:     ppRes.ppBlocked,
+          ppExtraCostBy:   ppRes.extraCost,
+          ppAfter:         getPP(atkSide, attacker.id),
         });
       } else {
         const dmg = calcDirectDamage(attacker, move);
         hp[defSide] = Math.max(0, hp[defSide] - dmg);
+
+        // PP gain (nessun difensore → nessuna passiva incoming, ma il costo
+        // del finisher si applica comunque)
+        let delta = 0;
+        if (move.isFinisher) delta -= 3;
+        delta += 1;   // hit a segno (danno diretto è sempre "land")
+        setPP(atkSide, attacker.id, getPP(atkSide, attacker.id) + delta);
 
         events.push({
           type:         'direct_damage',
@@ -279,6 +369,8 @@ export function resolveTurn({
           isAuto:       move.isAuto    ?? false,
           damage:       dmg,
           hpAfter:      hp[defSide],
+          ppDelta:      delta,
+          ppAfter:      getPP(atkSide, attacker.id),
         });
       }
     }
@@ -292,7 +384,74 @@ export function resolveTurn({
     doAttacks(playerOrder, enemyField,  'player', 'enemy');
   }
 
-  events.push({ type: 'turn_end', playerHP: hp.player, enemyHP: hp.enemy });
+  // ---- HOOK FINE TURNO: REGEN (Rigenerazione) ----
+  // Per ogni Pokémon ancora vivo, se ha 'regen' attivo nella sua slot,
+  // recupera percent% degli HP massimi.
+  function applyRegen(field, side) {
+    for (const [slotKey, p] of field.entries()) {
+      if (isDead(side, p.id)) continue;
+      const pass = getActivePassive(p, slotKey);
+      if (!pass || pass.meta.kind !== 'regen') continue;
+      if ((pass.meta.when ?? 'turn_end') !== 'turn_end') continue;
+      const maxHP = getScaledStats(p).hp;
+      const cur   = getHP(side, p.id, maxHP);
+      if (cur <= 0) continue;
+      const heal  = Math.round(maxHP * (pass.meta.percent ?? 0));
+      const next  = Math.min(maxHP, cur + heal);
+      if (next === cur) continue;
+      setHP(side, p.id, next);
+      events.push({
+        type:        'regen',
+        side, slotKey,
+        pokemonId:   p.id,
+        passiveName: pass.name,
+        healed:      next - cur,
+        hpAfter:     next,
+        maxHP,
+      });
+    }
+  }
+  applyRegen(playerField, 'player');
+  applyRegen(enemyField,  'enemy');
+
+  // ---- HOOK FINE TURNO: SPEED STACK (Velocitàscatto) ----
+  // Per ogni Pokemon ancora vivo con speed_stack attivo, +1 stack (cap a max_stacks).
+  function bumpSpeedStacks(field, side) {
+    for (const [slotKey, p] of field.entries()) {
+      if (isDead(side, p.id)) continue;
+      const pass = getActivePassive(p, slotKey);
+      if (!pass || pass.meta.kind !== 'speed_stack') continue;
+      const key  = speedKey(side, p.id);
+      const cur  = ps.speedStacks.get(key) ?? 0;
+      const max  = pass.meta.max_stacks ?? 4;
+      if (cur >= max) continue;
+      ps.speedStacks.set(key, cur + 1);
+      events.push({
+        type:        'speed_stack',
+        side, slotKey,
+        pokemonId:   p.id,
+        passiveName: pass.name,
+        stacks:      cur + 1,
+        maxStacks:   max,
+      });
+    }
+  }
+  bumpSpeedStacks(playerField, 'player');
+  bumpSpeedStacks(enemyField,  'enemy');
+
+  // Aggiorna le mappe HP/PP del chiamante (battle.js) dopo i mutated locali.
+  // Le mappe in input sono _copiate_ all'inizio di resolveTurn, quindi
+  // ritorniamo i nuovi stati. battle.js leggera' i delta dai single event,
+  // ma esponiamo anche un updatedState per i casi (regen/speed_stack).
+  events.push({
+    type: 'turn_end',
+    playerHP: hp.player,
+    enemyHP:  hp.enemy,
+    updatedPlayerPkmnHP: pHP,
+    updatedEnemyPkmnHP:  eHP,
+    updatedPlayerPkmnPP: pPP,
+    updatedEnemyPkmnPP:  ePP,
+  });
 
   return events;
 }

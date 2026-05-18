@@ -19,7 +19,7 @@ import {
   getItemUsages,
   equipItem,
 } from './data/state.js?v=4';
-import { openCardModal }                       from './data/card-modal.js?v=7';
+import { openCardModal }                       from './data/card-modal.js?v=8';
 import { findItem, ITEM_CATEGORIES, isItemAllowedForPokemon } from './data/items.js?v=3';
 import { typeLabel }                            from './data/types.js';
 
@@ -296,10 +296,15 @@ function renderPool() {
   for (const p of filtered) {
     const card = makeCard(p);
     card.addEventListener('click', () => {
-      if (addToTeamSlot(currentSlot, p.id)) {
+      const res = addToTeamSlot(currentSlot, p.id);
+      if (res.ok) {
         renderTeamTab();
       } else {
-        toast('Team pieno (max 6)', 'error');
+        const msg = res.reason === 'legendary_limit' ? 'Solo 1 Leggendario per team!'
+                  : res.reason === 'team_full'       ? 'Team pieno (max 6)'
+                  : res.reason === 'already_in_team' ? 'Già nel team'
+                  : 'Impossibile aggiungere';
+        toast(msg, 'error');
       }
     });
     root.appendChild(card);

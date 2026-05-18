@@ -14,8 +14,9 @@ import { MOVESETS }                            from './data/movesets.js?v=3';
 import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
-import { openCardModal }                       from './data/card-modal.js?v=7';
+import { openCardModal }                       from './data/card-modal.js?v=8';
 import { SFX }                                 from './data/sfx.js';
+import { getScaledStats }                      from './data/stats-scaling.js';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -164,13 +165,13 @@ async function init() {
   for (const id of bs.playerTeamIds) {
     const p = findPokemon(id);
     if (!p) continue;
-    bs.playerPkmnHP.set(p.id, p.stats.hp);
+    bs.playerPkmnHP.set(p.id, getScaledStats(p).hp);
     bs.playerPkmnPP.set(p.id, 0);
   }
   for (const id of bs.enemyTeamIds) {
     const p = findPokemon(id);
     if (!p) continue;
-    bs.enemyPkmnHP.set(p.id, p.stats.hp);
+    bs.enemyPkmnHP.set(p.id, getScaledStats(p).hp);
     bs.enemyPkmnPP.set(p.id, 0);
   }
 
@@ -400,7 +401,7 @@ function makeCard(pkmn, side, variant = 'bench') {
   const hpMap  = side === 'self' ? bs.playerPkmnHP  : bs.enemyPkmnHP;
   const ppMap  = side === 'self' ? bs.playerPkmnPP  : bs.enemyPkmnPP;
   const heldMap = side === 'self' ? bs.playerHeld   : bs.enemyHeld;
-  const curHP  = hpMap.get(pkmn.id) ?? pkmn.stats.hp;
+  const curHP  = hpMap.get(pkmn.id) ?? getScaledStats(pkmn).hp;
   const curPP  = ppMap.get(pkmn.id) ?? 0;
   const moveLabel = getMoveLabel(pkmn.id, side);
   const held   = heldMap.get(pkmn.id) ?? null;

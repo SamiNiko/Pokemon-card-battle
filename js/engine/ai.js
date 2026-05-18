@@ -8,6 +8,7 @@
 */
 
 import { getTypeEffectiveness } from '../data/types.js';
+import { getScaledStats }       from '../data/stats-scaling.js';
 
 const FRONT_SLOTS = ['front-left', 'front-center', 'front-right'];
 const ROWS        = ['front', 'back'];
@@ -35,13 +36,15 @@ export function aiPlaceCards(teamIds, deadIds, findPokemon, opts = {}) {
 
   if (alive.length === 0) return new Map();
 
-  // Score ogni Pokémon: privilegia HP% alti e potenza offensiva
+  // Score ogni Pokémon: privilegia HP% alti e potenza offensiva.
+  // Tutto in spazio SCALED per coerenza con battle (hpMap è già scaled).
   const scored = alive.map(pkmn => {
-    const maxHP     = pkmn.stats.hp;
+    const sc        = getScaledStats(pkmn);
+    const maxHP     = sc.hp;
     const currentHP = hpMap?.get(pkmn.id) ?? maxHP;
     const hpPct     = maxHP > 0 ? currentHP / maxHP : 0;
-    const offense   = Math.max(pkmn.stats.atk, pkmn.stats.spAtk);
-    const score     = hpPct * (offense + pkmn.stats.speed * 0.5);
+    const offense   = Math.max(sc.atk, sc.spAtk);
+    const score     = hpPct * (offense + sc.speed * 0.5);
     return { pkmn, score };
   }).sort((a, b) => b.score - a.score);
 
@@ -50,10 +53,9 @@ export function aiPlaceCards(teamIds, deadIds, findPokemon, opts = {}) {
   const top3 = scored.slice(0, 3).map(s => s.pkmn);
   if (top3.length === 0) return new Map();
 
-  // Sort: il più offensivo al centro, gli altri ai lati
-  const sortedByOffense = [...top3].sort((a, b) =>
-    Math.max(b.stats.atk, b.stats.spAtk) - Math.max(a.stats.atk, a.stats.spAtk)
-  );
+  // Sort: il più offensivo al centro, gli altri ai lati (su scaled stats)
+  const offOf = p => { const sc = getScaledStats(p); return Math.max(sc.atk, sc.spAtk); };
+  const sortedByOffense = [...top3].sort((a, b) => offOf(b) - offOf(a));
   // Layout: [left, center, right] — quello più offensivo va al centro
   const layout = [];
   if (sortedByOffense[1]) layout.push(sortedByOffense[1]); // left = secondo
@@ -140,7 +142,10 @@ function estimateDamage(attacker, move, defender) {
   if (!move || move.cat === 'status' || move.power === 0) return 0;
   const stab    = attacker.types.includes(move.type) ? 1.5 : 1.0;
   const typeEff = getTypeEffectiveness(move.type, defender.types);
-  const atkStat = move.cat === 'physical' ? attacker.stats.atk   : attacker.stats.spAtk;
-  const defStat = move.cat === 'physical' ? defender.stats.def   : defender.stats.spDef;
-  return Math.max(1, Math.round((atkStat / defStat) * move.power * stab * typeEff));
+  const atkS = getScaledStats(attacker);
+  const defS = getScaledStats(defender);
+  const atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
+  const defStat = move.cat === 'physical' ? defS.def : defS.spDef;
+  // Mirror combat.js: smorzamento 0.5
+  return Math.max(1, Math.round((atkStat / defStat) * move.power * stab * typeEff * 0.5));
 }

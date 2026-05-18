@@ -9,7 +9,7 @@ import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non dispon
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped } from './data/state.js?v=4';
 import { findItem }                    from './data/items.js?v=3';
-import { openCardModal }                from './data/card-modal.js?v=7';
+import { openCardModal }                from './data/card-modal.js?v=8';
 import { initTutorial, isTutorialDone } from './data/tutorial.js';
 
 const $ = sel => document.querySelector(sel);

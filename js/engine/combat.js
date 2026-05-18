@@ -8,6 +8,7 @@
    ============================================================ */
 
 import { getTypeEffectiveness } from '../data/types.js';
+import { getScaledStats }       from '../data/stats-scaling.js';
 
 const DIRECT_BASE_POWER = 150;
 const ROWS = ['front', 'back'];
@@ -63,11 +64,17 @@ export function calcDamage(attacker, move, defender) {
     return { damage: 0, typeEff: 1, stab: false, moveType: move.type, category: move.cat };
   }
 
-  const atkStat = move.cat === 'physical' ? attacker.stats.atk   : attacker.stats.spAtk;
-  const defStat = move.cat === 'physical' ? defender.stats.def   : defender.stats.spDef;
+  // Stats SCALATE per rarità (HP/DEF/SPD molto, ATK/SPA poco). Le base
+  // di PokeAPI da sole sarebbero troppo basse per la nostra fascia HP.
+  const atkS = getScaledStats(attacker);
+  const defS = getScaledStats(defender);
+  const atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
+  const defStat = move.cat === 'physical' ? defS.def : defS.spDef;
 
+  // Smorzamento /2 per evitare oneshot: in Pokemon ufficiale la formula
+  // ha un fattore livello/50 di smorzamento che qui non abbiamo.
   return {
-    damage:   Math.max(1, Math.round((atkStat / defStat) * move.power * stab * typeEff)),
+    damage:   Math.max(1, Math.round((atkStat / defStat) * move.power * stab * typeEff * 0.5)),
     typeEff,
     stab:     stab > 1,
     moveType: move.type,
@@ -77,8 +84,9 @@ export function calcDamage(attacker, move, defender) {
 
 export function calcDirectDamage(attacker, move) {
   if (move.cat === 'status' || move.power === 0) return 0;
-  const atkStat = move.cat === 'physical' ? attacker.stats.atk : attacker.stats.spAtk;
-  return Math.max(1, Math.round((atkStat / 100) * DIRECT_BASE_POWER));
+  const atkS = getScaledStats(attacker);
+  const atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
+  return Math.max(1, Math.round((atkStat / 100) * DIRECT_BASE_POWER * 0.5));
 }
 
 // ---- Risoluzione turno -------------------------------------------------

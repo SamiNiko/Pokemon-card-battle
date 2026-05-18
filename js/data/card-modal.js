@@ -13,6 +13,7 @@ import { getEquipped }                       from './state.js?v=4';
 import { findItem }                          from './items.js?v=3';
 import { typeLabel }                          from './types.js';
 import { getPassive }                        from './passives.js';
+import { getScaledStats }                    from './stats-scaling.js';
 
 const TYPE_COLORS = {
   normal:'#a8a878', fire:'#f08030',   water:'#6890f0',  grass:'#78c850',
@@ -183,10 +184,24 @@ export function openCardModal(pokemonId, opts = {}) {
   setTimeout(() => {
     right.querySelectorAll('.detail-stat__bar').forEach(bar => {
       const val = parseInt(bar.dataset.val ?? '0', 10);
-      bar.style.width = `${Math.min(100, (val / 250) * 100)}%`;
+      const label = bar.dataset.label ?? 'HP';
+      const max   = STAT_MAX[label] ?? 250;
+      bar.style.width = `${Math.min(100, (val / max) * 100)}%`;
     });
   }, 220);
 }
+
+// Max scale per stat (per le bar) — proporzionato ai valori scalati massimi
+// che possono apparire in pool: HP fino a ~1100 (Snorlax leg sim.), DEF/SP.D
+// fino a ~700 (tank epici), ATK/SP.A fino a ~300, VEL fino a 160.
+const STAT_MAX = {
+  HP:    1100,
+  ATK:   320,
+  'SP.A':320,
+  DEF:   700,
+  'SP.D':700,
+  VEL:   180,
+};
 
 export function closeCardModal() {
   if (!modalEl) return;
@@ -215,9 +230,12 @@ function buildPage1HTML(entry, pkmn) {
     `<span class="detail-type-badge" style="background:${TYPE_COLORS[t] ?? '#888'}">${typeLabel(t)}</span>`
   ).join('');
 
-  const s = pkmn.stats ?? {};
-  // Categoria attacco del Pokemon: physical se ATK >= SP.ATK, altrimenti special.
-  const isPhys = (s.atk ?? 0) >= (s.spAtk ?? 0);
+  // Stats SCALATE per rarità (HP/DEF molto su, ATK/SP.A poco su)
+  const s = getScaledStats(pkmn);
+  // Categoria attacco del Pokemon: physical se ATK base >= SP.ATK base.
+  // Uso le RAW stats per la decisione, non le scaled (la categoria non cambia col scaling).
+  const raw = pkmn.stats ?? {};
+  const isPhys = (raw.atk ?? 0) >= (raw.spAtk ?? 0);
   const atkRow = isPhys
     ? { label: 'ATK',  val: s.atk   ?? 0 }
     : { label: 'SP.A', val: s.spAtk ?? 0 };
@@ -233,7 +251,7 @@ function buildPage1HTML(entry, pkmn) {
       <div class="detail-stat">
         <span class="detail-stat__label" style="color:${color}">${label}</span>
         <div class="detail-stat__bar-wrap">
-          <div class="detail-stat__bar" style="background:${color}" data-val="${val}"></div>
+          <div class="detail-stat__bar" style="background:${color}" data-val="${val}" data-label="${label}"></div>
         </div>
         <span class="detail-stat__val">${val}</span>
       </div>`;

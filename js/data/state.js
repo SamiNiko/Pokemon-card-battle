@@ -4,6 +4,12 @@
    ============================================================ */
 
 import { isItemAllowedForPokemon } from './items.js?v=3';
+import { LEGGENDARI }              from './rarity.js';
+
+/** Costanti / errori espliciti che le API possono ritornare */
+export const ERR_LEGENDARY_LIMIT = 'legendary_limit';
+export const ERR_TEAM_FULL       = 'team_full';
+export const ERR_ALREADY_IN_TEAM = 'already_in_team';
 
 const STATE_KEY    = 'pkmn_player_state_v1';
 const SAVE_FORMAT  = 'pokemon-card-battle/v1';
@@ -135,10 +141,15 @@ export function setTeamSlot(slot, ids) {
 
 export function addToTeamSlot(slot, id) {
   const current = getTeamSlot(slot);
-  if (current.includes(id)) return false;
-  if (current.length >= 6) return false;
+  if (current.includes(id))   return { ok: false, reason: ERR_ALREADY_IN_TEAM };
+  if (current.length >= 6)    return { ok: false, reason: ERR_TEAM_FULL };
+  // Regola: massimo 1 Leggendario per team (sono già fortissimi al raccoglimento,
+  // non hanno costellazione/livelli, e devono essere "evento" non "stack").
+  if (LEGGENDARI.includes(id) && current.some(tid => LEGGENDARI.includes(tid))) {
+    return { ok: false, reason: ERR_LEGENDARY_LIMIT };
+  }
   setTeamSlot(slot, [...current, id]);
-  return true;
+  return { ok: true };
 }
 
 export function removeFromTeamSlot(slot, id) {

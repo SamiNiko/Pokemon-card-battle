@@ -212,16 +212,25 @@ function buildCardDetailHTML(entry, pkmn) {
           <span class="detail-passiva__text">In arrivo…</span>
         </div>`;
       }
-      // Friendly slot labels: front-center → "Centro fronte" etc.
-      const SLOT_LABEL = {
-        'front-left': 'Fronte Sx', 'front-center': 'Fronte Centro', 'front-right': 'Fronte Dx',
-        'back-left':  'Retro Sx',  'back-center':  'Retro Centro',  'back-right':  'Retro Dx',
-      };
-      const slots = passive.activeSlots.map(s => SLOT_LABEL[s] ?? s).join(' · ');
+      // Mini-griglia 3×2 (stesso ordine del campo battle): front-row sopra, back-row sotto.
+      // Le celle in passive.activeSlots sono "is-active" (illuminate).
+      // Vista DAL LATO TUO: il tuo schieramento. Front-row in alto = vicino al nemico.
+      const SLOTS_ORDER = [
+        'front-left', 'front-center', 'front-right',
+        'back-left',  'back-center',  'back-right',
+      ];
+      const activeSet = new Set(passive.activeSlots);
+      const gridCells = SLOTS_ORDER.map(s => {
+        const isActive = activeSet.has(s);
+        return `<span class="passiva-grid__cell${isActive ? ' is-active' : ''}" data-slot="${s}"></span>`;
+      }).join('');
       return `<div class="detail-passiva">
         <span class="detail-passiva__label">Passiva — ${passive.name}</span>
         <span class="detail-passiva__text">${passive.effect}</span>
-        <span class="detail-passiva__slots">Attiva in: <b>${slots}</b></span>
+        <div class="detail-passiva__field">
+          <div class="passiva-grid" aria-label="Posizioni di attivazione">${gridCells}</div>
+          <span class="detail-passiva__hint">Attiva nelle caselle illuminate</span>
+        </div>
       </div>`;
     })()}
   `;

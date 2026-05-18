@@ -490,6 +490,22 @@ function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
 /* ============================================================
    DRAG & DROP
    ============================================================ */
+
+/* Evidenzia gli slot del campo giocatore in cui la passiva del Pokemon
+   trascinato si attiverebbe. Effetto visivo guida per il giocatore. */
+function highlightPassiveSlots(pokemonId) {
+  const pass = getPassive(pokemonId);
+  if (!pass) return;
+  for (const slot of $$('#playerGrid .grid__slot')) {
+    if (pass.activeSlots.includes(slot.dataset.slotKey)) {
+      slot.classList.add('is-passive-slot');
+    }
+  }
+}
+function clearPassiveSlots() {
+  $$('.grid__slot.is-passive-slot').forEach(s => s.classList.remove('is-passive-slot'));
+}
+
 function onDragStart(e) {
   if (bs.phase !== 'placement') { e.preventDefault(); return; }
 
@@ -498,6 +514,7 @@ function onDragStart(e) {
   dragFromSlot   = card.closest('[data-slot-key]')?.dataset.slotKey ?? 'bench';
 
   card.classList.add('is-dragging');
+  highlightPassiveSlots(dragId);
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', String(dragId));
 }
@@ -509,6 +526,7 @@ function onDragEnd(e) {
   card.classList.add('was-dragged');
   setTimeout(() => card.classList.remove('was-dragged'), 100);
   $$('.grid__slot').forEach(s => s.classList.remove('is-drop-target'));
+  clearPassiveSlots();
   dragId       = null;
   dragFromSlot = null;
 }
@@ -562,6 +580,7 @@ function startTouchDrag(cardEl, pkmn, x, y) {
   dragFromSlot = cardEl.closest('[data-slot-key]')?.dataset.slotKey ?? 'bench';
 
   cardEl.classList.add('is-dragging');
+  highlightPassiveSlots(pkmn.id);
 
   // Crea il ghost: clone della card, posizionato dove il dito è
   const rect = cardEl.getBoundingClientRect();
@@ -630,6 +649,7 @@ function onTouchDragEnd(e) {
   }
   touchSrcCard = null;
   $$('.grid__slot.is-drop-target').forEach(s => s.classList.remove('is-drop-target'));
+  clearPassiveSlots();
 
   document.removeEventListener('pointermove',   onTouchDragMove);
   document.removeEventListener('pointerup',     onTouchDragEnd);

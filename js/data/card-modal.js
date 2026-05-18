@@ -204,12 +204,19 @@ function buildPage1HTML(entry, pkmn) {
   ).join('');
 
   const s = pkmn.stats ?? {};
+  // Categoria attacco del Pokemon: physical se ATK >= SP.ATK, altrimenti special.
+  // Tutte le mosse del Pokemon hanno questa categoria (cfr. movesets.js).
+  // Quindi mostro SOLO la stat di attacco rilevante (ATK o SP.A), non entrambe.
+  const isPhys = (s.atk ?? 0) >= (s.spAtk ?? 0);
+  const atkRow = isPhys
+    ? { label: 'ATK',  val: s.atk   ?? 0 }
+    : { label: 'SP.A', val: s.spAtk ?? 0 };
   const statRows = [
-    { label: 'HP',   val: s.hp    ?? 0 },
-    { label: 'ATK',  val: s.atk   ?? 0 },
-    { label: 'DEF',  val: s.def   ?? 0 },
-    { label: 'SP.A', val: s.spAtk ?? 0 },
-    { label: 'VEL',  val: s.speed ?? 0 },
+    { label: 'HP',    val: s.hp    ?? 0 },
+    atkRow,
+    { label: 'DEF',   val: s.def   ?? 0 },
+    { label: 'SP.D',  val: s.spDef ?? 0 },
+    { label: 'VEL',   val: s.speed ?? 0 },
   ].map(({ label, val }) => {
     const barColor = val >= 110 ? '#f5d050'
                    : val >= 80  ? '#78c850'

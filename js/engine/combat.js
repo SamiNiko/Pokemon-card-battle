@@ -285,10 +285,22 @@ export function resolveTurn({
     return { delta, ppBlocked: blocked, extraCost: extra };
   }
 
+  // Tracking: chi è andato a 0 HP per primo nel turno. Permette di
+  // emettere il 'team_defeated' una volta sola e di sapere il vincitore.
+  const teamDefeatedRegistered = new Set();
+
   function doAttacks(attackers, defenderField, atkSide, defSide) {
     const isPlayer = atkSide === 'player';
     for (const [slotKey, attacker] of attackers) {
       if (isDead(atkSide, attacker.id)) continue;
+
+      // STOP CONDITION: se il team avversario ha già perso (HP totale a 0),
+      // non eseguire ulteriori attacchi. Lo stesso se il team attaccante ha
+      // perso (un proprio attacco precedente ha generato direct_damage che
+      // poi è tornato indietro? scenario edge, ma copertura).
+      // Questo previene il caso "io porto enemy a 0 e poi enemy attacca
+      // ancora e mi porta a 0": dopo il colpo decisivo il turno si ferma.
+      if (hp[defSide] <= 0 || hp[atkSide] <= 0) break;
 
       const move   = resolveMove(attacker, isPlayer, moveCtx);
       const col    = slotKey.split('-')[1];
@@ -349,6 +361,7 @@ export function resolveTurn({
         });
       } else {
         const dmg = calcDirectDamage(attacker, move);
+        const prevTeamHP = hp[defSide];
         hp[defSide] = Math.max(0, hp[defSide] - dmg);
 
         // PP gain (nessun difensore → nessuna passiva incoming, ma il costo
@@ -372,16 +385,32 @@ export function resolveTurn({
           ppDelta:      delta,
           ppAfter:      getPP(atkSide, attacker.id),
         });
+
+        // Se questo colpo ha portato il team avversario a 0 HP, registralo
+        // come evento "team_defeated" UNA SOLA VOLTA. Battle.js lo userà
+        // per assegnare la vittoria a chi è arrivato a 0 per primo.
+        if (prevTeamHP > 0 && hp[defSide] <= 0 && !teamDefeatedRegistered.has(defSide)) {
+          teamDefeatedRegistered.add(defSide);
+          events.push({ type: 'team_defeated', side: defSide });
+        }
       }
     }
   }
 
+  // Esegui i due round di attacchi nell'ordine deciso dalla speed.
+  // CRUCIALE: prima del 2° round, controlla se il 1° team ha già
+  // azzerato gli HP avversari → in tal caso il secondo team NON attacca.
+  // Questo è il bug del "turno simultaneo" segnalato dall'utente.
   if (firstTeam === 'player') {
     doAttacks(playerOrder, enemyField,  'player', 'enemy');
-    doAttacks(enemyOrder,  playerField, 'enemy',  'player');
+    if (hp.enemy > 0 && hp.player > 0) {
+      doAttacks(enemyOrder,  playerField, 'enemy',  'player');
+    }
   } else {
     doAttacks(enemyOrder,  playerField, 'enemy',  'player');
-    doAttacks(playerOrder, enemyField,  'player', 'enemy');
+    if (hp.enemy > 0 && hp.player > 0) {
+      doAttacks(playerOrder, enemyField,  'player', 'enemy');
+    }
   }
 
   // ---- HOOK FINE TURNO: REGEN (Rigenerazione) ----

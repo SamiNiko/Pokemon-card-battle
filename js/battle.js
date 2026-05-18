@@ -194,6 +194,7 @@ async function init() {
   setupBenchDrop();
   setupTargetPreview();
   setupLogToggle();
+  bindMovePickerStaticHandlers();
   updateSpeedPreview();
   startTimer();
 
@@ -393,6 +394,105 @@ function updateCardMove(id, htmlSide) {
 }
 
 /* ============================================================
+   MOVE PICKER — modal per scegliere quale mossa userà il Pokemon
+   ============================================================ */
+let movePickerPkmnId = null;
+
+function openMovePicker(pkmn) {
+  const modal   = $('#movePickerModal');
+  const titleEl = $('#movePickerTitle');
+  const subEl   = $('#movePickerSub');
+  const optsEl  = $('#movePickerOptions');
+  if (!modal || !optsEl) return;
+
+  movePickerPkmnId = pkmn.id;
+  const set = MOVESETS[pkmn.id];
+  const pp  = bs.playerPkmnPP.get(pkmn.id) ?? 0;
+  const sel = bs.selectedMoves.get(pkmn.id) ?? 'basic1';
+
+  titleEl.textContent = `Mossa di ${cap(pkmn.name)}`;
+  subEl.textContent   = `PP attuali: ${pp}/3 · Quale mossa userà nel prossimo turno?`;
+
+  // Formato moves: [base1, base2, finisher] (nuovo) o [basic, finisher] (legacy)
+  let options = [];
+  if (set && set.length >= 3) {
+    options = [
+      { key: 'basic1',   role: 'Base 1',  move: set[0], icon: '⚔' },
+      { key: 'basic2',   role: 'Base 2',  move: set[1], icon: '⚔' },
+      { key: 'finisher', role: 'Finisher', move: set[2], icon: '★', cost: 3 },
+    ];
+  } else if (set && set.length >= 2) {
+    options = [
+      { key: 'basic1',   role: 'Base',     move: set[0], icon: '⚔' },
+      { key: 'finisher', role: 'Finisher', move: set[1], icon: '★', cost: 3 },
+    ];
+  } else {
+    options = [{ key: 'basic1', role: 'Auto', move: { name: 'Attacco Base', type: pkmn.types[0], power: 50, cat: 'physical' }, icon: '⚔' }];
+  }
+
+  optsEl.innerHTML = options.map(opt => {
+    const isSel       = opt.key === sel;
+    const insuffPP    = (opt.cost ?? 0) > pp;
+    const disabled    = insuffPP ? 'disabled' : '';
+    const ppLabel     = opt.cost ? `<span class="move-option__cost ${insuffPP ? 'is-low' : ''}">★ ${opt.cost} PP</span>` : '';
+    const catLabel    = opt.move.cat === 'special' ? 'Speciale' : opt.move.cat === 'physical' ? 'Fisica' : '—';
+    return `
+      <button class="move-option ${isSel ? 'is-selected' : ''}" data-move-sel="${opt.key}" ${disabled}>
+        <div class="move-option__role-wrap">
+          <span class="move-option__icon">${opt.icon}</span>
+          <span class="move-option__role">${opt.role}</span>
+        </div>
+        <div class="move-option__main">
+          <div class="move-option__name-row">
+            <span class="move-option__name">${opt.move.name ?? '—'}</span>
+            <span class="type-badge move-option__type" data-type="${opt.move.type ?? 'normal'}">${typeLabel(opt.move.type ?? 'normal')}</span>
+          </div>
+          <div class="move-option__meta">
+            <span class="move-option__cat">${catLabel}</span>
+            <span class="move-option__sep">·</span>
+            <span class="move-option__power">Potenza ${opt.move.power ?? '—'}</span>
+            ${ppLabel}
+          </div>
+        </div>
+        ${isSel ? '<span class="move-option__check">✓</span>' : ''}
+      </button>
+    `;
+  }).join('');
+
+  modal.classList.remove('hidden');
+}
+
+function closeMovePicker() {
+  $('#movePickerModal')?.classList.add('hidden');
+  movePickerPkmnId = null;
+}
+
+// Event delegation per i bottoni del picker (montato una volta sola)
+document.addEventListener('click', e => {
+  // Click sulla scelta di mossa
+  const opt = e.target.closest('.move-option');
+  if (opt && !opt.hasAttribute('disabled') && movePickerPkmnId != null) {
+    const key = opt.dataset.moveSel;
+    bs.selectedMoves.set(movePickerPkmnId, key);
+    updateCardMove(movePickerPkmnId, 'self');
+    closeMovePicker();
+    return;
+  }
+});
+// Cancel / backdrop / details
+function bindMovePickerStaticHandlers() {
+  const closeBtns = ['movePickerBackdrop', 'movePickerCancel'];
+  for (const id of closeBtns) {
+    $('#' + id)?.addEventListener('click', closeMovePicker);
+  }
+  $('#movePickerDetails')?.addEventListener('click', () => {
+    const id = movePickerPkmnId;
+    closeMovePicker();
+    if (id != null) openCardModal(id);
+  });
+}
+
+/* ============================================================
    CARD — costruzione elemento DOM
    variant: 'bench' (sprite compatta) | 'field' (fullart in campo)
    ============================================================ */
@@ -466,11 +566,19 @@ function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
     `;
   }
 
-  // Click sx → apre modal dettaglio (riusa quello della collezione)
-  // Soppresso durante il drag (vedi onDragEnd).
+  // Click sx:
+  //   - Carta del giocatore (qualunque slot, anche bench): apre il MOVE PICKER
+  //     per scegliere quale mossa userà nel prossimo turno (basic1/basic2/finisher).
+  //     Il picker ha anche un bottone "Vedi carta" che apre il card-modal completo.
+  //   - Carta avversaria o pokemon KO: apre direttamente il card-modal di dettaglio.
+  // Soppresso durante il drag (vedi onDragEnd / onTouchDragEnd).
   el.addEventListener('click', e => {
-    if (el.classList.contains('was-dragged')) return;   // distingui drag da click
-    openCardModal(pkmn.id);
+    if (el.classList.contains('was-dragged')) return;
+    if (side === 'self' && !bs.playerDeadIds.has(pkmn.id) && bs.phase !== 'resolving') {
+      openMovePicker(pkmn);
+    } else {
+      openCardModal(pkmn.id);
+    }
   });
 
   // Drag & drop solo per carte del giocatore (non morte, non in fase resolving)

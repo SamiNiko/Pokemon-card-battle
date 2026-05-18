@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Combattimento</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
-  <link rel="stylesheet" href="css/battle.css?v=14" />
+  <link rel="stylesheet" href="css/battle.css?v=15" />
   <link rel="stylesheet" href="css/card-modal.css?v=8" />
   <script src="js/register-sw.js?v=1" defer></script>
 </head>
@@ -105,6 +105,26 @@
     </aside>
   </main>
 
+  <!-- ============================================================
+       MODAL MOVE PICKER — scegli mossa per il prossimo turno
+       ============================================================ -->
+  <div class="modal hidden" id="movePickerModal" role="dialog" aria-modal="true" aria-labelledby="movePickerTitle">
+    <div class="modal__backdrop" id="movePickerBackdrop"></div>
+    <div class="modal__panel move-picker">
+      <header class="move-picker__head">
+        <h2 class="move-picker__title" id="movePickerTitle">Scegli mossa</h2>
+        <p class="move-picker__sub" id="movePickerSub">Quale mossa userà nel prossimo turno?</p>
+      </header>
+      <div class="move-picker__options" id="movePickerOptions">
+        <!-- popolato da JS -->
+      </div>
+      <div class="move-picker__actions">
+        <button class="btn btn--ghost" id="movePickerDetails">Vedi carta ▸</button>
+        <button class="btn" id="movePickerCancel">Annulla</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal conferma uscita partita (4a-4) -->
   <div class="modal hidden" id="exitModal" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
     <div class="modal__backdrop" id="exitModalBackdrop"></div>
@@ -124,6 +144,6 @@
     <p id="loadingMsg">Caricamento Pokémon…</p>
   </div>
 
-  <script type="module" src="js/battle.js?v=13"></script>
+  <script type="module" src="js/battle.js?v=14"></script>
 </body>
 </html>

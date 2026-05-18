@@ -1038,3 +1038,128 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
   .battle-log { width: calc(100vw - 16px); left: var(--sp-1); bottom: 64px; }
   .battle-log.is-open .battle-log__body { max-height: clamp(100px, 22dvh, 160px); }
 }
+
+/* ============================================================
+   MOVE PICKER MODAL — selezione mossa per il prossimo turno
+   ============================================================ */
+.move-picker {
+  min-width: 340px;
+  max-width: 480px;
+  padding: var(--sp-5);
+}
+.move-picker__head { margin-bottom: var(--sp-4); }
+.move-picker__title {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.move-picker__sub {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+.move-picker__options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+.move-picker__actions {
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+}
+
+/* Singola mossa selezionabile */
+.move-option {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  width: 100%;
+  color: var(--text);
+}
+.move-option:hover:not([disabled]) {
+  background: rgba(255, 203, 5, 0.08);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.move-option[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.move-option.is-selected {
+  background: rgba(255, 203, 5, 0.15);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent), 0 0 10px rgba(255, 203, 5, 0.25);
+}
+
+.move-option__role-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 52px;
+  padding-right: var(--sp-3);
+  border-right: 1px solid var(--border);
+}
+.move-option__icon {
+  font-size: 1.1rem;
+  color: var(--accent);
+}
+.move-option__role {
+  font-size: 0.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.move-option__main { flex: 1; min-width: 0; }
+.move-option__name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: 4px;
+}
+.move-option__name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.move-option__type {
+  font-size: 0.55rem;
+  padding: 2px 7px;
+}
+.move-option__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.move-option__sep { color: var(--text-muted); }
+.move-option__cost {
+  margin-left: auto;
+  font-weight: 800;
+  color: var(--accent);
+}
+.move-option__cost.is-low { color: var(--danger); }
+
+.move-option__check {
+  font-size: 1.3rem;
+  color: var(--accent);
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(255, 203, 5, 0.7);
+}
+
+@media (max-width: 480px) {
+  .move-picker { min-width: 0; width: calc(100vw - 32px); }
+}

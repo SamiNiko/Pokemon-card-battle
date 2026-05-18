@@ -15,15 +15,22 @@
   <title>Pokémon Card Battle — Summon</title>
   <link rel="stylesheet" href="css/base.css?v=7" />
   <link rel="stylesheet" href="css/summon.css?v=23" />
+  <link rel="stylesheet" href="css/page-hero.css?v=1" />
   <script src="js/register-sw.js?v=1" defer></script>
 </head>
 <body class="summon-page">
 
   <!-- Header -->
-  <header class="summon-header">
-    <a class="summon-header__back" href="index.html">← Home</a>
-    <h1 class="summon-header__title">✨ Summon</h1>
-    <div class="summon-header__currencies">
+  <header class="page-hero page-hero--summon">
+    <a class="page-hero__back" href="index.html" aria-label="Torna alla home">←</a>
+    <div class="page-hero__logo">
+      <span class="page-hero__ball" aria-hidden="true"></span>
+      <div class="page-hero__text">
+        <h1 class="page-hero__title">Summon</h1>
+        <p class="page-hero__tagline">Apri pacchetti · Ottieni nuove carte</p>
+      </div>
+    </div>
+    <div class="page-hero__extra summon-header__currencies">
       <div class="s-currency s-currency--gems">
         <span>💎</span><span id="walletGems">—</span>
       </div>

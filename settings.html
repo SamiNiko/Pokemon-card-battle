@@ -11,6 +11,7 @@
   <meta name="apple-mobile-web-app-title" content="Pokémon card game" />
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
   <link rel="stylesheet" href="css/tutorial.css?v=1" />
+  <link rel="stylesheet" href="css/page-hero.css?v=1" />
   <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Impostazioni</title>
@@ -21,10 +22,15 @@
 <body class="settings-page">
 
   <!-- Header -->
-  <header class="settings-header">
-    <a class="settings-header__back" href="index.html">← Home</a>
-    <h1 class="settings-header__title">⚙ Impostazioni</h1>
-    <span></span>
+  <header class="page-hero page-hero--settings">
+    <a class="page-hero__back" href="index.html" aria-label="Torna alla home">←</a>
+    <div class="page-hero__logo">
+      <span class="page-hero__ball" aria-hidden="true"></span>
+      <div class="page-hero__text">
+        <h1 class="page-hero__title">Impostazioni</h1>
+        <p class="page-hero__tagline">Audio · Account · Aiuto</p>
+      </div>
+    </div>
   </header>
 
   <main class="settings">

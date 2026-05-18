@@ -1,0 +1,193 @@
+/* ============================================================
+   page-hero.css — Header condiviso per pagine secondarie
+   ------------------------------------------------------------
+   Pattern coerente con la home: pokeball + titolo gradient
+   + tagline + back link + slot per contenuto extra (counter/wallet).
+
+   Usage:
+     <header class="page-hero page-hero--<variant>">
+       <a class="page-hero__back" href="index.html" aria-label="Home">←</a>
+       <div class="page-hero__logo">
+         <span class="page-hero__ball" aria-hidden="true"></span>
+         <div class="page-hero__text">
+           <h1 class="page-hero__title">Titolo</h1>
+           <p class="page-hero__tagline">Tagline</p>
+         </div>
+       </div>
+       <div class="page-hero__extra"><!-- counter/wallet --></div>
+     </header>
+
+   Varianti colore (--variant):
+     collection (verde) · summon (blu/viola) · shop (arancio)
+     stats (ciano)      · settings (neutro)
+   ============================================================ */
+
+.page-hero {
+  --hero-accent: var(--accent);
+  --hero-accent-rgb: 255, 203, 5;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) clamp(var(--sp-4), 4vw, var(--sp-7));
+  margin: 0 auto var(--sp-5);
+  max-width: 1500px;
+  box-sizing: border-box;
+  animation: page-hero-fade 0.45s ease both;
+}
+@keyframes page-hero-fade {
+  0%   { opacity: 0; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Back arrow rotonda */
+.page-hero__back {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+}
+.page-hero__back:hover {
+  background: var(--bg-2);
+  border-color: var(--hero-accent);
+  color: var(--hero-accent);
+  text-decoration: none;
+  transform: translateX(-2px);
+}
+
+/* Pokeball logo (versione compatta del hero home) */
+.page-hero__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: 1;
+  min-width: 0;
+}
+.page-hero__ball {
+  flex-shrink: 0;
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 5px solid var(--hero-accent);
+  position: relative;
+  box-shadow: 0 0 16px rgba(var(--hero-accent-rgb), 0.42);
+  animation:
+    page-hero-ball-intro 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    page-hero-ball-pulse 3.5s ease-in-out 0.7s infinite;
+}
+@keyframes page-hero-ball-intro {
+  0%   { transform: scale(0.4) rotate(-360deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+@keyframes page-hero-ball-pulse {
+  0%,100% { box-shadow: 0 0 16px rgba(var(--hero-accent-rgb), 0.42); }
+  50%      { box-shadow: 0 0 28px rgba(var(--hero-accent-rgb), 0.75); }
+}
+.page-hero__ball::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: -5px; right: -5px;
+  height: 2.5px;
+  background: var(--hero-accent);
+  transform: translateY(-50%);
+  opacity: 0.85;
+}
+.page-hero__ball::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--hero-accent);
+  box-shadow: 0 0 8px rgba(var(--hero-accent-rgb), 0.75);
+}
+
+.page-hero__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Titolo grande con gradient + glow */
+.page-hero__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3.6vw, 2.2rem);
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  background: linear-gradient(135deg, #fff 0%, var(--hero-accent) 60%, color-mix(in srgb, var(--hero-accent) 60%, #000) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 10px rgba(var(--hero-accent-rgb), 0.22));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: page-hero-title 0.55s 0.15s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes page-hero-title {
+  0%   { opacity: 0; transform: translateY(8px); letter-spacing: 0.15em; filter: blur(6px); }
+  100% { opacity: 1; transform: translateY(0);   letter-spacing: 0.03em; filter: blur(0);  }
+}
+
+.page-hero__tagline {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: clamp(0.62rem, 1vw, 0.74rem);
+  letter-spacing: 0.16em;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: page-hero-tagline 0.5s 0.45s ease both;
+}
+@keyframes page-hero-tagline {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 0.85; transform: translateY(0); }
+}
+
+/* Slot a destra per contenuto specifico (counter, wallet, badge) */
+.page-hero__extra {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* ============================================================
+   VARIANTI COLORE — assegnano accent per categoria
+   ============================================================ */
+.page-hero--collection { --hero-accent: #4dad5b; --hero-accent-rgb: 77, 173, 91; }
+.page-hero--summon     { --hero-accent: #8899ff; --hero-accent-rgb: 136, 153, 255; }
+.page-hero--shop       { --hero-accent: #f4a017; --hero-accent-rgb: 244, 160, 23; }
+.page-hero--stats      { --hero-accent: #5ee8d8; --hero-accent-rgb: 94, 232, 216; }
+.page-hero--settings   { --hero-accent: #a8b3cf; --hero-accent-rgb: 168, 179, 207; }
+.page-hero--story      { --hero-accent: #f5d050; --hero-accent-rgb: 245, 208, 80; }
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+@media (max-width: 640px) {
+  .page-hero {
+    padding: var(--sp-3) var(--sp-3);
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+  .page-hero__ball   { width: 42px; height: 42px; border-width: 4px; }
+  .page-hero__ball::before { left: -4px; right: -4px; height: 2px; }
+  .page-hero__ball::after  { width: 11px; height: 11px; }
+  .page-hero__title  { font-size: 1.35rem; }
+  .page-hero__tagline { font-size: 0.6rem; letter-spacing: 0.12em; }
+  .page-hero__back   { width: 34px; height: 34px; font-size: 1rem; }
+}

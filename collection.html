@@ -16,18 +16,25 @@
   <link rel="stylesheet" href="css/base.css?v=7" />
   <link rel="stylesheet" href="css/collection.css?v=9" />
   <link rel="stylesheet" href="css/card-modal.css?v=2" />
+  <link rel="stylesheet" href="css/page-hero.css?v=1" />
   <script src="js/register-sw.js?v=1" defer></script>
 </head>
 <body class="collection-page">
   <main class="collection">
 
     <!-- Header -->
-    <header class="collection__header">
-      <a class="btn btn--ghost" href="index.html">← Home</a>
-      <h1 class="collection__title">Collezione</h1>
-      <div class="collection__header-right">
+    <header class="page-hero page-hero--collection">
+      <a class="page-hero__back" href="index.html" aria-label="Torna alla home">←</a>
+      <div class="page-hero__logo">
+        <span class="page-hero__ball" aria-hidden="true"></span>
+        <div class="page-hero__text">
+          <h1 class="page-hero__title">Collezione</h1>
+          <p class="page-hero__tagline">Pokémon · Team · Oggetti</p>
+        </div>
+      </div>
+      <div class="page-hero__extra">
         <span class="collection__count" id="ownedCount">0 / 151</span>
-        <a class="btn btn--primary hidden" id="btnBattle" href="battle.html?mode=ai">⚔ Vai in Battaglia</a>
+        <a class="btn btn--primary hidden" id="btnBattle" href="battle.html?mode=ai">⚔ Battaglia</a>
       </div>
     </header>
 

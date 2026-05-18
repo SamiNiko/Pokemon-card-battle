@@ -15,15 +15,22 @@
   <title>Pokémon Card Battle — Negozio</title>
   <link rel="stylesheet" href="css/base.css?v=7" />
   <link rel="stylesheet" href="css/shop.css?v=4" />
+  <link rel="stylesheet" href="css/page-hero.css?v=1" />
   <script src="js/register-sw.js?v=1" defer></script>
 </head>
 <body class="shop-page">
 
   <!-- Header -->
-  <header class="shop-header">
-    <a class="shop-header__back" href="index.html">← Home</a>
-    <h1 class="shop-header__title">🛒 Negozio</h1>
-    <div class="shop-header__wallet">
+  <header class="page-hero page-hero--shop">
+    <a class="page-hero__back" href="index.html" aria-label="Torna alla home">←</a>
+    <div class="page-hero__logo">
+      <span class="page-hero__ball" aria-hidden="true"></span>
+      <div class="page-hero__text">
+        <h1 class="page-hero__title">Negozio</h1>
+        <p class="page-hero__tagline">Oggetti tenuti per i tuoi Pokémon</p>
+      </div>
+    </div>
+    <div class="page-hero__extra shop-header__wallet">
       <div class="s-currency s-currency--euro">
         <span>🪙</span><span id="walletEuro">—</span>
       </div>
@@ -32,15 +39,6 @@
       </div>
     </div>
   </header>
-
-  <!-- Sottotitolo / banner -->
-  <section class="shop-banner">
-    <div class="shop-banner__bg"></div>
-    <div class="shop-banner__content">
-      <h2 class="shop-banner__title">Oggetti tenuti</h2>
-      <p class="shop-banner__subtitle">Equipaggia i tuoi Pokémon per cambiare le sorti della battaglia.</p>
-    </div>
-  </section>
 
   <!-- Categorie -->
   <div class="shop-tabs" id="shopTabs">

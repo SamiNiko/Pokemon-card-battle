@@ -243,122 +243,161 @@ CAT_IT2EN = {'fisica':'physical', 'speciale':'special', 'stato':'status'}
 #      Le slot sono Hero-Colosseum-style: dipendono dalla NATURA della passiva.
 #    - meta: chiave + payload per il combat engine futuro
 # ============================================================
+# Pool slot per ogni archetipo: insieme delle caselle dove la passiva
+# ha senso strategico. Per ogni Pokemon, scegliamo deterministicamente
+# 1-2 slot DAL POOL DELL'ARCHETIPO, in modo che 3 Pokemon dello stesso
+# archetipo in un team possano avere combinazioni di slot diverse e
+# attivare tutte e 3 le passive. (varieta' a la Hero Colosseum)
 PASSIVE_LIB = {
     'siccita': {
         'name': 'Siccità',
         'effect': "Le tue mosse Fuoco infliggono +25% di danno.",
-        'active_slots': ['back-center'],            # regia: boosta tutto il team
-        'meta': {'kind': 'type_boost', 'type': 'fire', 'mult': 1.25},
+        'pool':  ['back-center', 'back-left', 'back-right', 'front-center'],  # regia/comando
+        'meta':  {'kind': 'type_boost', 'type': 'fire', 'mult': 1.25},
     },
     'pioggerellina': {
         'name': 'Pioggerellina',
         'effect': "Le tue mosse Acqua infliggono +25% di danno.",
-        'active_slots': ['back-center'],
-        'meta': {'kind': 'type_boost', 'type': 'water', 'mult': 1.25},
+        'pool':  ['back-center', 'back-left', 'back-right', 'front-center'],
+        'meta':  {'kind': 'type_boost', 'type': 'water', 'mult': 1.25},
     },
     'sabbiainfinita': {
         'name': 'Sabbiainfinita',
         'effect': "Le tue mosse Roccia/Terra infliggono +20% di danno.",
-        'active_slots': ['back-center'],
-        'meta': {'kind': 'type_boost_multi', 'types': ['rock', 'ground'], 'mult': 1.20},
+        'pool':  ['back-center', 'back-left', 'back-right', 'front-center'],
+        'meta':  {'kind': 'type_boost_multi', 'types': ['rock', 'ground'], 'mult': 1.20},
     },
     'snownevicata': {
         'name': 'Scendineve',
         'effect': "Le tue mosse Ghiaccio infliggono +25% di danno.",
-        'active_slots': ['back-center'],
-        'meta': {'kind': 'type_boost', 'type': 'ice', 'mult': 1.25},
+        'pool':  ['back-center', 'back-left', 'back-right', 'front-center'],
+        'meta':  {'kind': 'type_boost', 'type': 'ice', 'mult': 1.25},
     },
     'levitazione': {
         'name': 'Levitazione',
         'effect': "Immune al danno diretto da colonna vuota e mosse Terra.",
-        'active_slots': ['front-left', 'front-right'],   # sfuggente laterale
-        'meta': {'kind': 'immune', 'mods': ['direct_damage'], 'types': ['ground']},
+        'pool':  ['front-left', 'front-right', 'back-left', 'back-right'],   # sfuggente
+        'meta':  {'kind': 'immune', 'mods': ['direct_damage'], 'types': ['ground']},
     },
     'multiscala': {
         'name': 'Multiscaglia',
         'effect': "A HP pieno, subisci -50% di danno dal primo colpo ricevuto.",
-        'active_slots': ['front-center'],                # in prima linea
-        'meta': {'kind': 'first_hit_resist', 'amount': 0.5, 'condition': 'full_hp'},
+        'pool':  ['front-center', 'front-left', 'front-right'],  # linea fronte
+        'meta':  {'kind': 'first_hit_resist', 'amount': 0.5, 'condition': 'full_hp'},
     },
     'vigore': {
         'name': 'Vigore',
         'effect': "Sopravvivi con 1 HP a un colpo che ti ucciderebbe (1 volta a battaglia).",
-        'active_slots': ['front-center'],
-        'meta': {'kind': 'endure_once', 'once': True},
+        'pool':  ['front-center', 'front-left', 'front-right'],
+        'meta':  {'kind': 'endure_once', 'once': True},
     },
     'rigenerazione': {
         'name': 'Rigenerazione',
         'effect': "A fine turno, recuperi il 15% degli HP massimi.",
-        'active_slots': ['back-center'],                # safe spot per curarsi
-        'meta': {'kind': 'regen', 'percent': 0.15, 'when': 'turn_end'},
+        'pool':  ['back-center', 'back-left', 'back-right'],   # safe back
+        'meta':  {'kind': 'regen', 'percent': 0.15, 'when': 'turn_end'},
     },
     'pressione': {
         'name': 'Pressione',
         'effect': "Il Pokémon che ti attacca consuma 1 PP extra.",
-        'active_slots': ['front-center'],
-        'meta': {'kind': 'extra_pp_cost', 'amount': 1},
+        'pool':  ['front-center', 'front-left', 'front-right'],
+        'meta':  {'kind': 'extra_pp_cost', 'amount': 1},
     },
     'tecnico': {
         'name': 'Tecnico',
         'effect': "Le tue mosse Base infliggono +30% di danno.",
-        'active_slots': ['front-center'],
-        'meta': {'kind': 'base_move_boost', 'mult': 1.30},
+        'pool':  ['front-center', 'front-left', 'front-right', 'back-center'],
+        'meta':  {'kind': 'base_move_boost', 'mult': 1.30},
     },
     'fortunone': {
         'name': 'Fortunone',
         'effect': "Le tue mosse Finisher infliggono +20% di danno.",
-        'active_slots': ['back-center'],                # carica e calcola
-        'meta': {'kind': 'finisher_boost', 'mult': 1.20},
+        'pool':  ['back-center', 'back-left', 'back-right'],
+        'meta':  {'kind': 'finisher_boost', 'mult': 1.20},
     },
     'adattabilita': {
         'name': 'Adattabilità',
         'effect': "Il bonus STAB delle tue mosse è raddoppiato (×2 anziché ×1.5).",
-        'active_slots': ['front-center'],
-        'meta': {'kind': 'stab_boost', 'mult': 2.0},
+        'pool':  ['front-center', 'back-center', 'front-left', 'front-right', 'back-left', 'back-right'],
+        'meta':  {'kind': 'stab_boost', 'mult': 2.0},
     },
     'pancialarda': {
         'name': 'Pancialarda',
         'effect': "Subisci -30% di danno dalle mosse Fuoco e Ghiaccio.",
-        'active_slots': ['front-center'],
-        'meta': {'kind': 'type_resist', 'types': ['fire', 'ice'], 'mult': 0.70},
+        'pool':  ['front-center', 'front-left', 'front-right'],
+        'meta':  {'kind': 'type_resist', 'types': ['fire', 'ice'], 'mult': 0.70},
     },
     'specchiomagico': {
         'name': 'Specchiomagico',
         'effect': "Le mosse Speciali subite infliggono -25% di danno.",
-        'active_slots': ['back-center'],                # sotto controllo
-        'meta': {'kind': 'cat_resist', 'cat': 'special', 'mult': 0.75},
+        'pool':  ['back-center', 'back-left', 'back-right', 'front-center'],
+        'meta':  {'kind': 'cat_resist', 'cat': 'special', 'mult': 0.75},
     },
     'statico': {
         'name': 'Statico',
         'effect': "Il Pokémon che ti attacca ha 30% di non guadagnare PP quel turno.",
-        'active_slots': ['front-center'],
-        'meta': {'kind': 'pp_block_chance', 'chance': 0.3},
+        'pool':  ['front-center', 'front-left', 'front-right'],
+        'meta':  {'kind': 'pp_block_chance', 'chance': 0.3},
     },
     'velenpunta': {
         'name': 'Velenpunta',
         'effect': "Le tue mosse Veleno infliggono +25% di danno.",
-        'active_slots': ['back-center'],
-        'meta': {'kind': 'type_boost', 'type': 'poison', 'mult': 1.25},
+        'pool':  ['back-center', 'back-left', 'back-right', 'front-center'],
+        'meta':  {'kind': 'type_boost', 'type': 'poison', 'mult': 1.25},
     },
     'corazza': {
         'name': 'Corazza',
         'effect': "Subisci -20% di danno dalle mosse Fisiche.",
-        'active_slots': ['front-center'],
-        'meta': {'kind': 'cat_resist', 'cat': 'physical', 'mult': 0.80},
+        'pool':  ['front-center', 'front-left', 'front-right'],
+        'meta':  {'kind': 'cat_resist', 'cat': 'physical', 'mult': 0.80},
     },
     'velocitascatto': {
         'name': 'Velocitàscatto',
         'effect': "A ogni turno la tua Velocità aumenta del 15% (cumulativo, max +60%).",
-        'active_slots': ['back-left', 'back-right'],     # angoli rapidi
-        'meta': {'kind': 'speed_stack', 'percent': 0.15, 'max_stacks': 4},
+        'pool':  ['back-left', 'back-right', 'back-center', 'front-left', 'front-right'],
+        'meta':  {'kind': 'speed_stack', 'percent': 0.15, 'max_stacks': 4},
     },
     'ultrapotenza': {
         'name': 'Ultrapotenza',
         'effect': "Il tuo Attacco è raddoppiato. La tua Difesa è dimezzata.",
-        'active_slots': ['front-center'],
-        'meta': {'kind': 'atk_boost_def_drop', 'atk_mult': 2.0, 'def_mult': 0.5},
+        'pool':  ['front-center', 'front-left', 'front-right'],
+        'meta':  {'kind': 'atk_boost_def_drop', 'atk_mult': 2.0, 'def_mult': 0.5},
     },
 }
+
+# Tutte le combinazioni possibili di 1-2 slot dal pool (1 elemento prima, poi 2)
+def slot_combos(pool):
+    """Lista di tuple — combinazioni di 1 elemento, poi di 2 elementi
+    (ordinate alfabeticamente per stabilità). Non ripetiamo (a,b) e (b,a)."""
+    singles = [(s,) for s in pool]
+    pairs = []
+    for i, a in enumerate(pool):
+        for b in pool[i+1:]:
+            pairs.append(tuple(sorted([a, b])))
+    return singles + pairs
+
+# Distribuzione round-robin: per ogni archetipo, distribuisco i combos
+# uniformemente fra tutti i Pokemon che usano quell'archetipo. Cosi' due
+# Pokemon dello stesso archetipo non avranno mai gli stessi slot a meno che
+# ci siano piu' Pokemon che combos disponibili.
+_ASSIGN_CACHE = {}  # pid → tuple di slot
+
+def build_assignment_cache():
+    """Pre-popola _ASSIGN_CACHE con assegnazioni stabili."""
+    by_arch = {}
+    for pid, key in POKEMON_PASSIVE.items():
+        by_arch.setdefault(key, []).append(pid)
+    for key, pids in by_arch.items():
+        combos = slot_combos(PASSIVE_LIB[key]['pool'])
+        # Ordino i pid per stabilità tra esecuzioni
+        for i, pid in enumerate(sorted(pids)):
+            combo = combos[i % len(combos)]
+            _ASSIGN_CACHE[pid] = list(combo)
+
+def pick_combo_for_pokemon(pid, archetype_key):
+    if not _ASSIGN_CACHE:
+        build_assignment_cache()
+    return _ASSIGN_CACHE.get(pid, list(slot_combos(PASSIVE_LIB[archetype_key]['pool'])[0]))
 
 # ============================================================
 #  MAPPING Pokemon → passiva archetipo
@@ -566,19 +605,6 @@ def pick_moves(pid, movepool):
     secondary = types[1] if len(types) > 1 else None
 
     pool = [m for m in movepool.get(pid, []) if m['cat'] == cat and m['power'] > 0]
-    # Mossa 1: STAB tipo primario, piu' forte (sara' la "base 1")
-    stab_primary = sorted([m for m in pool if m['type'] == primary], key=lambda m: -m['power'])
-    # Mossa 2: STAB tipo secondario (dual-type) o tipo coperto diverso dal primario
-    if secondary:
-        stab_secondary = sorted([m for m in pool if m['type'] == secondary], key=lambda m: -m['power'])
-    else:
-        # Monotipo: prendi mosse di tipo DIVERSO dal primario (copertura)
-        stab_secondary = sorted([m for m in pool if m['type'] != primary], key=lambda m: -m['power'])
-
-    # Finisher: STAB tipo primario massima potenza (la prima da stab_primary)
-    finisher_src = stab_primary[0] if stab_primary else (pool[0] if pool else None)
-    base1_src    = stab_primary[1] if len(stab_primary) > 1 else (stab_primary[0] if stab_primary else None)
-    base2_src    = stab_secondary[0] if stab_secondary else (pool[1] if len(pool) > 1 else base1_src)
 
     rarity = rarity_of(pid)
     bmin, bmax, fmin, fmax = POWER_BY_RARITY[rarity]
@@ -586,6 +612,29 @@ def pick_moves(pid, movepool):
     pwr_b1 = (bmin + bmax) // 2
     pwr_b2 = pwr_b1 - 3  # base 2 leggermente piu' debole
     pwr_fn = (fmin + fmax) // 2
+
+    # Scelta mossa per "fedelta'": dato un tipo target + power target,
+    # scegli la mossa del pool con power piu' vicino. Cosi' un Bulbasaur comune
+    # avra' "Frusta Erba" (power originale 45) invece di "Solarraggio" (power 120).
+    def pick_closest(candidates, target_power):
+        if not candidates:
+            return None
+        return min(candidates, key=lambda m: abs(m['power'] - target_power))
+
+    # Mossa 1: STAB primario, power vicino a pwr_b1
+    stab_primary = [m for m in pool if m['type'] == primary]
+    base1_src = pick_closest(stab_primary, pwr_b1) or (pool[0] if pool else None)
+
+    # Mossa 2: STAB secondario se dual-type, altrimenti tipo coperto != primario
+    if secondary:
+        stab_secondary = [m for m in pool if m['type'] == secondary]
+    else:
+        stab_secondary = [m for m in pool if m['type'] != primary]
+    base2_src = pick_closest(stab_secondary, pwr_b2) or pick_closest([m for m in stab_primary if m is not base1_src], pwr_b2) or base1_src
+
+    # Finisher: STAB primario, power vicino a pwr_fn (preferisce mossa diversa da base1)
+    finisher_candidates = [m for m in stab_primary if m is not base1_src]
+    finisher_src = pick_closest(finisher_candidates, pwr_fn) or pick_closest(stab_primary, pwr_fn) or base1_src
 
     def mk(src, name_fallback, type_fb, power_v):
         if not src:
@@ -664,14 +713,17 @@ def write_passives_js(rows, out_path='js/data/passives.js'):
     lines.append("   passives.js — Passive per ogni Pokémon Gen 1")
     lines.append("   ")
     lines.append("   Ogni Pokémon ha una passiva tra ~18 archetipi competitive")
-    lines.append("   adattati. La passiva si attiva SOLO se la carta è in una")
-    lines.append("   delle slot indicate in `activeSlots` (1-2 slot, Hero")
-    lines.append("   Colosseum style — la posizione deriva dalla NATURA della")
-    lines.append("   passiva, non dal ruolo del Pokémon).")
+    lines.append("   adattati. Le SLOT di attivazione sono PER-POKEMON (non per")
+    lines.append("   archetipo): cosi' Pokemon dello stesso archetipo possono")
+    lines.append("   avere combinazioni di slot diverse e in un team da 3 ognuno")
+    lines.append("   puo' attivare la propria passiva (varieta' a la Hero Colosseum).")
     lines.append("   ")
-    lines.append("   Le costanti `PASSIVE_LIBRARY` e `POKEMON_PASSIVE` sono")
-    lines.append("   separate per chiarezza: la biblioteca contiene gli archetipi,")
-    lines.append("   la mappa lega ogni Pokémon a uno di essi.")
+    lines.append("   Strutture:")
+    lines.append("     - PASSIVE_LIBRARY[key] = { name, effect, meta, slotPool }")
+    lines.append("         slotPool: slot dove la passiva HA SENSO per la sua natura")
+    lines.append("     - POKEMON_PASSIVE[id] = { key, activeSlots: [...1-2 slot] }")
+    lines.append("         activeSlots: scelti DAL slotPool dell'archetipo,")
+    lines.append("         determinisitcamente per dare varieta'")
     lines.append("   ")
     lines.append("   Generato da scripts/gen_movesets_passives.py")
     lines.append("   ============================================================ */")
@@ -679,28 +731,36 @@ def write_passives_js(rows, out_path='js/data/passives.js'):
     lines.append("export const PASSIVE_LIBRARY = {")
     for key, p in PASSIVE_LIB.items():
         meta_json = json.dumps(p['meta'])
-        slots_str = ', '.join("'" + s + "'" for s in p['active_slots'])
+        pool_str = ', '.join("'" + s + "'" for s in p['pool'])
         lines.append(f"  '{key}': {{")
-        lines.append(f"    name:        '{p['name']}',")
-        lines.append(f"    effect:      \"{p['effect']}\",")
-        lines.append(f"    activeSlots: [{slots_str}],")
-        lines.append(f"    meta:        {meta_json},")
+        lines.append(f"    name:     '{p['name']}',")
+        lines.append(f"    effect:   \"{p['effect']}\",")
+        lines.append(f"    slotPool: [{pool_str}],")
+        lines.append(f"    meta:     {meta_json},")
         lines.append("  },")
     lines.append("};")
     lines.append("")
-    lines.append("/** Mappa Pokémon → chiave nell'archetipo. */")
+    lines.append("/** Mappa Pokémon → { key, activeSlots }. */")
     lines.append("export const POKEMON_PASSIVE = {")
     for r in rows:
-        lines.append(f"  {r['id']}: '{r['passive_key']}',   // {r['name_it']}")
+        slots_str = ', '.join("'" + s + "'" for s in r['active_slots'])
+        lines.append(f"  {r['id']}: {{ key: '{r['passive_key']}', activeSlots: [{slots_str}] }},   // {r['name_it']}")
     lines.append("};")
     lines.append("")
-    lines.append("/** Helper: restituisce la passiva di un Pokémon o null. */")
+    lines.append("/** Helper: restituisce la passiva di un Pokémon o null.")
+    lines.append("    Forma compatibile: { key, name, effect, activeSlots, meta }. */")
     lines.append("export function getPassive(pokemonId) {")
-    lines.append("  const key = POKEMON_PASSIVE[pokemonId];")
-    lines.append("  if (!key) return null;")
-    lines.append("  const p = PASSIVE_LIBRARY[key];")
-    lines.append("  if (!p) return null;")
-    lines.append("  return { key, ...p };")
+    lines.append("  const entry = POKEMON_PASSIVE[pokemonId];")
+    lines.append("  if (!entry) return null;")
+    lines.append("  const lib = PASSIVE_LIBRARY[entry.key];")
+    lines.append("  if (!lib) return null;")
+    lines.append("  return {")
+    lines.append("    key:         entry.key,")
+    lines.append("    name:        lib.name,")
+    lines.append("    effect:      lib.effect,")
+    lines.append("    meta:        lib.meta,")
+    lines.append("    activeSlots: entry.activeSlots,")
+    lines.append("  };")
     lines.append("}")
     lines.append("")
     lines.append("/** Helper: true se la passiva si attiva nella slot indicata. */")
@@ -738,6 +798,8 @@ def main():
         base1, base2, finisher = pick_moves(pid, movepool)
         passive_key = POKEMON_PASSIVE.get(pid, 'tecnico')
         passive     = PASSIVE_LIB[passive_key]
+        # Slot per QUESTO pokemon, scelti deterministicamente dal pool dell'archetipo
+        active_slots = pick_combo_for_pokemon(pid, passive_key)
         name_en, name_it = name_map.get(pid, (f'#{pid}', f'#{pid}'))
         rows.append({
             'id':             pid,
@@ -751,6 +813,7 @@ def main():
             'passive_key':    passive_key,
             'passive_name':   passive['name'],
             'passive_effect': passive['effect'],
+            'active_slots':   active_slots,
         })
 
     # Output

@@ -7,7 +7,7 @@ import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non dispon
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState }         from './data/state.js?v=4';
-import { MOVESETS }                    from './data/movesets.js?v=2';
+import { MOVESETS }                    from './data/movesets.js?v=3';
 import { getSummonablePool, PULL_RATES, tierLabel } from './data/rarity.js';
 import { typeLabel }                                from './data/types.js';
 

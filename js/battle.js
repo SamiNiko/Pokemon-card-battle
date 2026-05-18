@@ -10,11 +10,11 @@ import { getState, getActiveTeam, getEquipped } from './data/state.js?v=4';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
-import { MOVESETS }                            from './data/movesets.js?v=2';
+import { MOVESETS }                            from './data/movesets.js?v=3';
 import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
-import { openCardModal }                       from './data/card-modal.js?v=4';
+import { openCardModal }                       from './data/card-modal.js?v=5';
 import { SFX }                                 from './data/sfx.js';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */

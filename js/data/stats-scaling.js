@@ -18,7 +18,8 @@
    moltiplicazione applicata sopra a questa.
    ============================================================ */
 
-import { getRarity } from './rarity.js';
+import { getRarity }                from './rarity.js';
+import { getLevel, MAX_LEVEL }       from './state.js?v=4';
 
 /**
  * Moltiplicatori per rarità:
@@ -40,21 +41,36 @@ const MULT = {
 
 const ROUND = x => Math.round(x);
 
-/** Restituisce le stats SCALATE per il Pokemon (in base alla sua rarità).
+/** Bonus stats per livello: LV1=+0%, LV2=+5%, ..., LV5=+20%.
+ *  I leggendari NON ricevono questo bonus (sono già forti di base). */
+const LEVEL_BOOST = [1.00, 1.05, 1.10, 1.15, 1.20];
+
+/** Restituisce le stats SCALATE per il Pokemon (in base alla sua rarità + livello).
  *  Non muta il pokemon originale — ritorna un oggetto nuovo `{ hp, atk, def, spAtk, spDef, speed }`.
  *  Usa questo invece di `pkmn.stats` in TUTTO il codice del gameplay e visualizzazione. */
 export function getScaledStats(pkmn) {
   const s = pkmn?.stats ?? {};
   const rarity = getRarity(pkmn?.id);
   const m = MULT[rarity] ?? MULT.common;
+  // I leggendari NON ricevono il level boost (sono già forti di base — niente costellazione)
+  const level = rarity === 'legendary' ? MAX_LEVEL : getLevel(pkmn?.id ?? 0);
+  const boost = rarity === 'legendary' ? 1.0 : (LEVEL_BOOST[level - 1] ?? 1.0);
   return {
-    hp:    ROUND((s.hp    ?? 0) * m.tank),
-    atk:   ROUND((s.atk   ?? 0) * m.atk),
-    def:   ROUND((s.def   ?? 0) * m.tank),
-    spAtk: ROUND((s.spAtk ?? 0) * m.atk),
-    spDef: ROUND((s.spDef ?? 0) * m.tank),
-    speed: ROUND((s.speed ?? 0) * m.speed),
+    hp:    ROUND((s.hp    ?? 0) * m.tank * boost),
+    atk:   ROUND((s.atk   ?? 0) * m.atk  * boost),
+    def:   ROUND((s.def   ?? 0) * m.tank * boost),
+    spAtk: ROUND((s.spAtk ?? 0) * m.atk  * boost),
+    spDef: ROUND((s.spDef ?? 0) * m.tank * boost),
+    speed: ROUND((s.speed ?? 0) * m.speed),     // VEL non scala né con rarità né con livello
   };
+}
+
+/** Display-friendly: ritorna il livello come label "LV. 30" o "LV. MAX" per leggendari. */
+export function levelLabel(pokemonId) {
+  const rarity = getRarity(pokemonId);
+  if (rarity === 'legendary') return 'LV. MAX';
+  const lvl = getLevel(pokemonId);
+  return `LV. ${lvl * 10}`;
 }
 
 /** Restituisce i moltiplicatori per una rarità (utility per UI/debug). */

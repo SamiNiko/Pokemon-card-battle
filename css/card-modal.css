@@ -310,6 +310,20 @@
   letter-spacing: 0.08em;
   color: var(--text-muted);
 }
+.detail-rarity__level {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(255, 203, 5, 0.12);
+  border: 1px solid rgba(255, 203, 5, 0.45);
+  border-radius: 999px;
+  padding: 2px 8px;
+  vertical-align: middle;
+}
 .detail-rarity--pseudo   .detail-rarity__stars { color: #5ee8d8; text-shadow: 0 0 12px rgba(94,232,216,0.7); }
 .detail-rarity--epic     .detail-rarity__stars { color: #f5d050; text-shadow: 0 0 10px rgba(245,208,80,0.6); }
 .detail-rarity--rare     .detail-rarity__stars { color: #c8a8ff; text-shadow: 0 0 8px  rgba(200,168,255,0.5); }

@@ -6,7 +6,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState }         from './data/state.js?v=4';
+import { getState, saveState, addPokemonOrLevelUp } from './data/state.js?v=4';
 import { MOVESETS }                    from './data/movesets.js?v=3';
 import { getSummonablePool, PULL_RATES, tierLabel } from './data/rarity.js';
 import { typeLabel }                                from './data/types.js';
@@ -129,9 +129,14 @@ const getGems   = ()     => gs.gems ?? 0;
 const setGems   = n      => { gs.gems = n; saveState(); updateWallet(); };
 const spendGems = amount => setGems(Math.max(0, getGems() - amount));
 
+/** Aggiunge o livella-su un Pokemon e ritorna info sullo stato (per UI/animazioni).
+ *  Forma: { gained, leveledUp, alreadyMax, newLevel } — usa per mostrare label "+1 LV"
+ *  oppure "Nuovo!" nel reveal del summon. */
 function addToOwned(id) {
-  if (!gs.owned.includes(id)) gs.owned.push(id);
-  saveState();
+  const result = addPokemonOrLevelUp(id);
+  // Sincronizza la copia locale di gs.owned (gs è cache)
+  gs = getState();
+  return result;
 }
 
 function updateWallet() {
@@ -433,7 +438,12 @@ async function handlePull(n) {
 
   const results = doPulls(n);
   spendGems(cost);
-  results.forEach(r => addToOwned(r.id));
+  // Aggiungi o livella-su ogni Pokemon. Salvo l'esito su ogni entry così il
+  // reveal può mostrare "Nuovo!" o "LV +1" appropriatamente.
+  results.forEach(r => {
+    const outcome = addToOwned(r.id);
+    r.outcome = outcome;   // { gained, leveledUp, alreadyMax, newLevel }
+  });
 
   pullAll   = results;
   pullQueue = [...results];

@@ -30,6 +30,11 @@ const DEFAULT_STATE = {
   /* ---- Progressi ---- */
   owned: [],                          // vuoto all'inizio: si popola via summon / storia
   stars: {},
+  /* Livelli per Pokémon: { pokemonId: 1..5 }.
+     Si guadagna 1 livello quando peschi un duplicato dal summon (max 5).
+     I leggendari sono sempre LV.MAX (no scaling — vedi stats-scaling.js).
+     Display: LV 10/20/30/40/50 (livello × 10). */
+  levels: {},
   teams: [[], [], [], []],            // 4 slot team (1, 2, 3, 4) — sempre 4
   activeTeam: 0,                      // indice del team correntemente visualizzato/usato in battaglia
   /* gearByTeam: 4 mappe { pokemonId: itemId }, una per ogni team slot.
@@ -178,6 +183,55 @@ export function setActiveTeam(slot) {
 
 export function isOwned(id) {
   return getState().owned.includes(id);
+}
+
+/* ================================================================
+   LIVELLI POKEMON (1..5, mostrati come LV 10/20/30/40/50)
+   ================================================================
+   - Default 1 quando un Pokemon viene ottenuto per la prima volta
+   - Sale di 1 ad ogni duplicato (max 5)
+   - I leggendari sono SEMPRE livello 5 (bypassato in stats-scaling).
+*/
+export const MAX_LEVEL = 5;
+
+/** Ritorna il livello 1..5 di un Pokemon. */
+export function getLevel(pokemonId) {
+  const s = getState();
+  const l = s.levels?.[pokemonId] ?? 1;
+  return Math.max(1, Math.min(MAX_LEVEL, l));
+}
+
+/** Setta esplicitamente il livello (clamp 1..5). */
+export function setLevel(pokemonId, level) {
+  const s = getState();
+  if (!s.levels) s.levels = {};
+  s.levels[pokemonId] = Math.max(1, Math.min(MAX_LEVEL, level));
+  saveState();
+}
+
+/** Aggiunge un Pokemon all'inventario.
+ *  - Se non posseduto: lo aggiunge a `owned` e mette livello 1.
+ *  - Se già posseduto e livello < MAX: livello +1.
+ *  - Se già posseduto e livello = MAX: nessun cambio (ritorna { alreadyMax: true }).
+ *  Ritorna { gained, leveledUp, alreadyMax, newLevel }. */
+export function addPokemonOrLevelUp(pokemonId) {
+  const s = getState();
+  if (!s.owned)  s.owned  = [];
+  if (!s.levels) s.levels = {};
+
+  if (!s.owned.includes(pokemonId)) {
+    s.owned.push(pokemonId);
+    s.levels[pokemonId] = 1;
+    saveState();
+    return { gained: true, leveledUp: false, alreadyMax: false, newLevel: 1 };
+  }
+  const cur = s.levels[pokemonId] ?? 1;
+  if (cur < MAX_LEVEL) {
+    s.levels[pokemonId] = cur + 1;
+    saveState();
+    return { gained: false, leveledUp: true, alreadyMax: false, newLevel: cur + 1 };
+  }
+  return { gained: false, leveledUp: false, alreadyMax: true, newLevel: cur };
 }
 
 /* ================================================================

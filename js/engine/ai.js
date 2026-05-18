@@ -8,7 +8,7 @@
 */
 
 import { getTypeEffectiveness } from '../data/types.js';
-import { getScaledStats }       from '../data/stats-scaling.js';
+import { getScaledStats }       from '../data/stats-scaling.js?v=2';
 
 const FRONT_SLOTS = ['front-left', 'front-center', 'front-right'];
 const ROWS        = ['front', 'back'];
@@ -146,6 +146,5 @@ function estimateDamage(attacker, move, defender) {
   const defS = getScaledStats(defender);
   const atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
   const defStat = move.cat === 'physical' ? defS.def : defS.spDef;
-  // Mirror combat.js: smorzamento 0.5
-  return Math.max(1, Math.round((atkStat / defStat) * move.power * stab * typeEff * 0.5));
+  return Math.max(1, Math.round((atkStat / defStat) * move.power * stab * typeEff));
 }

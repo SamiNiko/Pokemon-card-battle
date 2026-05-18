@@ -8,7 +8,8 @@
    ============================================================ */
 
 import { getTypeEffectiveness } from '../data/types.js';
-import { getScaledStats }       from '../data/stats-scaling.js';
+import { getScaledStats }       from '../data/stats-scaling.js?v=2';
+import { getPassive }           from '../data/passives.js';
 
 const DIRECT_BASE_POWER = 150;
 const ROWS = ['front', 'back'];
@@ -56,7 +57,15 @@ function resolveMove(pkmn, isPlayer, { movesets, selectedMoves, enemySelectedMov
 
 // ---- Calcolo danno con STAB --------------------------------------------
 
-export function calcDamage(attacker, move, defender) {
+/**
+ * Calcola il danno di una mossa, applicando i modificatori delle passive
+ * di attaccante e difensore SE sono attive nelle loro rispettive slot.
+ *
+ * opts.attackerSlot  - slot key dell'attaccante (es. 'front-center')
+ * opts.defenderSlot  - slot key del difensore
+ * opts.isFullHP      - true se il difensore è a HP pieno (per Multiscaglia)
+ */
+export function calcDamage(attacker, move, defender, opts = {}) {
   const stab    = attacker.types.includes(move.type) ? 1.5 : 1.0;
   const typeEff = getTypeEffectiveness(move.type, defender.types);
 
@@ -64,29 +73,82 @@ export function calcDamage(attacker, move, defender) {
     return { damage: 0, typeEff: 1, stab: false, moveType: move.type, category: move.cat };
   }
 
-  // Stats SCALATE per rarità (HP/DEF/SPD molto, ATK/SPA poco). Le base
-  // di PokeAPI da sole sarebbero troppo basse per la nostra fascia HP.
+  // Passive attive (se Pokemon è nello slot giusto)
+  const atkPassive = getActivePassive(attacker, opts.attackerSlot);
+  const defPassive = getActivePassive(defender, opts.defenderSlot);
+
+  // IMMUNITY check: la passiva del difensore può azzerare il danno
+  if (defPassive && isImmune(defPassive.meta, move)) {
+    return { damage: 0, typeEff: 0, stab: false, moveType: move.type, category: move.cat, immuneByPassive: defPassive.name };
+  }
+
+  // Stab effettivo: alcune passive lo raddoppiano (Adattabilità)
+  let effStab = stab;
+  if (atkPassive?.meta?.kind === 'stab_boost' && stab > 1) effStab = atkPassive.meta.mult ?? 2.0;
+
+  // Stats SCALATE per rarità + eventuale boost ATK / debuff DEF (Ultrapotenza)
   const atkS = getScaledStats(attacker);
   const defS = getScaledStats(defender);
-  const atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
-  const defStat = move.cat === 'physical' ? defS.def : defS.spDef;
+  let atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
+  let defStat = move.cat === 'physical' ? defS.def : defS.spDef;
+  if (atkPassive?.meta?.kind === 'atk_boost_def_drop') {
+    atkStat = Math.round(atkStat * (atkPassive.meta.atk_mult ?? 1));
+  }
+  if (defPassive?.meta?.kind === 'atk_boost_def_drop') {
+    defStat = Math.round(defStat * (defPassive.meta.def_mult ?? 1));
+  }
 
-  // Smorzamento /2 per evitare oneshot: in Pokemon ufficiale la formula
-  // ha un fattore livello/50 di smorzamento che qui non abbiamo.
+  let damage = (atkStat / defStat) * move.power * effStab * typeEff;
+
+  // OUTGOING modifiers (boost danno dell'attaccante)
+  if (atkPassive) {
+    const m = atkPassive.meta;
+    if (m.kind === 'type_boost'       && m.type  === move.type)               damage *= (m.mult ?? 1);
+    if (m.kind === 'type_boost_multi' && (m.types ?? []).includes(move.type)) damage *= (m.mult ?? 1);
+    if (m.kind === 'base_move_boost'  && !move.isFinisher)                    damage *= (m.mult ?? 1);
+    if (m.kind === 'finisher_boost'   &&  move.isFinisher)                    damage *= (m.mult ?? 1);
+  }
+
+  // INCOMING modifiers (resistenze del difensore)
+  if (defPassive) {
+    const m = defPassive.meta;
+    if (m.kind === 'type_resist' && (m.types ?? []).includes(move.type))      damage *= (m.mult ?? 1);
+    if (m.kind === 'cat_resist'  &&  m.cat === move.cat)                      damage *= (m.mult ?? 1);
+    if (m.kind === 'first_hit_resist' && opts.isFullHP)                       damage *= (1 - (m.amount ?? 0));
+  }
+
   return {
-    damage:   Math.max(1, Math.round((atkStat / defStat) * move.power * stab * typeEff * 0.5)),
+    damage:   Math.max(1, Math.round(damage)),
     typeEff,
-    stab:     stab > 1,
+    stab:     effStab > 1,
     moveType: move.type,
     category: move.cat,
+    atkPassive: atkPassive?.name ?? null,
+    defPassive: defPassive?.name ?? null,
   };
+}
+
+/** True se la passiva del difensore rende il Pokemon immune a questa mossa. */
+function isImmune(meta, move) {
+  if (!meta || meta.kind !== 'immune') return false;
+  if ((meta.types ?? []).includes(move.type)) return true;
+  return false;
+}
+
+/** Restituisce la passiva di un Pokemon SE attiva nella slot corrente. */
+function getActivePassive(pkmn, slotKey) {
+  if (!pkmn || !slotKey) return null;
+  const p = getPassive(pkmn.id);
+  if (!p) return null;
+  if (!p.activeSlots.includes(slotKey)) return null;
+  return p;
 }
 
 export function calcDirectDamage(attacker, move) {
   if (move.cat === 'status' || move.power === 0) return 0;
   const atkS = getScaledStats(attacker);
   const atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
-  return Math.max(1, Math.round((atkStat / 100) * DIRECT_BASE_POWER * 0.5));
+  return Math.max(1, Math.round((atkStat / 100) * DIRECT_BASE_POWER));
 }
 
 // ---- Risoluzione turno -------------------------------------------------
@@ -164,8 +226,16 @@ export function resolveTurn({
       const target = findTarget(defenderField, col, defSide);
 
       if (target) {
-        const res    = calcDamage(attacker, move, target.pkmn);
-        const prevHP = getHP(defSide, target.pkmn.id, target.pkmn.stats.hp);
+        // Calcolo passive-aware: serve sapere se il bersaglio è a HP pieno
+        // (per Multiscaglia) e gli slot di entrambi
+        const maxHPDef  = getScaledStats(target.pkmn).hp;
+        const prevHP    = getHP(defSide, target.pkmn.id, maxHPDef);
+        const isFullHP  = prevHP >= maxHPDef;
+        const res       = calcDamage(attacker, move, target.pkmn, {
+          attackerSlot: slotKey,
+          defenderSlot: target.slotKey,
+          isFullHP,
+        });
         const newHP  = Math.max(0, prevHP - res.damage);
         setHP(defSide, target.pkmn.id, newHP);
         if (newHP === 0) markDead(defSide, target.pkmn.id);
@@ -187,8 +257,12 @@ export function resolveTurn({
           isFinisher:    move.isFinisher ?? false,
           isAuto:        move.isAuto    ?? false,
           targetHPAfter: newHP,
-          targetMaxHP:   target.pkmn.stats.hp,
+          targetMaxHP:   maxHPDef,
           targetDied:    newHP === 0,
+          // Marker per eventuale animazione/log dedicato
+          atkPassive:    res.atkPassive,
+          defPassive:    res.defPassive,
+          immuneByPassive: res.immuneByPassive ?? null,
         });
       } else {
         const dmg = calcDirectDamage(attacker, move);

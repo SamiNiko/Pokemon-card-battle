@@ -30,12 +30,12 @@ import { getRarity } from './rarity.js';
  * non hanno costellazione che li potenzi nel tempo.
  */
 const MULT = {
-  common:    { tank: 3.5, atk: 1.0, speed: 1.0 },
-  uncommon:  { tank: 3.8, atk: 1.1, speed: 1.0 },
-  rare:      { tank: 4.2, atk: 1.2, speed: 1.0 },
-  epic:      { tank: 4.6, atk: 1.4, speed: 1.0 },
-  pseudo:    { tank: 5.0, atk: 1.5, speed: 1.0 },
-  legendary: { tank: 6.5, atk: 1.9, speed: 1.0 },  // NETTO DISTACCO
+  common:    { tank: 2.8, atk: 1.5, speed: 1.0 },
+  uncommon:  { tank: 3.0, atk: 1.7, speed: 1.0 },
+  rare:      { tank: 3.2, atk: 2.0, speed: 1.0 },
+  epic:      { tank: 3.4, atk: 2.5, speed: 1.0 },  // tarato: Charizard vs Venusaur super-eff = oneshot
+  pseudo:    { tank: 3.7, atk: 2.8, speed: 1.0 },
+  legendary: { tank: 4.5, atk: 3.5, speed: 1.0 },  // NETTO DISTACCO
 };
 
 const ROUND = x => Math.round(x);

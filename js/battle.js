@@ -16,7 +16,7 @@ import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js?v=8';
 import { SFX }                                 from './data/sfx.js';
-import { getScaledStats }                      from './data/stats-scaling.js';
+import { getScaledStats }                      from './data/stats-scaling.js?v=2';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -1044,6 +1044,9 @@ async function playEvents(events) {
                  : ev.typeEff < 1  ? 'weak'
                  : 'attack';
       log(`${fin}${pkmnName} attacca ${defName} — ${ev.damage > 0 ? `−${ev.damage} HP` : 'nessun danno'}${effLabel}`, kind);
+      if (ev.atkPassive)      log(`✨ ${pkmnName}: passiva ${ev.atkPassive} attiva`, 'item');
+      if (ev.defPassive)      log(`🛡 ${defName}: passiva ${ev.defPassive} attiva`, 'item');
+      if (ev.immuneByPassive) log(`∅ ${defName} immune grazie a ${ev.immuneByPassive}`, 'immune');
 
       if (defEl) {
         // Shake + flash overlay sul bersaglio

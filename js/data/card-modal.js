@@ -194,7 +194,19 @@ export function closeCardModal() {
   document.body.style.overflow = '';
 }
 
-/* ---- PAGINA 1: rarità + nome + tipi + stats ------------------------ */
+/* ---- PAGINA 1: rarità + nome + tipi + ruolo + stats + meta -------- */
+// Colori fissi per stat — distingue a colpo d'occhio phys vs spec senza
+// dover leggere la label. ATK (fisica) e SP.A (speciale) hanno colori
+// nettamente diversi così la categoria del Pokemon è subito chiara.
+const STAT_COLORS = {
+  HP:    '#4dad5b',   // verde (vitalità)
+  ATK:   '#ee1515',   // rosso (attacco fisico)
+  'SP.A':'#a040a0',   // viola (attacco speciale)
+  DEF:   '#6890f0',   // blu (difesa fisica)
+  'SP.D':'#5ee8d8',   // ciano (difesa speciale)
+  VEL:   '#ffcb05',   // giallo (velocità)
+};
+
 function buildPage1HTML(entry, pkmn) {
   const starsStr  = '★'.repeat(tierStars(entry.rarity));
   const rarityLbl = tierLabel(entry.rarity);
@@ -205,8 +217,6 @@ function buildPage1HTML(entry, pkmn) {
 
   const s = pkmn.stats ?? {};
   // Categoria attacco del Pokemon: physical se ATK >= SP.ATK, altrimenti special.
-  // Tutte le mosse del Pokemon hanno questa categoria (cfr. movesets.js).
-  // Quindi mostro SOLO la stat di attacco rilevante (ATK o SP.A), non entrambe.
   const isPhys = (s.atk ?? 0) >= (s.spAtk ?? 0);
   const atkRow = isPhys
     ? { label: 'ATK',  val: s.atk   ?? 0 }
@@ -218,19 +228,27 @@ function buildPage1HTML(entry, pkmn) {
     { label: 'SP.D',  val: s.spDef ?? 0 },
     { label: 'VEL',   val: s.speed ?? 0 },
   ].map(({ label, val }) => {
-    const barColor = val >= 110 ? '#f5d050'
-                   : val >= 80  ? '#78c850'
-                   : val >= 50  ? '#6890f0'
-                   : '#a8b3cf';
+    const color = STAT_COLORS[label] ?? '#a8b3cf';
     return `
       <div class="detail-stat">
-        <span class="detail-stat__label">${label}</span>
+        <span class="detail-stat__label" style="color:${color}">${label}</span>
         <div class="detail-stat__bar-wrap">
-          <div class="detail-stat__bar" style="background:${barColor}" data-val="${val}"></div>
+          <div class="detail-stat__bar" style="background:${color}" data-val="${val}"></div>
         </div>
         <span class="detail-stat__val">${val}</span>
       </div>`;
   }).join('');
+
+  // ---- Ruolo (cat + role label) ----
+  const roleIcon  = isPhys ? '⚔' : '✨';
+  const roleLabel = isPhys ? 'Attaccante Fisico' : 'Attaccante Speciale';
+  const roleColor = isPhys ? '#ee1515' : '#a040a0';
+
+  // ---- Meta: BST totale, altezza, peso ----
+  const bst    = (s.hp ?? 0) + (s.atk ?? 0) + (s.def ?? 0) + (s.spAtk ?? 0) + (s.spDef ?? 0) + (s.speed ?? 0);
+  // PokeAPI: height in decimetri, weight in ettogrammi
+  const heightM = pkmn.height ? (pkmn.height / 10).toFixed(1) : '—';
+  const weightK = pkmn.weight ? (pkmn.weight / 10).toFixed(1) : '—';
 
   return `
     <div class="detail-rarity detail-rarity--${entry.rarity}">
@@ -239,8 +257,29 @@ function buildPage1HTML(entry, pkmn) {
     </div>
     <div class="detail-name">${pkmn.name}</div>
     <div class="detail-types">${typeBadges}</div>
+
+    <div class="detail-role" style="--role-color:${roleColor}">
+      <span class="detail-role__icon">${roleIcon}</span>
+      <span class="detail-role__label">${roleLabel}</span>
+    </div>
+
     <span class="detail-section-label">Base Stats</span>
     <div class="detail-stats">${statRows}</div>
+
+    <div class="detail-meta">
+      <div class="detail-meta__item">
+        <span class="detail-meta__label">Totale</span>
+        <span class="detail-meta__value detail-meta__value--bst">${bst}</span>
+      </div>
+      <div class="detail-meta__item">
+        <span class="detail-meta__label">Altezza</span>
+        <span class="detail-meta__value">${heightM} m</span>
+      </div>
+      <div class="detail-meta__item">
+        <span class="detail-meta__label">Peso</span>
+        <span class="detail-meta__value">${weightK} kg</span>
+      </div>
+    </div>
   `;
 }
 

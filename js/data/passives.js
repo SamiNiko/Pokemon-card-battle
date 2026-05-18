@@ -136,152 +136,152 @@ export const PASSIVE_LIBRARY = {
 
 /** Mappa Pokémon → { key, activeSlots }. */
 export const POKEMON_PASSIVE = {
-  1: { key: 'velenpunta', activeSlots: ['back-center'] },   // Bulbasaur
-  2: { key: 'velenpunta', activeSlots: ['back-left'] },   // Ivysaur
-  3: { key: 'velenpunta', activeSlots: ['back-right'] },   // Venusaur
-  4: { key: 'siccita', activeSlots: ['back-center'] },   // Charmander
-  5: { key: 'siccita', activeSlots: ['back-left'] },   // Charmeleon
-  6: { key: 'siccita', activeSlots: ['back-right'] },   // Charizard
-  7: { key: 'pioggerellina', activeSlots: ['back-center'] },   // Squirtle
-  8: { key: 'pioggerellina', activeSlots: ['back-left'] },   // Wartortle
-  9: { key: 'pioggerellina', activeSlots: ['back-right'] },   // Blastoise
-  10: { key: 'corazza', activeSlots: ['front-center'] },   // Caterpie
-  11: { key: 'corazza', activeSlots: ['front-left'] },   // Metapod
-  12: { key: 'fortunone', activeSlots: ['back-center'] },   // Butterfree
-  13: { key: 'velenpunta', activeSlots: ['front-center'] },   // Weedle
-  14: { key: 'corazza', activeSlots: ['front-right'] },   // Kakuna
-  15: { key: 'velenpunta', activeSlots: ['back-center', 'back-left'] },   // Beedrill
-  16: { key: 'velocitascatto', activeSlots: ['back-left'] },   // Pidgey
-  17: { key: 'velocitascatto', activeSlots: ['back-right'] },   // Pidgeotto
-  18: { key: 'velocitascatto', activeSlots: ['back-center'] },   // Pidgeot
-  19: { key: 'tecnico', activeSlots: ['front-center'] },   // Rattata
-  20: { key: 'tecnico', activeSlots: ['front-left'] },   // Raticate
-  21: { key: 'tecnico', activeSlots: ['front-right'] },   // Spearow
-  22: { key: 'velocitascatto', activeSlots: ['front-left'] },   // Fearow
-  23: { key: 'velenpunta', activeSlots: ['back-center', 'back-right'] },   // Ekans
+  1: { key: 'velenpunta', activeSlots: ['back-center', 'back-left'] },   // Bulbasaur
+  2: { key: 'velenpunta', activeSlots: ['back-center', 'back-right'] },   // Ivysaur
+  3: { key: 'velenpunta', activeSlots: ['back-center', 'front-center'] },   // Venusaur
+  4: { key: 'siccita', activeSlots: ['back-center', 'back-left'] },   // Charmander
+  5: { key: 'siccita', activeSlots: ['back-center', 'back-right'] },   // Charmeleon
+  6: { key: 'siccita', activeSlots: ['back-center', 'front-center'] },   // Charizard
+  7: { key: 'pioggerellina', activeSlots: ['back-center', 'back-left'] },   // Squirtle
+  8: { key: 'pioggerellina', activeSlots: ['back-center', 'back-right'] },   // Wartortle
+  9: { key: 'pioggerellina', activeSlots: ['back-center', 'front-center'] },   // Blastoise
+  10: { key: 'corazza', activeSlots: ['front-center', 'front-left'] },   // Caterpie
+  11: { key: 'corazza', activeSlots: ['front-center', 'front-right'] },   // Metapod
+  12: { key: 'fortunone', activeSlots: ['back-center', 'back-left'] },   // Butterfree
+  13: { key: 'velenpunta', activeSlots: ['back-left', 'back-right'] },   // Weedle
+  14: { key: 'corazza', activeSlots: ['front-left', 'front-right'] },   // Kakuna
+  15: { key: 'velenpunta', activeSlots: ['back-left', 'front-center'] },   // Beedrill
+  16: { key: 'velocitascatto', activeSlots: ['back-left', 'back-right'] },   // Pidgey
+  17: { key: 'velocitascatto', activeSlots: ['back-center', 'back-left'] },   // Pidgeotto
+  18: { key: 'velocitascatto', activeSlots: ['back-left', 'front-left'] },   // Pidgeot
+  19: { key: 'tecnico', activeSlots: ['front-center', 'front-left'] },   // Rattata
+  20: { key: 'tecnico', activeSlots: ['front-center', 'front-right'] },   // Raticate
+  21: { key: 'tecnico', activeSlots: ['back-center', 'front-center'] },   // Spearow
+  22: { key: 'velocitascatto', activeSlots: ['back-left', 'front-right'] },   // Fearow
+  23: { key: 'velenpunta', activeSlots: ['back-right', 'front-center'] },   // Ekans
   24: { key: 'pressione', activeSlots: ['front-center'] },   // Arbok
-  25: { key: 'statico', activeSlots: ['front-center'] },   // Pikachu
-  26: { key: 'statico', activeSlots: ['front-left'] },   // Raichu
+  25: { key: 'statico', activeSlots: ['front-center', 'front-left'] },   // Pikachu
+  26: { key: 'statico', activeSlots: ['front-center', 'front-right'] },   // Raichu
   27: { key: 'corazza', activeSlots: ['front-center', 'front-left'] },   // Sandshrew
-  28: { key: 'sabbiainfinita', activeSlots: ['back-center'] },   // Sandslash
-  29: { key: 'velenpunta', activeSlots: ['back-center', 'front-center'] },   // Nidoran♀
-  30: { key: 'velenpunta', activeSlots: ['back-left', 'back-right'] },   // Nidorina
+  28: { key: 'sabbiainfinita', activeSlots: ['back-center', 'back-left'] },   // Sandslash
+  29: { key: 'velenpunta', activeSlots: ['back-center', 'back-left'] },   // Nidoran♀
+  30: { key: 'velenpunta', activeSlots: ['back-center', 'back-right'] },   // Nidorina
   31: { key: 'corazza', activeSlots: ['front-center', 'front-right'] },   // Nidoqueen
-  32: { key: 'velenpunta', activeSlots: ['back-left', 'front-center'] },   // Nidoran♂
-  33: { key: 'velenpunta', activeSlots: ['back-right', 'front-center'] },   // Nidorino
+  32: { key: 'velenpunta', activeSlots: ['back-center', 'front-center'] },   // Nidoran♂
+  33: { key: 'velenpunta', activeSlots: ['back-left', 'back-right'] },   // Nidorino
   34: { key: 'ultrapotenza', activeSlots: ['front-center'] },   // Nidoking
-  35: { key: 'specchiomagico', activeSlots: ['back-center'] },   // Clefairy
-  36: { key: 'specchiomagico', activeSlots: ['back-left'] },   // Clefable
-  37: { key: 'siccita', activeSlots: ['front-center'] },   // Vulpix
-  38: { key: 'siccita', activeSlots: ['back-center', 'back-left'] },   // Ninetales
-  39: { key: 'specchiomagico', activeSlots: ['back-right'] },   // Jigglypuff
-  40: { key: 'specchiomagico', activeSlots: ['front-center'] },   // Wigglytuff
-  41: { key: 'levitazione', activeSlots: ['front-left'] },   // Zubat
-  42: { key: 'levitazione', activeSlots: ['front-right'] },   // Golbat
-  43: { key: 'velenpunta', activeSlots: ['back-center'] },   // Oddish
-  44: { key: 'velenpunta', activeSlots: ['back-left'] },   // Gloom
-  45: { key: 'velenpunta', activeSlots: ['back-right'] },   // Vileplume
-  46: { key: 'tecnico', activeSlots: ['back-center'] },   // Paras
+  35: { key: 'specchiomagico', activeSlots: ['back-center', 'back-left'] },   // Clefairy
+  36: { key: 'specchiomagico', activeSlots: ['back-center', 'back-right'] },   // Clefable
+  37: { key: 'siccita', activeSlots: ['back-left', 'back-right'] },   // Vulpix
+  38: { key: 'siccita', activeSlots: ['back-left', 'front-center'] },   // Ninetales
+  39: { key: 'specchiomagico', activeSlots: ['back-center', 'front-center'] },   // Jigglypuff
+  40: { key: 'specchiomagico', activeSlots: ['back-left', 'back-right'] },   // Wigglytuff
+  41: { key: 'levitazione', activeSlots: ['front-left', 'front-right'] },   // Zubat
+  42: { key: 'levitazione', activeSlots: ['back-left', 'front-left'] },   // Golbat
+  43: { key: 'velenpunta', activeSlots: ['back-left', 'front-center'] },   // Oddish
+  44: { key: 'velenpunta', activeSlots: ['back-right', 'front-center'] },   // Gloom
+  45: { key: 'velenpunta', activeSlots: ['back-center', 'back-left'] },   // Vileplume
+  46: { key: 'tecnico', activeSlots: ['front-left', 'front-right'] },   // Paras
   47: { key: 'pressione', activeSlots: ['front-left'] },   // Parasect
-  48: { key: 'velenpunta', activeSlots: ['front-center'] },   // Venonat
-  49: { key: 'velenpunta', activeSlots: ['back-center', 'back-left'] },   // Venomoth
-  50: { key: 'velocitascatto', activeSlots: ['front-right'] },   // Diglett
-  51: { key: 'velocitascatto', activeSlots: ['back-left', 'back-right'] },   // Dugtrio
-  52: { key: 'fortunone', activeSlots: ['back-left'] },   // Meowth
-  53: { key: 'tecnico', activeSlots: ['front-center', 'front-left'] },   // Persian
+  48: { key: 'velenpunta', activeSlots: ['back-center', 'back-right'] },   // Venonat
+  49: { key: 'velenpunta', activeSlots: ['back-center', 'front-center'] },   // Venomoth
+  50: { key: 'velocitascatto', activeSlots: ['back-center', 'back-right'] },   // Diglett
+  51: { key: 'velocitascatto', activeSlots: ['back-right', 'front-left'] },   // Dugtrio
+  52: { key: 'fortunone', activeSlots: ['back-center', 'back-right'] },   // Meowth
+  53: { key: 'tecnico', activeSlots: ['back-center', 'front-left'] },   // Persian
   54: { key: 'pressione', activeSlots: ['front-right'] },   // Psyduck
-  55: { key: 'pressione', activeSlots: ['front-center', 'front-left'] },   // Golduck
+  55: { key: 'pressione', activeSlots: ['front-center'] },   // Golduck
   56: { key: 'ultrapotenza', activeSlots: ['front-left'] },   // Mankey
   57: { key: 'ultrapotenza', activeSlots: ['front-right'] },   // Primeape
-  58: { key: 'siccita', activeSlots: ['back-center', 'back-right'] },   // Growlithe
-  59: { key: 'siccita', activeSlots: ['back-center', 'front-center'] },   // Arcanine
-  60: { key: 'pioggerellina', activeSlots: ['front-center'] },   // Poliwag
-  61: { key: 'pioggerellina', activeSlots: ['back-center', 'back-left'] },   // Poliwhirl
-  62: { key: 'ultrapotenza', activeSlots: ['front-center', 'front-left'] },   // Poliwrath
-  63: { key: 'pressione', activeSlots: ['front-center', 'front-right'] },   // Abra
-  64: { key: 'specchiomagico', activeSlots: ['back-center', 'back-left'] },   // Kadabra
-  65: { key: 'specchiomagico', activeSlots: ['back-center', 'back-right'] },   // Alakazam
-  66: { key: 'ultrapotenza', activeSlots: ['front-center', 'front-right'] },   // Machop
-  67: { key: 'ultrapotenza', activeSlots: ['front-left', 'front-right'] },   // Machoke
+  58: { key: 'siccita', activeSlots: ['back-right', 'front-center'] },   // Growlithe
+  59: { key: 'siccita', activeSlots: ['back-center', 'back-left'] },   // Arcanine
+  60: { key: 'pioggerellina', activeSlots: ['back-left', 'back-right'] },   // Poliwag
+  61: { key: 'pioggerellina', activeSlots: ['back-left', 'front-center'] },   // Poliwhirl
+  62: { key: 'ultrapotenza', activeSlots: ['front-center'] },   // Poliwrath
+  63: { key: 'pressione', activeSlots: ['front-left'] },   // Abra
+  64: { key: 'specchiomagico', activeSlots: ['back-left', 'front-center'] },   // Kadabra
+  65: { key: 'specchiomagico', activeSlots: ['back-right', 'front-center'] },   // Alakazam
+  66: { key: 'ultrapotenza', activeSlots: ['front-left'] },   // Machop
+  67: { key: 'ultrapotenza', activeSlots: ['front-right'] },   // Machoke
   68: { key: 'ultrapotenza', activeSlots: ['front-center'] },   // Machamp
-  69: { key: 'velenpunta', activeSlots: ['back-center', 'back-right'] },   // Bellsprout
-  70: { key: 'velenpunta', activeSlots: ['back-center', 'front-center'] },   // Weepinbell
-  71: { key: 'velenpunta', activeSlots: ['back-left', 'back-right'] },   // Victreebel
-  72: { key: 'velenpunta', activeSlots: ['back-left', 'front-center'] },   // Tentacool
-  73: { key: 'velenpunta', activeSlots: ['back-right', 'front-center'] },   // Tentacruel
+  69: { key: 'velenpunta', activeSlots: ['back-left', 'back-right'] },   // Bellsprout
+  70: { key: 'velenpunta', activeSlots: ['back-left', 'front-center'] },   // Weepinbell
+  71: { key: 'velenpunta', activeSlots: ['back-right', 'front-center'] },   // Victreebel
+  72: { key: 'velenpunta', activeSlots: ['back-center', 'back-left'] },   // Tentacool
+  73: { key: 'velenpunta', activeSlots: ['back-center', 'back-right'] },   // Tentacruel
   74: { key: 'corazza', activeSlots: ['front-left', 'front-right'] },   // Geodude
-  75: { key: 'corazza', activeSlots: ['front-center'] },   // Graveler
-  76: { key: 'sabbiainfinita', activeSlots: ['back-left'] },   // Golem
-  77: { key: 'siccita', activeSlots: ['back-left', 'back-right'] },   // Ponyta
-  78: { key: 'velocitascatto', activeSlots: ['back-center', 'back-left'] },   // Rapidash
-  79: { key: 'rigenerazione', activeSlots: ['back-center'] },   // Slowpoke
-  80: { key: 'rigenerazione', activeSlots: ['back-left'] },   // Slowbro
-  81: { key: 'corazza', activeSlots: ['front-left'] },   // Magnemite
-  82: { key: 'corazza', activeSlots: ['front-right'] },   // Magneton
-  83: { key: 'tecnico', activeSlots: ['front-center', 'front-right'] },   // Farfetch’d
-  84: { key: 'velocitascatto', activeSlots: ['back-left', 'front-left'] },   // Doduo
-  85: { key: 'velocitascatto', activeSlots: ['back-left', 'front-right'] },   // Dodrio
-  86: { key: 'snownevicata', activeSlots: ['back-center'] },   // Seel
-  87: { key: 'snownevicata', activeSlots: ['back-left'] },   // Dewgong
-  88: { key: 'velenpunta', activeSlots: ['back-center'] },   // Grimer
-  89: { key: 'velenpunta', activeSlots: ['back-left'] },   // Muk
+  75: { key: 'corazza', activeSlots: ['front-center', 'front-left'] },   // Graveler
+  76: { key: 'sabbiainfinita', activeSlots: ['back-center', 'back-right'] },   // Golem
+  77: { key: 'siccita', activeSlots: ['back-center', 'back-right'] },   // Ponyta
+  78: { key: 'velocitascatto', activeSlots: ['back-right', 'front-right'] },   // Rapidash
+  79: { key: 'rigenerazione', activeSlots: ['back-center', 'back-left'] },   // Slowpoke
+  80: { key: 'rigenerazione', activeSlots: ['back-center', 'back-right'] },   // Slowbro
+  81: { key: 'corazza', activeSlots: ['front-center', 'front-right'] },   // Magnemite
+  82: { key: 'corazza', activeSlots: ['front-left', 'front-right'] },   // Magneton
+  83: { key: 'tecnico', activeSlots: ['back-center', 'front-right'] },   // Farfetch’d
+  84: { key: 'velocitascatto', activeSlots: ['back-center', 'front-left'] },   // Doduo
+  85: { key: 'velocitascatto', activeSlots: ['back-center', 'front-right'] },   // Dodrio
+  86: { key: 'snownevicata', activeSlots: ['back-center', 'back-left'] },   // Seel
+  87: { key: 'snownevicata', activeSlots: ['back-center', 'back-right'] },   // Dewgong
+  88: { key: 'velenpunta', activeSlots: ['back-center', 'front-center'] },   // Grimer
+  89: { key: 'velenpunta', activeSlots: ['back-left', 'back-right'] },   // Muk
   90: { key: 'corazza', activeSlots: ['front-center', 'front-left'] },   // Shellder
   91: { key: 'corazza', activeSlots: ['front-center', 'front-right'] },   // Cloyster
-  92: { key: 'levitazione', activeSlots: ['back-left'] },   // Gastly
-  93: { key: 'levitazione', activeSlots: ['back-right'] },   // Haunter
-  94: { key: 'levitazione', activeSlots: ['front-left', 'front-right'] },   // Gengar
+  92: { key: 'levitazione', activeSlots: ['back-right', 'front-left'] },   // Gastly
+  93: { key: 'levitazione', activeSlots: ['back-left', 'front-right'] },   // Haunter
+  94: { key: 'levitazione', activeSlots: ['back-right', 'front-right'] },   // Gengar
   95: { key: 'corazza', activeSlots: ['front-left', 'front-right'] },   // Onix
-  96: { key: 'pressione', activeSlots: ['front-left', 'front-right'] },   // Drowzee
+  96: { key: 'pressione', activeSlots: ['front-right'] },   // Drowzee
   97: { key: 'pressione', activeSlots: ['front-center'] },   // Hypno
   98: { key: 'ultrapotenza', activeSlots: ['front-left'] },   // Krabby
   99: { key: 'ultrapotenza', activeSlots: ['front-right'] },   // Kingler
-  100: { key: 'statico', activeSlots: ['front-right'] },   // Voltorb
-  101: { key: 'velocitascatto', activeSlots: ['back-center', 'back-right'] },   // Electrode
-  102: { key: 'rigenerazione', activeSlots: ['back-right'] },   // Exeggcute
+  100: { key: 'statico', activeSlots: ['front-left', 'front-right'] },   // Voltorb
+  101: { key: 'velocitascatto', activeSlots: ['front-left', 'front-right'] },   // Electrode
+  102: { key: 'rigenerazione', activeSlots: ['back-left', 'back-right'] },   // Exeggcute
   103: { key: 'rigenerazione', activeSlots: ['back-center', 'back-left'] },   // Exeggutor
-  104: { key: 'corazza', activeSlots: ['front-center'] },   // Cubone
-  105: { key: 'ultrapotenza', activeSlots: ['front-center', 'front-left'] },   // Marowak
-  106: { key: 'tecnico', activeSlots: ['back-center', 'front-center'] },   // Hitmonlee
-  107: { key: 'tecnico', activeSlots: ['front-left', 'front-right'] },   // Hitmonchan
+  104: { key: 'corazza', activeSlots: ['front-center', 'front-left'] },   // Cubone
+  105: { key: 'ultrapotenza', activeSlots: ['front-center'] },   // Marowak
+  106: { key: 'tecnico', activeSlots: ['front-center', 'front-left'] },   // Hitmonlee
+  107: { key: 'tecnico', activeSlots: ['front-center', 'front-right'] },   // Hitmonchan
   108: { key: 'rigenerazione', activeSlots: ['back-center', 'back-right'] },   // Lickitung
-  109: { key: 'levitazione', activeSlots: ['back-left', 'front-left'] },   // Koffing
-  110: { key: 'levitazione', activeSlots: ['back-right', 'front-left'] },   // Weezing
-  111: { key: 'corazza', activeSlots: ['front-left'] },   // Rhyhorn
-  112: { key: 'corazza', activeSlots: ['front-right'] },   // Rhydon
-  113: { key: 'specchiomagico', activeSlots: ['back-center', 'front-center'] },   // Chansey
+  109: { key: 'levitazione', activeSlots: ['back-left', 'back-right'] },   // Koffing
+  110: { key: 'levitazione', activeSlots: ['front-left', 'front-right'] },   // Weezing
+  111: { key: 'corazza', activeSlots: ['front-center', 'front-right'] },   // Rhyhorn
+  112: { key: 'corazza', activeSlots: ['front-left', 'front-right'] },   // Rhydon
+  113: { key: 'specchiomagico', activeSlots: ['back-center', 'back-left'] },   // Chansey
   114: { key: 'rigenerazione', activeSlots: ['back-left', 'back-right'] },   // Tangela
-  115: { key: 'tecnico', activeSlots: ['back-center', 'front-left'] },   // Kangaskhan
-  116: { key: 'pioggerellina', activeSlots: ['back-center', 'back-right'] },   // Horsea
-  117: { key: 'pioggerellina', activeSlots: ['back-center', 'front-center'] },   // Seadra
-  118: { key: 'pioggerellina', activeSlots: ['back-left', 'back-right'] },   // Goldeen
-  119: { key: 'pioggerellina', activeSlots: ['back-left', 'front-center'] },   // Seaking
-  120: { key: 'pioggerellina', activeSlots: ['back-right', 'front-center'] },   // Staryu
-  121: { key: 'specchiomagico', activeSlots: ['back-left', 'back-right'] },   // Starmie
-  122: { key: 'specchiomagico', activeSlots: ['back-left', 'front-center'] },   // Mr. Mime
-  123: { key: 'tecnico', activeSlots: ['back-center', 'front-right'] },   // Scyther
-  124: { key: 'snownevicata', activeSlots: ['back-right'] },   // Jynx
+  115: { key: 'tecnico', activeSlots: ['back-center', 'front-center'] },   // Kangaskhan
+  116: { key: 'pioggerellina', activeSlots: ['back-right', 'front-center'] },   // Horsea
+  117: { key: 'pioggerellina', activeSlots: ['back-center', 'back-left'] },   // Seadra
+  118: { key: 'pioggerellina', activeSlots: ['back-center', 'back-right'] },   // Goldeen
+  119: { key: 'pioggerellina', activeSlots: ['back-center', 'front-center'] },   // Seaking
+  120: { key: 'pioggerellina', activeSlots: ['back-left', 'back-right'] },   // Staryu
+  121: { key: 'specchiomagico', activeSlots: ['back-center', 'back-right'] },   // Starmie
+  122: { key: 'specchiomagico', activeSlots: ['back-center', 'front-center'] },   // Mr. Mime
+  123: { key: 'tecnico', activeSlots: ['front-left', 'front-right'] },   // Scyther
+  124: { key: 'snownevicata', activeSlots: ['back-center', 'front-center'] },   // Jynx
   125: { key: 'statico', activeSlots: ['front-center', 'front-left'] },   // Electabuzz
-  126: { key: 'siccita', activeSlots: ['back-left', 'front-center'] },   // Magmar
-  127: { key: 'ultrapotenza', activeSlots: ['front-center', 'front-right'] },   // Pinsir
-  128: { key: 'tecnico', activeSlots: ['front-center'] },   // Tauros
+  126: { key: 'siccita', activeSlots: ['back-center', 'front-center'] },   // Magmar
+  127: { key: 'ultrapotenza', activeSlots: ['front-left'] },   // Pinsir
+  128: { key: 'tecnico', activeSlots: ['back-center', 'front-left'] },   // Tauros
   129: { key: 'vigore', activeSlots: ['front-center'] },   // Magikarp
-  130: { key: 'ultrapotenza', activeSlots: ['front-left', 'front-right'] },   // Gyarados
-  131: { key: 'snownevicata', activeSlots: ['front-center'] },   // Lapras
+  130: { key: 'ultrapotenza', activeSlots: ['front-right'] },   // Gyarados
+  131: { key: 'snownevicata', activeSlots: ['back-left', 'back-right'] },   // Lapras
   132: { key: 'adattabilita', activeSlots: ['front-center'] },   // Ditto
   133: { key: 'adattabilita', activeSlots: ['back-center'] },   // Eevee
-  134: { key: 'pioggerellina', activeSlots: ['back-center'] },   // Vaporeon
+  134: { key: 'pioggerellina', activeSlots: ['back-left', 'front-center'] },   // Vaporeon
   135: { key: 'statico', activeSlots: ['front-center', 'front-right'] },   // Jolteon
-  136: { key: 'siccita', activeSlots: ['back-right', 'front-center'] },   // Flareon
+  136: { key: 'siccita', activeSlots: ['back-left', 'back-right'] },   // Flareon
   137: { key: 'adattabilita', activeSlots: ['front-left'] },   // Porygon
   138: { key: 'corazza', activeSlots: ['front-center', 'front-left'] },   // Omanyte
   139: { key: 'corazza', activeSlots: ['front-center', 'front-right'] },   // Omastar
   140: { key: 'corazza', activeSlots: ['front-left', 'front-right'] },   // Kabuto
-  141: { key: 'tecnico', activeSlots: ['front-left'] },   // Kabutops
-  142: { key: 'velocitascatto', activeSlots: ['back-right', 'front-left'] },   // Aerodactyl
+  141: { key: 'tecnico', activeSlots: ['back-center', 'front-right'] },   // Kabutops
+  142: { key: 'velocitascatto', activeSlots: ['back-left', 'back-right'] },   // Aerodactyl
   143: { key: 'pancialarda', activeSlots: ['front-center'] },   // Snorlax
-  144: { key: 'snownevicata', activeSlots: ['back-center', 'back-left'] },   // Articuno
+  144: { key: 'snownevicata', activeSlots: ['back-left', 'front-center'] },   // Articuno
   145: { key: 'statico', activeSlots: ['front-left', 'front-right'] },   // Zapdos
-  146: { key: 'siccita', activeSlots: ['back-center'] },   // Moltres
+  146: { key: 'siccita', activeSlots: ['back-left', 'front-center'] },   // Moltres
   147: { key: 'multiscala', activeSlots: ['front-center'] },   // Dratini
   148: { key: 'multiscala', activeSlots: ['front-left'] },   // Dragonair
   149: { key: 'multiscala', activeSlots: ['front-right'] },   // Dragonite

@@ -351,6 +351,62 @@
   margin-top: var(--sp-1);
 }
 
+/* Ruolo del Pokemon (attaccante fisico / speciale) */
+.detail-role {
+  --role-color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--role-color);
+  border-radius: 6px;
+  margin-top: var(--sp-1);
+}
+.detail-role__icon {
+  font-size: 1.2rem;
+  color: var(--role-color);
+  filter: drop-shadow(0 0 6px var(--role-color));
+}
+.detail-role__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+/* Meta: BST totale, altezza, peso (3 colonne uguali) */
+.detail-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-top: var(--sp-2);
+}
+.detail-meta__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.detail-meta__label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.detail-meta__value {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+  font-feature-settings: "tnum";
+}
+.detail-meta__value--bst { color: var(--accent); }
+
 .detail-stats {
   display: flex;
   flex-direction: column;

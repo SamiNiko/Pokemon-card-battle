@@ -376,10 +376,23 @@ def slot_combos(pool):
             pairs.append(tuple(sorted([a, b])))
     return singles + pairs
 
-# Distribuzione round-robin: per ogni archetipo, distribuisco i combos
-# uniformemente fra tutti i Pokemon che usano quell'archetipo. Cosi' due
-# Pokemon dello stesso archetipo non avranno mai gli stessi slot a meno che
-# ci siano piu' Pokemon che combos disponibili.
+# Passive considerate "troppo forti" — limitate a 1 slot solo (singleton).
+# Le altre passive ricevono SEMPRE 2 slot per pokemon, per dare piu' varieta'
+# nelle composizioni di team.
+SINGLE_SLOT_ARCHETYPES = {
+    'ultrapotenza',   # ATK x2, DEF /2 — devastante
+    'adattabilita',   # STAB raddoppiato — fortissimo
+    'multiscala',     # -50% primo colpo a HP pieno — molto difensivo
+    'vigore',         # sopravvivi con 1 HP — clutch
+    'pancialarda',    # -30% Fuoco/Ghiaccio — forte resistenza
+    'pressione',      # 1 PP extra al nemico — utility forte
+}
+
+# Distribuzione round-robin: per ogni archetipo, distribuisco le combinazioni
+# fra tutti i Pokemon che usano quell'archetipo. Le passive "single-slot"
+# ricevono solo combinazioni di 1 slot, le altre solo combinazioni di 2.
+# Cosi' due Pokemon dello stesso archetipo non avranno mai gli stessi slot
+# a meno che ci siano piu' Pokemon che combos disponibili.
 _ASSIGN_CACHE = {}  # pid → tuple di slot
 
 def build_assignment_cache():
@@ -388,7 +401,14 @@ def build_assignment_cache():
     for pid, key in POKEMON_PASSIVE.items():
         by_arch.setdefault(key, []).append(pid)
     for key, pids in by_arch.items():
-        combos = slot_combos(PASSIVE_LIB[key]['pool'])
+        all_combos = slot_combos(PASSIVE_LIB[key]['pool'])
+        # Separo singles (len=1) da pairs (len=2)
+        singles = [c for c in all_combos if len(c) == 1]
+        pairs   = [c for c in all_combos if len(c) == 2]
+        # Single-slot archetypes -> solo singles. Altri -> solo pairs.
+        combos = singles if key in SINGLE_SLOT_ARCHETYPES else pairs
+        # Fallback se la pool e' troppo piccola per generare la categoria richiesta
+        if not combos: combos = all_combos
         # Ordino i pid per stabilità tra esecuzioni
         for i, pid in enumerate(sorted(pids)):
             combo = combos[i % len(combos)]

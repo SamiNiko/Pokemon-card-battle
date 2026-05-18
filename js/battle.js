@@ -9,6 +9,7 @@ import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
 import { getState, getActiveTeam, getEquipped } from './data/state.js?v=5';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js';
+import { getPassive }                          from './data/passives.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
 import { MOVESETS }                            from './data/movesets.js?v=3';
 import { createOnlineClient }                  from './data/online.js';
@@ -338,7 +339,7 @@ function renderField() {
   $$('#playerGrid .grid__slot').forEach(slot => {
     slot.querySelectorAll('.card').forEach(c => c.remove());
     const pkmn = bs.playerField.get(slot.dataset.slotKey);
-    if (pkmn) slot.appendChild(makeCard(pkmn, 'self', 'field'));
+    if (pkmn) slot.appendChild(makeCard(pkmn, 'self', 'field', slot.dataset.slotKey));
   });
   renderPlayerBench();
   updateSpeedPreview();
@@ -358,7 +359,7 @@ function renderEnemyField() {
   $$('#enemyGrid .grid__slot').forEach(slot => {
     slot.querySelectorAll('.card').forEach(c => c.remove());
     const pkmn = bs.enemyField.get(slot.dataset.slotKey);
-    if (pkmn) slot.appendChild(makeCard(pkmn, 'enemy', 'field'));
+    if (pkmn) slot.appendChild(makeCard(pkmn, 'enemy', 'field', slot.dataset.slotKey));
   });
   renderEnemyBench();
 }
@@ -395,7 +396,7 @@ function updateCardMove(id, htmlSide) {
    CARD — costruzione elemento DOM
    variant: 'bench' (sprite compatta) | 'field' (fullart in campo)
    ============================================================ */
-function makeCard(pkmn, side, variant = 'bench') {
+function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
   const el  = document.createElement('div');
   el.className         = variant === 'field' ? 'card card--battle card--fullart' : 'card card--battle';
   el.dataset.pokemonId = pkmn.id;
@@ -419,12 +420,25 @@ function makeCard(pkmn, side, variant = 'bench') {
        </span>`
     : '';
 
+  // Badge passiva attiva: appare SOLO se la card è su una slot del campo
+  // (slotKey != null) E la passiva del Pokemon include quella slot tra le
+  // sue activeSlots. Aiuta il giocatore a capire quando il posizionamento
+  // sblocca la passiva.
+  let passiveBadgeHTML = '';
+  if (slotKey) {
+    const pass = getPassive(pkmn.id);
+    if (pass && pass.activeSlots.includes(slotKey)) {
+      passiveBadgeHTML = `<span class="card__passive-badge" title="${pass.name}: ${pass.effect}" data-passive-name="${pass.name}">✨</span>`;
+    }
+  }
+
   if (variant === 'field') {
     // Variante fullart in campo: artwork con fallback sprite
     el.innerHTML = `
       <span class="card__hp card__hp--field" data-hp="${pkmn.id}" data-hp-side="${side}">${curHP}</span>
       <span class="card__pp card__pp--field" data-pp="${pkmn.id}" data-pp-side="${side}">PP ${curPP}</span>
       ${heldHTML}
+      ${passiveBadgeHTML}
       <div class="card__sprite">
         <img class="card__img" src="${getArtworkUrl(pkmn)}" alt="${pkmn.name}"
              onerror="this.onerror=null;this.classList.add('is-fallback');this.src='${pkmn.sprite.default}';" />

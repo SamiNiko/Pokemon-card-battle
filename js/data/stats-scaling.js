@@ -19,7 +19,7 @@
    ============================================================ */
 
 import { getRarity }                from './rarity.js';
-import { getLevel, MAX_LEVEL }       from './state.js?v=4';
+import { getLevel, MAX_LEVEL }       from './state.js?v=5';
 
 /**
  * Moltiplicatori per rarità:
@@ -41,20 +41,28 @@ const MULT = {
 
 const ROUND = x => Math.round(x);
 
-/** Bonus stats per livello: LV1=+0%, LV2=+5%, ..., LV5=+20%.
+/** Bonus stats per livello: LV1=+0%, ..., LV6=+20% (max).
+ *  6 step lineari (4% per livello) per arrivare a +20% al livello max.
  *  I leggendari NON ricevono questo bonus (sono già forti di base). */
-const LEVEL_BOOST = [1.00, 1.05, 1.10, 1.15, 1.20];
+const LEVEL_BOOST = [1.00, 1.04, 1.08, 1.12, 1.16, 1.20];
 
-/** Restituisce le stats SCALATE per il Pokemon (in base alla sua rarità + livello).
+/** Restituisce le stats SCALATE per il Pokemon (in base alla sua rarità + livello attuale).
  *  Non muta il pokemon originale — ritorna un oggetto nuovo `{ hp, atk, def, spAtk, spDef, speed }`.
  *  Usa questo invece di `pkmn.stats` in TUTTO il codice del gameplay e visualizzazione. */
 export function getScaledStats(pkmn) {
+  const rarity = getRarity(pkmn?.id);
+  const level = rarity === 'legendary' ? MAX_LEVEL : getLevel(pkmn?.id ?? 0);
+  return getScaledStatsAtLevel(pkmn, level);
+}
+
+/** Stessa cosa di getScaledStats ma con livello esplicito (per anteprime/animazioni level-up).
+ *  I leggendari ignorano comunque `level` e usano MAX_LEVEL (no boost). */
+export function getScaledStatsAtLevel(pkmn, level) {
   const s = pkmn?.stats ?? {};
   const rarity = getRarity(pkmn?.id);
   const m = MULT[rarity] ?? MULT.common;
-  // I leggendari NON ricevono il level boost (sono già forti di base — niente costellazione)
-  const level = rarity === 'legendary' ? MAX_LEVEL : getLevel(pkmn?.id ?? 0);
-  const boost = rarity === 'legendary' ? 1.0 : (LEVEL_BOOST[level - 1] ?? 1.0);
+  const lv = rarity === 'legendary' ? MAX_LEVEL : Math.max(1, Math.min(MAX_LEVEL, level | 0));
+  const boost = rarity === 'legendary' ? 1.0 : (LEVEL_BOOST[lv - 1] ?? 1.0);
   return {
     hp:    ROUND((s.hp    ?? 0) * m.tank * boost),
     atk:   ROUND((s.atk   ?? 0) * m.atk  * boost),
@@ -65,9 +73,9 @@ export function getScaledStats(pkmn) {
   };
 }
 
-/** Display dei livelli 1..5 → 50/60/75/90/100.
- *  Scelta non lineare: prima trovata è LV.50 ("d'impatto"), max è LV.100. */
-const LEVEL_DISPLAY = [50, 60, 75, 90, 100];
+/** Display dei livelli 1..6 → 50/60/70/80/90/100. Progressione regolare (+10 per livello).
+ *  Prima volta = LV.50 (d'impatto), max = LV.100. */
+export const LEVEL_DISPLAY = [50, 60, 70, 80, 90, 100];
 
 /** Display-friendly: ritorna il livello come label "LV. 50" o "LV. MAX" per leggendari. */
 export function levelLabel(pokemonId) {

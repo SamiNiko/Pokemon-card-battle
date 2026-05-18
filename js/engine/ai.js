@@ -8,7 +8,7 @@
 */
 
 import { getTypeEffectiveness } from '../data/types.js';
-import { getScaledStats }       from '../data/stats-scaling.js?v=2';
+import { getScaledStats }       from '../data/stats-scaling.js?v=3';
 
 const FRONT_SLOTS = ['front-left', 'front-center', 'front-right'];
 const ROWS        = ['front', 'back'];

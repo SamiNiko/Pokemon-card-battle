@@ -8,7 +8,7 @@
    ============================================================ */
 
 import { getTypeEffectiveness } from '../data/types.js';
-import { getScaledStats }       from '../data/stats-scaling.js?v=2';
+import { getScaledStats }       from '../data/stats-scaling.js?v=3';
 import { getPassive }           from '../data/passives.js';
 
 const DIRECT_BASE_POWER = 150;

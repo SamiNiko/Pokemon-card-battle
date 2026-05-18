@@ -15,7 +15,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, getActiveTeam }     from './data/state.js?v=4';
+import { getState, getActiveTeam }     from './data/state.js?v=5';
 import { createOnlineClient }          from './data/online.js';
 
 const $  = id => document.getElementById(id);

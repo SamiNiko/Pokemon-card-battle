@@ -186,22 +186,22 @@ export function isOwned(id) {
 }
 
 /* ================================================================
-   LIVELLI POKEMON (1..5, mostrati come LV 10/20/30/40/50)
+   LIVELLI POKEMON (1..6, mostrati come LV 50/60/70/80/90/100)
    ================================================================
-   - Default 1 quando un Pokemon viene ottenuto per la prima volta
-   - Sale di 1 ad ogni duplicato (max 5)
-   - I leggendari sono SEMPRE livello 5 (bypassato in stats-scaling).
+   - Default 1 quando un Pokemon viene ottenuto per la prima volta (LV.50)
+   - Sale di 1 ad ogni duplicato (max 6 = LV.100)
+   - I leggendari sono SEMPRE livello MAX (bypassato in stats-scaling).
 */
-export const MAX_LEVEL = 5;
+export const MAX_LEVEL = 6;
 
-/** Ritorna il livello 1..5 di un Pokemon. */
+/** Ritorna il livello 1..MAX_LEVEL di un Pokemon. */
 export function getLevel(pokemonId) {
   const s = getState();
   const l = s.levels?.[pokemonId] ?? 1;
   return Math.max(1, Math.min(MAX_LEVEL, l));
 }
 
-/** Setta esplicitamente il livello (clamp 1..5). */
+/** Setta esplicitamente il livello (clamp 1..MAX_LEVEL). */
 export function setLevel(pokemonId, level) {
   const s = getState();
   if (!s.levels) s.levels = {};

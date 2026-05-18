@@ -6,7 +6,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState }                    from './data/state.js?v=4';
+import { getState }                    from './data/state.js?v=5';
 import {
   getMatchHistory,
   getLifetimeStats,
@@ -18,7 +18,7 @@ import {
   LEGGENDARI, PSEUDO_LEGGENDARI, EPICI, RARI, NON_COMUNI, COMUNI,
   getRarity, tierLabel, tierStars, tierColor,
 } from './data/rarity.js';
-import { openCardModal } from './data/card-modal.js?v=8';
+import { openCardModal } from './data/card-modal.js?v=9';
 
 const $ = id => document.getElementById(id);
 

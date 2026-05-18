@@ -6,7 +6,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
-import { getState, getActiveTeam, getEquipped } from './data/state.js?v=4';
+import { getState, getActiveTeam, getEquipped } from './data/state.js?v=5';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
@@ -14,9 +14,9 @@ import { MOVESETS }                            from './data/movesets.js?v=3';
 import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
-import { openCardModal }                       from './data/card-modal.js?v=8';
+import { openCardModal }                       from './data/card-modal.js?v=9';
 import { SFX }                                 from './data/sfx.js';
-import { getScaledStats }                      from './data/stats-scaling.js?v=2';
+import { getScaledStats }                      from './data/stats-scaling.js?v=3';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);

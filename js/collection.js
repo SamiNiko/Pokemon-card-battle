@@ -18,8 +18,8 @@ import {
   getPokemonHoldingItem,
   getItemUsages,
   equipItem,
-} from './data/state.js?v=4';
-import { openCardModal }                       from './data/card-modal.js?v=8';
+} from './data/state.js?v=5';
+import { openCardModal }                       from './data/card-modal.js?v=9';
 import { findItem, ITEM_CATEGORIES, isItemAllowedForPokemon } from './data/items.js?v=3';
 import { typeLabel }                            from './data/types.js';
 

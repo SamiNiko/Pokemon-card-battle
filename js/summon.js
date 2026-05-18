@@ -6,10 +6,12 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState, addPokemonOrLevelUp } from './data/state.js?v=4';
+import { getState, saveState, addPokemonOrLevelUp } from './data/state.js?v=5';
 import { MOVESETS }                    from './data/movesets.js?v=3';
 import { getSummonablePool, PULL_RATES, tierLabel } from './data/rarity.js';
 import { typeLabel }                                from './data/types.js';
+import { getScaledStats, getScaledStatsAtLevel, levelLabel, LEVEL_DISPLAY } from './data/stats-scaling.js?v=3';
+import { getPassive }                               from './data/passives.js';
 
 const $ = id => document.getElementById(id);
 
@@ -865,13 +867,110 @@ async function showReveal(entry) {
 
   // Anima le barre stat dopo che lo sprite è comparso
   await sleep(380);
-  right.querySelectorAll('.detail-stat__bar').forEach(bar => {
-    const val = parseInt(bar.dataset.val ?? '0', 10);
-    bar.style.width = `${Math.min(100, (val / 250) * 100)}%`;
+  animateStatBars(right);
+
+  // Se è un LEVEL UP, dopo che le bar si sono stabilizzate al LV vecchio,
+  // anima le bar/numeri da LV vecchio → LV nuovo con flash + delta pop-up.
+  const outcome = entry.outcome ?? {};
+  if (outcome.leveledUp && pkmn) {
+    await sleep(700);
+    await animateLevelUpStats(right);
+  }
+}
+
+/* Riempimento iniziale delle bar: usa data-val (= valore inziale renderizzato,
+   che per i level-up è il valore al LIVELLO PRECEDENTE). */
+function animateStatBars(rightPanel) {
+  rightPanel.querySelectorAll('.detail-stat__bar').forEach(bar => {
+    const val   = parseInt(bar.dataset.val ?? '0', 10);
+    const label = bar.dataset.label ?? 'HP';
+    const max   = STAT_MAX_REVEAL[label] ?? 700;
+    bar.style.width = `${Math.min(100, (val / max) * 100)}%`;
   });
 }
 
-/* Costruisce HTML del pannello dettagli */
+/* Anima le barre + numeri da `data-val` (initial) → `data-target-val` (new level).
+   Aggiunge un flash colorato a ogni barra che cresce e un "+delta" effimero. */
+async function animateLevelUpStats(rightPanel /*, pkmn, newLevel */) {
+  const rows = rightPanel.querySelectorAll('.detail-stat');
+  const statsSection = rightPanel.querySelector('.detail-stats');
+  statsSection?.classList.add('is-levelup-anim');
+
+  const DURATION = 900;          // ms di animazione bar
+  const STAGGER  = 70;           // ritardo tra una stat e l'altra
+  const startTime = performance.now();
+
+  rows.forEach((row, i) => {
+    const bar   = row.querySelector('.detail-stat__bar');
+    const valEl = row.querySelector('.detail-stat__val');
+    const label = bar?.dataset.label ?? 'HP';
+    const max   = STAT_MAX_REVEAL[label] ?? 700;
+    const prevV = parseInt(bar?.dataset.val ?? '0', 10);
+    const nextV = parseInt(bar?.dataset.targetVal ?? bar?.dataset.val ?? '0', 10);
+    const delay = i * STAGGER;
+
+    // Flash visivo della riga quando la stat cresce
+    if (nextV > prevV) {
+      setTimeout(() => row.classList.add('is-pumping'),    delay);
+      setTimeout(() => row.classList.remove('is-pumping'), delay + DURATION + 200);
+    }
+
+    // "+delta" effimero accanto al valore
+    const delta = nextV - prevV;
+    if (delta > 0 && valEl) {
+      setTimeout(() => {
+        const pop = document.createElement('span');
+        pop.className = 'detail-stat__delta';
+        pop.textContent = `+${delta}`;
+        valEl.parentElement?.appendChild(pop);
+        setTimeout(() => pop.remove(), 1400);
+      }, delay + 100);
+    }
+
+    // Anima width + numero in sync (RAF, ease-out cubic)
+    const animStart = startTime + delay;
+    const step = (now) => {
+      const t = Math.max(0, Math.min(1, (now - animStart) / DURATION));
+      const e = 1 - Math.pow(1 - t, 3);
+      const cur = Math.round(prevV + (nextV - prevV) * e);
+      if (bar)   bar.style.width = `${Math.min(100, (cur / max) * 100)}%`;
+      if (valEl) valEl.textContent = String(cur);
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+
+  // Aggiorna anche il badge LV (text + glow promosso)
+  const lvBadge = rightPanel.querySelector('.detail-rarity__level');
+  if (lvBadge) {
+    await sleep(DURATION + (rows.length - 1) * STAGGER);
+    const target = lvBadge.dataset.lvTarget;
+    if (target) lvBadge.textContent = target;
+    lvBadge.classList.add('is-promoted');
+  }
+}
+
+// Max scala per barre nel reveal (uguali al card-modal).
+const STAT_MAX_REVEAL = {
+  HP:     1100,
+  ATK:    320,
+  'SP.A': 320,
+  DEF:    700,
+  'SP.D': 700,
+  VEL:    180,
+};
+
+// Colori fissi per stat (uguali al card-modal: distingue Phys ⚔ vs Spec ✨)
+const STAT_COLORS_REVEAL = {
+  HP:     '#4dad5b',
+  ATK:    '#ee1515',
+  'SP.A': '#a040a0',
+  DEF:    '#6890f0',
+  'SP.D': '#5ee8d8',
+  VEL:    '#ffcb05',
+};
+
+/* Costruisce HTML del pannello dettagli (allineato alla card-modal di collezione) */
 function buildDetailHTML(entry, pkmn) {
   if (!pkmn) return `<p style="color:var(--text-muted);font-size:0.85rem">Dati non disponibili</p>`;
 
@@ -890,28 +989,49 @@ function buildDetailHTML(entry, pkmn) {
     `<span class="detail-type-badge" style="background:${typeColors[t] ?? '#888'}">${typeLabel(t)}</span>`
   ).join('');
 
-  const s = pkmn.stats ?? {};
+  // ---- Stats SCALATE per rarità + livello (uguale al card-modal) ----
+  // Se il pull è un LEVEL-UP, mostra inizialmente le stats al LIVELLO PRECEDENTE
+  // (cosi' poi l'animazione le anima da PREV → NEW). Per "gained"/"alreadyMax"
+  // mostra direttamente le stats al livello corrente.
+  const outcome  = entry.outcome ?? {};
+  const sCurrent = getScaledStats(pkmn);
+  const sPrev    = outcome.leveledUp
+    ? getScaledStatsAtLevel(pkmn, Math.max(1, outcome.newLevel - 1))
+    : sCurrent;
+  const raw = pkmn.stats ?? {};
+  // Categoria attacco: physical se ATK base >= SP.ATK base (su raw, non scaled)
+  const isPhys = (raw.atk ?? 0) >= (raw.spAtk ?? 0);
+  const atkRow = isPhys
+    ? { label: 'ATK',  initial: sPrev.atk   ?? 0, target: sCurrent.atk   ?? 0 }
+    : { label: 'SP.A', initial: sPrev.spAtk ?? 0, target: sCurrent.spAtk ?? 0 };
   const statRows = [
-    { label: 'HP',   val: s.hp    ?? 0 },
-    { label: 'ATK',  val: s.atk   ?? 0 },
-    { label: 'DEF',  val: s.def   ?? 0 },
-    { label: 'SP.A', val: s.spAtk ?? 0 },
-    { label: 'VEL',  val: s.speed ?? 0 },
-  ].map(({ label, val }) => {
-    const barColor = val >= 110 ? '#f5d050' : val >= 80 ? '#78c850' : val >= 50 ? '#6890f0' : '#a8b3cf';
+    { label: 'HP',    initial: sPrev.hp    ?? 0, target: sCurrent.hp    ?? 0 },
+    atkRow,
+    { label: 'DEF',   initial: sPrev.def   ?? 0, target: sCurrent.def   ?? 0 },
+    { label: 'SP.D',  initial: sPrev.spDef ?? 0, target: sCurrent.spDef ?? 0 },
+    { label: 'VEL',   initial: sPrev.speed ?? 0, target: sCurrent.speed ?? 0 },
+  ].map(({ label, initial, target }) => {
+    const color = STAT_COLORS_REVEAL[label] ?? '#a8b3cf';
     return `
       <div class="detail-stat">
-        <span class="detail-stat__label">${label}</span>
+        <span class="detail-stat__label" style="color:${color}">${label}</span>
         <div class="detail-stat__bar-wrap">
-          <div class="detail-stat__bar" style="background:${barColor}" data-val="${val}"></div>
+          <div class="detail-stat__bar" style="background:${color}" data-val="${initial}" data-target-val="${target}" data-label="${label}"></div>
         </div>
-        <span class="detail-stat__val">${val}</span>
+        <span class="detail-stat__val">${initial}</span>
       </div>`;
   }).join('');
 
-  const moves  = MOVESETS[pkmn.id] ?? [];
-  const roles  = ['Base', 'Finale'];
-  const moveRows = moves.slice(0, 2).map((m, i) => `
+  // ---- Ruolo (Attaccante Fisico / Speciale) ----
+  const roleIcon  = isPhys ? '⚔' : '✨';
+  const roleLabel = isPhys ? 'Attaccante Fisico' : 'Attaccante Speciale';
+  const roleColor = isPhys ? '#ee1515' : '#a040a0';
+
+  // ---- Mosse ----
+  const moves = MOVESETS[pkmn.id] ?? [];
+  const isNewFmt = moves.length >= 3;
+  const roles    = isNewFmt ? ['Base 1', 'Base 2', 'Finale'] : ['Base', 'Finale'];
+  const moveRows = moves.map((m, i) => `
     <div class="detail-move">
       <span class="detail-move__role">${roles[i] ?? ''}</span>
       <span class="detail-move__name">${m.name}</span>
@@ -920,9 +1040,20 @@ function buildDetailHTML(entry, pkmn) {
     </div>`
   ).join('');
 
-  // Badge "NUOVO!" / "LV +1 → 60" / "LV. MAX" basato sull'esito del pull
-  const outcome = entry.outcome ?? {};
-  const LEVEL_DISPLAY = [50, 60, 75, 90, 100];
+  // ---- Passiva (nome + effetto) ----
+  const passive = getPassive(pkmn.id);
+  const passivaHTML = passive
+    ? `<div class="detail-passiva">
+         <span class="detail-passiva__label">Passiva — ${passive.name}</span>
+         <span class="detail-passiva__text">${passive.effect}</span>
+       </div>`
+    : `<div class="detail-passiva">
+         <span class="detail-passiva__label">Passiva</span>
+         <span class="detail-passiva__text">—</span>
+       </div>`;
+
+  // ---- Outcome badge (NUOVO! / LV up / LV.MAX) ----
+  // (outcome è già stato letto nella sezione stats sopra)
   let outcomeBadge = '';
   if (outcome.gained) {
     outcomeBadge = `<div class="reveal-outcome reveal-outcome--new">
@@ -931,7 +1062,7 @@ function buildDetailHTML(entry, pkmn) {
     </div>`;
   } else if (outcome.leveledUp) {
     const prevLv = LEVEL_DISPLAY[outcome.newLevel - 2] ?? LEVEL_DISPLAY[0];
-    const newLv  = LEVEL_DISPLAY[outcome.newLevel - 1] ?? LEVEL_DISPLAY[outcome.newLevel - 1];
+    const newLv  = LEVEL_DISPLAY[outcome.newLevel - 1] ?? prevLv;
     outcomeBadge = `<div class="reveal-outcome reveal-outcome--levelup">
       <span class="reveal-outcome__icon">⬆</span>
       <span class="reveal-outcome__text">
@@ -947,22 +1078,35 @@ function buildDetailHTML(entry, pkmn) {
     </div>`;
   }
 
+  // Badge LV: se è un level-up, mostro inizialmente il LV VECCHIO,
+  // poi l'animazione lo "promuove" al LV NUOVO (testo aggiornato + glow).
+  const lvLabel = outcome.leveledUp
+    ? `LV. ${LEVEL_DISPLAY[Math.max(0, outcome.newLevel - 2)] ?? LEVEL_DISPLAY[0]}`
+    : levelLabel(pkmn.id);
+  const lvTargetLabel = levelLabel(pkmn.id);
+
   return `
     ${outcomeBadge}
     <div class="detail-rarity detail-rarity--${entry.rarity}">
       <span class="detail-rarity__stars">${starsStr}</span>
       <span class="detail-rarity__label">${rarityLabel}</span>
+      <span class="detail-rarity__level" data-lv-target="${lvTargetLabel}">${lvLabel}</span>
     </div>
     <div class="detail-name">${pkmn.name}</div>
     <div class="detail-types">${typeBadges}</div>
+
+    <div class="detail-role" style="--role-color:${roleColor}">
+      <span class="detail-role__icon">${roleIcon}</span>
+      <span class="detail-role__label">${roleLabel}</span>
+    </div>
+
     <span class="detail-section-label">Base Stats</span>
     <div class="detail-stats">${statRows}</div>
+
     <span class="detail-section-label">Mosse</span>
     <div class="detail-moves">${moveRows || '<p style="color:var(--text-muted);font-size:0.75rem">Nessuna mossa</p>'}</div>
-    <div class="detail-passiva">
-      <span class="detail-passiva__label">Passiva</span>
-      <span class="detail-passiva__text">In arrivo…</span>
-    </div>
+
+    ${passivaHTML}
   `;
 }
 

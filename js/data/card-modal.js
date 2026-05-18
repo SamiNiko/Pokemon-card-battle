@@ -9,11 +9,11 @@
 import { findPokemon }                       from './pokeapi.js';
 import { MOVESETS }                          from './movesets.js?v=3';
 import { getRarity, tierStars, tierLabel }   from './rarity.js';
-import { getEquipped }                       from './state.js?v=4';
+import { getEquipped }                       from './state.js?v=5';
 import { findItem }                          from './items.js?v=3';
 import { typeLabel }                          from './types.js';
 import { getPassive }                        from './passives.js';
-import { getScaledStats, levelLabel }        from './stats-scaling.js?v=2';
+import { getScaledStats, levelLabel }        from './stats-scaling.js?v=3';
 
 const TYPE_COLORS = {
   normal:'#a8a878', fire:'#f08030',   water:'#6890f0',  grass:'#78c850',

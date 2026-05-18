@@ -1078,15 +1078,70 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+  flex-wrap: wrap;
 }
 .detail-rarity__stars { font-size: 1rem; font-weight: 900; line-height: 1; }
 .detail-rarity__label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+
+/* Badge livello nella riga rarità (LV. 60 / LV. MAX) — uguale al card-modal */
+.detail-rarity__level {
+  display: inline-block;
+  margin-left: auto;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(255, 203, 5, 0.12);
+  border: 1px solid rgba(255, 203, 5, 0.45);
+  border-radius: 999px;
+  padding: 2px 8px;
+  vertical-align: middle;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.4s ease,
+              background 0.4s ease;
+}
+.detail-rarity__level.is-promoted {
+  transform: scale(1.12);
+  background: rgba(255, 203, 5, 0.28);
+  box-shadow: 0 0 16px rgba(255, 203, 5, 0.65);
+  animation: lv-badge-promoted 0.9s ease-out 1;
+}
+@keyframes lv-badge-promoted {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 rgba(255, 203, 5, 0);    }
+  40%  { transform: scale(1.22); box-shadow: 0 0 20px rgba(255, 203, 5, 0.85); }
+  100% { transform: scale(1.12); box-shadow: 0 0 16px rgba(255, 203, 5, 0.65); }
+}
 
 .detail-rarity--pseudo   .detail-rarity__stars { color: #5ee8d8; }
 .detail-rarity--epic     .detail-rarity__stars { color: #f5d050; }
 .detail-rarity--rare     .detail-rarity__stars { color: #c8a8ff; }
 .detail-rarity--uncommon .detail-rarity__stars { color: #88b4ff; }
 .detail-rarity--common   .detail-rarity__stars { color: var(--text-muted); }
+
+/* Ruolo (Attaccante Fisico / Speciale) — uguale al card-modal */
+.detail-role {
+  --role-color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--role-color);
+  border-radius: 6px;
+}
+.detail-role__icon {
+  font-size: 1.05rem;
+  color: var(--role-color);
+  filter: drop-shadow(0 0 6px var(--role-color));
+  line-height: 1;
+}
+.detail-role__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
 
 .detail-name {
   font-family: var(--font-display);
@@ -1227,6 +1282,8 @@
   width: 0;
   transition: width 0.65s ease 0.25s;
 }
+/* Durante l'animazione level-up, la bar è guidata in JS via RAF: niente transizione */
+.detail-stats.is-levelup-anim .detail-stat__bar { transition: none; }
 
 .detail-stat__val {
   font-size: 0.7rem;
@@ -1234,6 +1291,48 @@
   color: var(--text-dim);
   width: 26px;
   text-align: right;
+  position: relative;
+  font-feature-settings: "tnum";
+}
+
+/* "+N" effimero accanto al valore stat durante level-up */
+.detail-stat__delta {
+  position: absolute;
+  right: -2px;
+  bottom: 100%;
+  font-size: 0.62rem;
+  font-weight: 900;
+  color: #ffe04a;
+  text-shadow: 0 0 6px rgba(255, 224, 74, 0.85);
+  pointer-events: none;
+  animation: stat-delta-pop 1.3s ease-out forwards;
+  white-space: nowrap;
+}
+@keyframes stat-delta-pop {
+  0%   { opacity: 0; transform: translateY(4px)  scale(0.7); }
+  20%  { opacity: 1; transform: translateY(-4px) scale(1.15); }
+  70%  { opacity: 1; transform: translateY(-10px) scale(1);   }
+  100% { opacity: 0; transform: translateY(-18px) scale(0.95);}
+}
+
+/* Riga stat che "pompa" mentre cresce durante level-up */
+.detail-stat.is-pumping .detail-stat__label,
+.detail-stat.is-pumping .detail-stat__val {
+  animation: stat-row-pump 0.9s ease-out;
+}
+.detail-stat.is-pumping .detail-stat__bar-wrap {
+  box-shadow: 0 0 0 1px rgba(255, 224, 74, 0.45),
+              0 0 10px rgba(255, 224, 74, 0.45);
+  animation: stat-row-glow 0.9s ease-out;
+}
+@keyframes stat-row-pump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); color: #ffe04a; text-shadow: 0 0 8px rgba(255, 224, 74, 0.8); }
+  100% { transform: scale(1); }
+}
+@keyframes stat-row-glow {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255, 224, 74, 0), 0 0 0 rgba(255, 224, 74, 0); }
+  40%      { box-shadow: 0 0 0 1px rgba(255, 224, 74, 0.7), 0 0 14px rgba(255, 224, 74, 0.55); }
 }
 
 .detail-moves { display: flex; flex-direction: column; gap: 6px; }

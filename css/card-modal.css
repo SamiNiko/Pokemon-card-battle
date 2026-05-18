@@ -429,6 +429,17 @@
   color: var(--text);
   font-style: italic;
 }
+.detail-passiva__slots {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+.detail-passiva__slots b {
+  color: #5ee8d8;
+  font-weight: 700;
+  font-style: normal;
+}
 
 /* ===== Mobile ===== */
 @media (max-width: 720px) {

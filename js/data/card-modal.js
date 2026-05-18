@@ -7,11 +7,12 @@
    ============================================================ */
 
 import { findPokemon }                       from './pokeapi.js';
-import { MOVESETS }                          from './movesets.js';
+import { MOVESETS }                          from './movesets.js?v=2';
 import { getRarity, tierStars, tierLabel }   from './rarity.js';
 import { getEquipped }                       from './state.js?v=4';
 import { findItem }                          from './items.js?v=3';
 import { typeLabel }                          from './types.js';
+import { getPassive }                        from './passives.js';
 
 const TYPE_COLORS = {
   normal:'#a8a878', fire:'#f08030',   water:'#6890f0',  grass:'#78c850',
@@ -154,9 +155,11 @@ function buildCardDetailHTML(entry, pkmn) {
       </div>`;
   }).join('');
 
+  // Mosse: [base1, base2, finisher] nuovo formato, [base, finisher] vecchio
   const moves   = MOVESETS[pkmn.id] ?? [];
-  const roles   = ['Base', 'Finale'];
-  const moveRows = moves.slice(0, 2).map((m, i) => `
+  const isNew   = moves.length >= 3;
+  const roles   = isNew ? ['Base 1', 'Base 2', 'Finale'] : ['Base', 'Finale'];
+  const moveRows = moves.map((m, i) => `
     <div class="detail-move">
       <span class="detail-move__role">${roles[i] ?? ''}</span>
       <span class="detail-move__name">${m.name}</span>
@@ -201,9 +204,25 @@ function buildCardDetailHTML(entry, pkmn) {
     <span class="detail-section-label">Mosse</span>
     <div class="detail-moves">${moveRows || '<p style="color:var(--text-muted);font-size:0.75rem">Nessuna mossa</p>'}</div>
     ${heldHTML}
-    <div class="detail-passiva">
-      <span class="detail-passiva__label">Passiva</span>
-      <span class="detail-passiva__text">In arrivo…</span>
-    </div>
+    ${(() => {
+      const passive = getPassive(pkmn.id);
+      if (!passive) {
+        return `<div class="detail-passiva">
+          <span class="detail-passiva__label">Passiva</span>
+          <span class="detail-passiva__text">In arrivo…</span>
+        </div>`;
+      }
+      // Friendly slot labels: front-center → "Centro fronte" etc.
+      const SLOT_LABEL = {
+        'front-left': 'Fronte Sx', 'front-center': 'Fronte Centro', 'front-right': 'Fronte Dx',
+        'back-left':  'Retro Sx',  'back-center':  'Retro Centro',  'back-right':  'Retro Dx',
+      };
+      const slots = passive.activeSlots.map(s => SLOT_LABEL[s] ?? s).join(' · ');
+      return `<div class="detail-passiva">
+        <span class="detail-passiva__label">Passiva — ${passive.name}</span>
+        <span class="detail-passiva__text">${passive.effect}</span>
+        <span class="detail-passiva__slots">Attiva in: <b>${slots}</b></span>
+      </div>`;
+    })()}
   `;
 }

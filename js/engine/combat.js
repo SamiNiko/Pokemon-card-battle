@@ -33,15 +33,23 @@ function resolveMove(pkmn, isPlayer, { movesets, selectedMoves, enemySelectedMov
 
   if (!set) return getAutoMove(pkmn);
 
-  const [basic, finisher] = set;
+  // Nuovo formato: [base1, base2, finisher] (3 elementi)
+  // Vecchio formato: [basic, finisher] (2 elementi) — backward compat
+  const isNew    = set.length >= 3;
+  const base1    = set[0];
+  const base2    = isNew ? set[1] : set[0];
+  const finisher = isNew ? set[2] : set[1];
+
   const movesMap = isPlayer ? selectedMoves : enemySelectedMoves;
-  const sel      = movesMap?.get(pkmn.id) ?? 'basic';
+  const sel      = movesMap?.get(pkmn.id) ?? 'basic1';
 
   if (sel === 'finisher') {
     if (pp >= 3) return { ...finisher, isFinisher: true };
-    return { ...basic };  // PP insufficienti → fall back
+    return { ...base1 };  // PP insufficienti → fall back
   }
-  if (sel === 'basic') return { ...basic };
+  if (sel === 'basic2') return { ...base2 };
+  // 'basic1', 'basic' (legacy), o default
+  if (sel === 'basic1' || sel === 'basic') return { ...base1 };
   return getAutoMove(pkmn);  // sel === 'auto'
 }
 

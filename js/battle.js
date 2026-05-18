@@ -10,11 +10,11 @@ import { getState, getActiveTeam, getEquipped } from './data/state.js?v=4';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
-import { MOVESETS }                            from './data/movesets.js';
+import { MOVESETS }                            from './data/movesets.js?v=2';
 import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
-import { openCardModal }                       from './data/card-modal.js?v=2';
+import { openCardModal }                       from './data/card-modal.js?v=3';
 import { SFX }                                 from './data/sfx.js';
 
 /* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
@@ -368,10 +368,16 @@ function getMoveLabel(id, htmlSide) {
   const ppMap = htmlSide === 'self' ? bs.playerPkmnPP : bs.enemyPkmnPP;
   const pp    = ppMap.get(id) ?? 0;
   const set   = MOVESETS[id];
-  const sel   = bs.selectedMoves.get(id) ?? 'basic';
+  const sel   = bs.selectedMoves.get(id) ?? 'basic1';
   if (!set) return '⚔ Attacco Base';
-  if (sel === 'finisher' && pp >= 3) return `★ ${set[1].name}`;
-  return `⚔ ${set[0].name}`; // 'basic', 'auto', o finisher senza PP → stessa mossa
+  // Nuovo formato [base1, base2, finisher] (3 elementi) o vecchio [basic, finisher] (2)
+  const isNew    = set.length >= 3;
+  const base1    = set[0];
+  const base2    = isNew ? set[1] : set[0];
+  const finisher = isNew ? set[2] : set[1];
+  if (sel === 'finisher' && pp >= 3) return `★ ${finisher.name}`;
+  if (sel === 'basic2')              return `⚔ ${base2.name}`;
+  return `⚔ ${base1.name}`; // 'basic1', 'basic' (legacy), 'auto', o finisher senza PP
 }
 
 /** Aggiorna il footer della mossa sulle carte del lato indicato */

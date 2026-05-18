@@ -89,7 +89,11 @@ export function aiChooseMoves({ attackerField, defenderField, attackerPP, movese
       selections.set(attacker.id, 'auto');
       continue;
     }
-    const [basic, finisher] = set;
+    // Nuovo formato: [base1, base2, finisher] — backward compat con 2 elementi
+    const isNew    = set.length >= 3;
+    const base1    = set[0];
+    const base2    = isNew ? set[1] : set[0];
+    const finisher = isNew ? set[2] : set[1];
     const pp = attackerPP?.get(attacker.id) ?? 0;
     const canFinisher = pp >= 3;
 
@@ -106,25 +110,24 @@ export function aiChooseMoves({ attackerField, defenderField, attackerPP, movese
 
     // Nessun target → danno diretto. Finisher è sempre meglio (più power).
     if (!target) {
-      selections.set(attacker.id, canFinisher ? 'finisher' : 'basic');
+      selections.set(attacker.id, canFinisher ? 'finisher' : 'basic1');
       continue;
     }
 
     // Calcola danno atteso con ciascuna mossa
-    const basicDmg    = estimateDamage(attacker, basic,    target);
+    const b1Dmg       = estimateDamage(attacker, base1,    target);
+    const b2Dmg       = estimateDamage(attacker, base2,    target);
     const finisherDmg = canFinisher ? estimateDamage(attacker, finisher, target) : -1;
+    const bestBaseDmg = Math.max(b1Dmg, b2Dmg);
+    const bestBaseKey = b1Dmg >= b2Dmg ? 'basic1' : 'basic2';
 
     if (finisherDmg < 0) {
-      selections.set(attacker.id, 'basic');
+      selections.set(attacker.id, bestBaseKey);
       continue;
     }
 
-    // Scegli la mossa che fa più danno al target (considera STAB + tipo)
-    if (finisherDmg > basicDmg) {
-      selections.set(attacker.id, 'finisher');
-    } else {
-      selections.set(attacker.id, 'basic');
-    }
+    // Scegli la mossa che fa più danno al target
+    selections.set(attacker.id, finisherDmg > bestBaseDmg ? 'finisher' : bestBaseKey);
   }
 
   return selections;

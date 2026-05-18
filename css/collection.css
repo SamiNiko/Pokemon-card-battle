@@ -264,6 +264,40 @@
 .pool-toolbar__search:focus { border-color: var(--accent); }
 .pool-toolbar__search::placeholder { color: var(--text-muted); }
 
+/* Card nel pool che è già nel team selezionato: badge ✓ + bordo accent.
+   Cliccarla la RIMUOVE dal team. */
+.team-pool .card.is-in-team {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 14px rgba(255, 203, 5, 0.25);
+}
+.team-pool .card.is-in-team::after {
+  content: '✓';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #000;
+  font-weight: 900;
+  font-size: 0.85rem;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(255, 203, 5, 0.6);
+  pointer-events: none;
+  z-index: 5;
+}
+.team-pool .card.is-in-team:hover {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px var(--danger), 0 4px 14px rgba(238, 21, 21, 0.3);
+}
+.team-pool .card.is-in-team:hover::after {
+  content: '×';
+  background: var(--danger);
+  color: #fff;
+}
+
 .pool-toolbar__types {
   display: flex;
   gap: 4px;

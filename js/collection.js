@@ -277,8 +277,8 @@ function renderPool() {
 
   const team    = getTeamSlot(currentSlot);
   const owned   = allPokemon.filter(p => isOwned(p.id));
+  // Mostriamo TUTTI i posseduti — quelli già nel team con badge ✓ + click toggle.
   const filtered = owned.filter(p => {
-    if (team.includes(p.id)) return false;
     if (poolSearch && !p.name.toLowerCase().includes(poolSearch)) return false;
     if (poolType && !p.types.includes(poolType)) return false;
     return true;
@@ -293,9 +293,26 @@ function renderPool() {
   root.style.display = '';
   emptyMsg.classList.add('hidden');
 
+  // Set degli ID già nel team per evidenziare le card "in team" e fare toggle
+  const teamIds = new Set(getTeamSlot(currentSlot));
+
   for (const p of filtered) {
     const card = makeCard(p);
-    card.addEventListener('click', () => {
+    const inTeam = teamIds.has(p.id);
+    if (inTeam) card.classList.add('is-in-team');
+    card.title = inTeam
+      ? 'Clicca per RIMUOVERE dal team. Tasto destro / tap lungo: anteprima carta'
+      : 'Clicca per AGGIUNGERE al team. Tasto destro / tap lungo: anteprima carta';
+
+    // CLICK SX = toggle (aggiungi se non c'è, rimuovi se c'è)
+    card.addEventListener('click', e => {
+      // Sopprime click sintetico dopo il long-press (vedi sotto)
+      if (card.classList.contains('was-longpress')) return;
+      if (teamIds.has(p.id)) {
+        removeFromTeamSlot(currentSlot, p.id);
+        renderTeamTab();
+        return;
+      }
       const res = addToTeamSlot(currentSlot, p.id);
       if (res.ok) {
         renderTeamTab();
@@ -307,6 +324,35 @@ function renderPool() {
         toast(msg, 'error');
       }
     });
+
+    // CLICK DX (desktop) = apre card modal con anteprima
+    card.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      openCardModal(p.id);
+    });
+
+    // LONG-PRESS (mobile) = apre card modal (touchstart 450ms senza muovere)
+    let pressTimer = null;
+    let pressStart = { x: 0, y: 0 };
+    const cancelPress = () => { clearTimeout(pressTimer); pressTimer = null; };
+    card.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') return;   // solo touch / pen
+      pressStart = { x: e.clientX, y: e.clientY };
+      pressTimer = setTimeout(() => {
+        pressTimer = null;
+        card.classList.add('was-longpress');
+        setTimeout(() => card.classList.remove('was-longpress'), 200);
+        openCardModal(p.id);
+      }, 450);
+    });
+    card.addEventListener('pointermove', e => {
+      if (!pressTimer) return;
+      if (Math.abs(e.clientX - pressStart.x) > 8 || Math.abs(e.clientY - pressStart.y) > 8) cancelPress();
+    });
+    card.addEventListener('pointerup',     cancelPress);
+    card.addEventListener('pointercancel', cancelPress);
+    card.addEventListener('pointerleave',  cancelPress);
+
     root.appendChild(card);
   }
 

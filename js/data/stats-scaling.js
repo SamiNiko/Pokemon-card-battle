@@ -65,12 +65,24 @@ export function getScaledStats(pkmn) {
   };
 }
 
-/** Display-friendly: ritorna il livello come label "LV. 30" o "LV. MAX" per leggendari. */
+/** Display dei livelli 1..5 → 50/60/75/90/100.
+ *  Scelta non lineare: prima trovata è LV.50 ("d'impatto"), max è LV.100. */
+const LEVEL_DISPLAY = [50, 60, 75, 90, 100];
+
+/** Display-friendly: ritorna il livello come label "LV. 50" o "LV. MAX" per leggendari. */
 export function levelLabel(pokemonId) {
   const rarity = getRarity(pokemonId);
   if (rarity === 'legendary') return 'LV. MAX';
   const lvl = getLevel(pokemonId);
-  return `LV. ${lvl * 10}`;
+  return `LV. ${LEVEL_DISPLAY[lvl - 1] ?? LEVEL_DISPLAY[0]}`;
+}
+
+/** Solo il numero del livello display (per UI dettagliata). */
+export function levelNumber(pokemonId) {
+  const rarity = getRarity(pokemonId);
+  if (rarity === 'legendary') return LEVEL_DISPLAY[LEVEL_DISPLAY.length - 1];
+  const lvl = getLevel(pokemonId);
+  return LEVEL_DISPLAY[lvl - 1] ?? LEVEL_DISPLAY[0];
 }
 
 /** Restituisce i moltiplicatori per una rarità (utility per UI/debug). */

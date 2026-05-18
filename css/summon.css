@@ -1097,6 +1097,87 @@
   color: var(--text);
 }
 
+/* ============================================================
+   REVEAL OUTCOME BADGE — "NUOVO!" / "LV → 60" / "LV. MAX"
+   Appare nel pannello destro del reveal sopra la rarità.
+   ============================================================ */
+.reveal-outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 6px 14px;
+  margin-bottom: 4px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border: 1.5px solid;
+  animation: reveal-outcome-pop 0.6s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.reveal-outcome__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.reveal-outcome__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reveal-outcome__lv-arrow {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
+.reveal-outcome__lv-prev {
+  opacity: 0.55;
+  font-weight: 700;
+}
+
+.reveal-outcome__lv-new {
+  color: #ffe04a;
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(255, 224, 74, 0.6);
+}
+
+/* Varianti */
+.reveal-outcome--new {
+  background: linear-gradient(135deg, rgba(77, 173, 91, 0.35), rgba(77, 173, 91, 0.18));
+  border-color: rgba(77, 173, 91, 0.85);
+  color: #6fdc7f;
+  box-shadow: 0 0 16px rgba(77, 173, 91, 0.45);
+}
+
+.reveal-outcome--levelup {
+  background: linear-gradient(135deg, rgba(255, 203, 5, 0.30), rgba(245, 208, 80, 0.15));
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 16px rgba(255, 203, 5, 0.4);
+  animation:
+    reveal-outcome-pop 0.6s 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    reveal-outcome-levelup-glow 1.6s 0.9s ease-in-out 2;
+}
+
+.reveal-outcome--max {
+  background: linear-gradient(135deg, rgba(94, 232, 216, 0.25), rgba(200, 168, 255, 0.18));
+  border-color: rgba(94, 232, 216, 0.7);
+  color: #5ee8d8;
+}
+
+@keyframes reveal-outcome-pop {
+  0%   { opacity: 0; transform: scale(0.6) translateY(8px); }
+  60%  { opacity: 1; transform: scale(1.1)  translateY(0);  }
+  100% { opacity: 1; transform: scale(1)    translateY(0);  }
+}
+@keyframes reveal-outcome-levelup-glow {
+  0%, 100% { box-shadow: 0 0 16px rgba(255, 203, 5, 0.4); }
+  50%      { box-shadow: 0 0 24px rgba(255, 203, 5, 0.85), 0 0 36px rgba(255, 203, 5, 0.5); }
+}
+
 .detail-types { display: flex; gap: var(--sp-2); }
 
 .detail-type-badge {

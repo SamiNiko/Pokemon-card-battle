@@ -920,7 +920,35 @@ function buildDetailHTML(entry, pkmn) {
     </div>`
   ).join('');
 
+  // Badge "NUOVO!" / "LV +1 → 60" / "LV. MAX" basato sull'esito del pull
+  const outcome = entry.outcome ?? {};
+  const LEVEL_DISPLAY = [50, 60, 75, 90, 100];
+  let outcomeBadge = '';
+  if (outcome.gained) {
+    outcomeBadge = `<div class="reveal-outcome reveal-outcome--new">
+      <span class="reveal-outcome__icon">✨</span>
+      <span class="reveal-outcome__text">NUOVO!</span>
+    </div>`;
+  } else if (outcome.leveledUp) {
+    const prevLv = LEVEL_DISPLAY[outcome.newLevel - 2] ?? LEVEL_DISPLAY[0];
+    const newLv  = LEVEL_DISPLAY[outcome.newLevel - 1] ?? LEVEL_DISPLAY[outcome.newLevel - 1];
+    outcomeBadge = `<div class="reveal-outcome reveal-outcome--levelup">
+      <span class="reveal-outcome__icon">⬆</span>
+      <span class="reveal-outcome__text">
+        <span class="reveal-outcome__lv-prev">LV. ${prevLv}</span>
+        <span class="reveal-outcome__lv-arrow">→</span>
+        <span class="reveal-outcome__lv-new">LV. ${newLv}</span>
+      </span>
+    </div>`;
+  } else if (outcome.alreadyMax) {
+    outcomeBadge = `<div class="reveal-outcome reveal-outcome--max">
+      <span class="reveal-outcome__icon">★</span>
+      <span class="reveal-outcome__text">LV. MAX</span>
+    </div>`;
+  }
+
   return `
+    ${outcomeBadge}
     <div class="detail-rarity detail-rarity--${entry.rarity}">
       <span class="detail-rarity__stars">${starsStr}</span>
       <span class="detail-rarity__label">${rarityLabel}</span>

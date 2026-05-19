@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Combattimento</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
-  <link rel="stylesheet" href="css/battle.css?v=16" />
+  <link rel="stylesheet" href="css/battle.css?v=17" />
   <link rel="stylesheet" href="css/card-modal.css?v=8" />
   <script src="js/register-sw.js?v=1" defer></script>
 </head>
@@ -125,6 +125,31 @@
     </div>
   </div>
 
+  <!-- ============================================================
+       END-GAME OVERLAY — schermata fine partita (trainer/AI/PvP)
+       ============================================================ -->
+  <div class="endgame-overlay hidden" id="endgameOverlay" role="dialog" aria-modal="true">
+    <div class="endgame-overlay__backdrop"></div>
+    <div class="endgame-overlay__rays" aria-hidden="true"></div>
+    <div class="endgame-panel">
+      <div class="endgame-panel__sprite-wrap">
+        <div class="endgame-panel__sprite-bg"></div>
+        <div class="endgame-panel__sprite" id="endgameSprite">⚔</div>
+      </div>
+      <div class="endgame-panel__result" id="endgameResult">Vittoria!</div>
+      <div class="endgame-panel__sub" id="endgameSub">Hai battuto l'avversario</div>
+      <div class="endgame-panel__reward hidden" id="endgameReward">
+        <span class="endgame-panel__reward-icon">💎</span>
+        <span class="endgame-panel__reward-amount" id="endgameRewardAmount">+0</span>
+        <span class="endgame-panel__reward-label">gemme</span>
+      </div>
+      <div class="endgame-panel__actions">
+        <button class="btn btn--ghost" id="endgameSecondary">← Indietro</button>
+        <button class="btn btn--primary" id="endgamePrimary">Continua ▸</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal conferma uscita partita (4a-4) -->
   <div class="modal hidden" id="exitModal" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
     <div class="modal__backdrop" id="exitModalBackdrop"></div>
@@ -144,6 +169,6 @@
     <p id="loadingMsg">Caricamento Pokémon…</p>
   </div>
 
-  <script type="module" src="js/battle.js?v=16"></script>
+  <script type="module" src="js/battle.js?v=17"></script>
 </body>
 </html>

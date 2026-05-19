@@ -94,6 +94,16 @@
   border-radius: 50%;
   border: 2px solid color-mix(in srgb, var(--trainer-color) 45%, transparent);
   filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--trainer-color) 40%, transparent));
+  overflow: hidden;
+}
+/* Sprite trainer reale (PokeAPI HGSS): pixelato, scalato fino al cerchio */
+.trainer-card__sprite {
+  width: 110%;
+  height: 110%;
+  object-fit: contain;
+  object-position: center top;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .trainer-card__main { min-width: 0; }
@@ -235,13 +245,22 @@
   border-bottom: 1px solid color-mix(in srgb, var(--trainer-color) 30%, var(--border));
 }
 .trainer-modal__badge {
-  width: 64px; height: 64px;
+  width: 72px; height: 72px;
   display: grid; place-items: center;
   font-size: 2.2rem;
   background: radial-gradient(circle, color-mix(in srgb, var(--trainer-color) 45%, transparent) 0%, transparent 70%);
   border-radius: 50%;
   border: 2px solid var(--trainer-color);
   flex-shrink: 0;
+  overflow: hidden;
+}
+.trainer-modal__sprite {
+  width: 110%;
+  height: 110%;
+  object-fit: contain;
+  object-position: center top;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 .trainer-modal__name {
   margin: 0 0 2px;

@@ -5,7 +5,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { TRAINERS, getTrainer, getUnlockedTrainers } from './data/trainers.js?v=1';
+import { TRAINERS, getTrainer, getUnlockedTrainers } from './data/trainers.js?v=3';
 import { getTrainersBeaten, isTrainerBeaten } from './data/state.js?v=6';
 import { getRarity }                          from './data/rarity.js';
 
@@ -52,9 +52,15 @@ function renderList() {
       </span>
     `).join('');
 
+    // Avatar: usa lo sprite del trainer (PokeAPI HGSS) con fallback all'emoji
+    const avatarHTML = t.sprite
+      ? `<img class="trainer-card__sprite" src="${t.sprite}" alt="${t.name}"
+             onerror="this.outerHTML='${t.badge}'" />`
+      : t.badge;
+
     card.innerHTML = `
       <div class="trainer-card__num">${String(idx + 1).padStart(2, '0')}</div>
-      <div class="trainer-card__badge">${t.badge}</div>
+      <div class="trainer-card__badge">${avatarHTML}</div>
       <div class="trainer-card__main">
         <h3 class="trainer-card__name">${t.name}</h3>
         <p class="trainer-card__title">${t.title}</p>
@@ -88,7 +94,11 @@ function openTrainerModal(id) {
 
   const modal = $('#trainerModal');
   modal.style.setProperty('--trainer-color', t.color);
-  $('#trainerModalBadge').textContent     = t.badge;
+  // Avatar grande in alto: sprite con fallback emoji
+  $('#trainerModalBadge').innerHTML = t.sprite
+    ? `<img class="trainer-modal__sprite" src="${t.sprite}" alt="${t.name}"
+           onerror="this.outerHTML='${t.badge}'" />`
+    : t.badge;
   $('#trainerModalTitle').textContent     = t.name;
   $('#trainerModalTitleSub').textContent  = t.title;
   $('#trainerModalIntro').textContent     = t.intro;

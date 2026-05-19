@@ -103,6 +103,19 @@
   font-size: 0.85rem;
   color: var(--text-dim);
   flex-shrink: 0;
+  overflow: hidden;
+}
+.player-info__avatar.has-trainer-sprite {
+  background: linear-gradient(135deg, rgba(255,203,5,0.18), transparent);
+  border-color: var(--accent);
+}
+.trainer-avatar-img {
+  width: 110%;
+  height: 110%;
+  object-fit: contain;
+  object-position: center top;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .player-info__meta {
@@ -1165,7 +1178,179 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
 }
 
 /* ============================================================
-   REWARD TOAST — popup gemme post-battaglia online
+   END-GAME OVERLAY — fine partita (trainer/AI/PvP)
+   ============================================================ */
+.endgame-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+.endgame-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.endgame-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center,
+    rgba(13, 14, 22, 0.78) 0%,
+    rgba(13, 14, 22, 0.97) 80%);
+  backdrop-filter: blur(8px);
+}
+/* Raggi gialli rotanti dietro lo sprite (stile vittoria anime) */
+.endgame-overlay__rays {
+  position: absolute;
+  width: 700px; height: 700px;
+  pointer-events: none;
+  background:
+    conic-gradient(from 0deg,
+      rgba(255, 203, 5, 0)   0deg,
+      rgba(255, 203, 5, 0.18) 8deg,
+      rgba(255, 203, 5, 0)   16deg,
+      rgba(255, 203, 5, 0)   30deg,
+      rgba(255, 203, 5, 0.18) 38deg,
+      rgba(255, 203, 5, 0)   46deg);
+  background-size: 60deg 60deg;
+  animation: endgame-rays-spin 18s linear infinite;
+  opacity: 0;
+  transition: opacity 0.8s ease 0.2s;
+}
+.endgame-overlay.is-visible .endgame-overlay__rays { opacity: 0.7; }
+@keyframes endgame-rays-spin {
+  from { transform: rotate(0deg);   }
+  to   { transform: rotate(360deg); }
+}
+
+.endgame-panel {
+  position: relative;
+  z-index: 1;
+  width: min(440px, calc(100vw - 32px));
+  background: linear-gradient(180deg, rgba(22, 28, 48, 0.97) 0%, rgba(15, 19, 32, 0.97) 100%);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-4);
+  padding: var(--sp-7) var(--sp-5) var(--sp-5);
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7),
+              0 0 100px -10px rgba(255, 203, 5, 0.45);
+  transform: scale(0.85) translateY(20px);
+  transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.endgame-overlay.is-visible .endgame-panel { transform: scale(1) translateY(0); }
+
+.endgame-panel__sprite-wrap {
+  position: relative;
+  margin: 0 auto var(--sp-3);
+  width: 140px;
+  height: 140px;
+  display: grid;
+  place-items: center;
+}
+.endgame-panel__sprite-bg {
+  position: absolute;
+  inset: -10px;
+  background: radial-gradient(circle, rgba(255, 203, 5, 0.35) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: endgame-sprite-bg-pulse 2.2s ease-in-out infinite;
+}
+@keyframes endgame-sprite-bg-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.85; }
+  50%      { transform: scale(1.08); opacity: 1.00; }
+}
+.endgame-panel__sprite {
+  position: relative;
+  z-index: 1;
+  width: 120px;
+  height: 120px;
+  display: grid;
+  place-items: center;
+  font-size: 4rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 24px rgba(255, 203, 5, 0.55);
+}
+.endgame-panel__sprite img {
+  width: 110%;
+  height: 110%;
+  object-fit: contain;
+  object-position: center top;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.endgame-panel__result {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  margin: var(--sp-2) 0 4px;
+  text-shadow: 0 0 18px rgba(255, 203, 5, 0.55);
+}
+.endgame-panel__result--win  { color: var(--accent); }
+.endgame-panel__result--lose { color: var(--danger); }
+
+.endgame-panel__sub {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: var(--sp-4);
+  line-height: 1.4;
+}
+
+.endgame-panel__reward {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: var(--sp-3) auto var(--sp-5);
+  padding: var(--sp-3) var(--sp-5);
+  width: fit-content;
+  background: linear-gradient(135deg, rgba(255, 203, 5, 0.18), rgba(255, 203, 5, 0.06));
+  border: 2px solid rgba(255, 203, 5, 0.45);
+  border-radius: 999px;
+  animation: endgame-reward-glow 1.8s ease-in-out infinite;
+}
+@keyframes endgame-reward-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 203, 5, 0.40); }
+  50%      { box-shadow: 0 0 22px rgba(255, 203, 5, 0.70); }
+}
+.endgame-panel__reward-icon  { font-size: 1.4rem; }
+.endgame-panel__reward-amount {
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--accent);
+  font-feature-settings: "tnum";
+  text-shadow: 0 0 12px rgba(255, 203, 5, 0.6);
+}
+.endgame-panel__reward-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.endgame-panel__actions {
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: center;
+}
+.endgame-panel__actions .btn { min-width: 130px; }
+
+@media (max-width: 480px) {
+  .endgame-panel__sprite-wrap { width: 110px; height: 110px; }
+  .endgame-panel__sprite      { width: 96px; height: 96px; font-size: 3rem; }
+  .endgame-panel__result      { font-size: 1.6rem; }
+  .endgame-panel__reward-amount { font-size: 1.6rem; }
+}
+
+/* ============================================================
+   REWARD TOAST — popup gemme post-battaglia online (deprecato,
+   sostituito dall'end-game overlay sopra. Mantengo CSS per safety.)
    ============================================================ */
 .reward-toast {
   position: fixed;

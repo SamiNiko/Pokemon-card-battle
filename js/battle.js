@@ -167,7 +167,7 @@ async function init() {
     // ---- TRAINER mode ----
     // Carica il team del trainer da js/data/trainers.js. Se l'id non
     // esiste o il team è vuoto, fallback al team random.
-    const { getTrainer } = await import('./data/trainers.js?v=1');
+    const { getTrainer } = await import('./data/trainers.js?v=3');
     const t = getTrainer(TRAINER_ID);
     const playerTeam = getActiveTeam();
     bs.playerTeamIds = playerTeam.length > 0 ? playerTeam : [25, 6, 9, 3, 94, 65];
@@ -177,7 +177,16 @@ async function init() {
       const enemyNameEl   = $('#enemyName');
       const enemyAvatarEl = $('#enemyAvatar');
       if (enemyNameEl)   enemyNameEl.textContent   = t.name;
-      if (enemyAvatarEl) enemyAvatarEl.textContent = t.badge ?? (t.name[0] ?? 'T');
+      if (enemyAvatarEl) {
+        // Sprite del trainer come avatar (con fallback emoji badge)
+        if (t.sprite) {
+          enemyAvatarEl.innerHTML = `<img class="trainer-avatar-img" src="${t.sprite}" alt="${t.name}"
+            onerror="this.outerHTML='${t.badge ?? t.name[0] ?? 'T'}'" />`;
+          enemyAvatarEl.classList.add('has-trainer-sprite');
+        } else {
+          enemyAvatarEl.textContent = t.badge ?? (t.name[0] ?? 'T');
+        }
+      }
     } else {
       bs.enemyTeamIds = pickRandomEnemyTeam(6);
     }
@@ -1503,7 +1512,7 @@ async function endGame(result) {
       markTrainerBeaten(TRAINER_ID);
       // Carica reward dal modulo trainers
       try {
-        const { getTrainer } = await import('./data/trainers.js?v=1');
+        const { getTrainer } = await import('./data/trainers.js?v=3');
         const t = getTrainer(TRAINER_ID);
         if (t && typeof t.reward === 'number' && t.reward > 0) {
           gemReward = t.reward;
@@ -1548,41 +1557,109 @@ async function endGame(result) {
   btn.removeEventListener('click', confirmTurn);
   btn.addEventListener('click', () => { window.location.href = 'index.html'; }, { once: true });
 
-  // Reward toast: appare al centro con animazione pop (solo se ho dato gemme)
-  if (gemReward > 0) {
-    showRewardToast(gemReward, result === 'win');
-  }
+  // End-game overlay: appare dopo ~0.8s per non sovrapporsi all'animazione KO
+  setTimeout(() => showEndGameScreen(result, gemReward), 850);
 }
 
-/** Toast riepilogo reward post-battaglia (gemme guadagnate). */
-function showRewardToast(gems, isWin) {
-  // Riusa il toast esistente in fondo, ma con stile reward
-  const toast = $('#toast');
-  if (!toast) {
-    // Fallback: crea un toast volante
-    const t = document.createElement('div');
-    t.className = 'reward-toast';
-    t.innerHTML = `
-      <div class="reward-toast__title">${isWin ? '🏆 Vittoria!' : '🎁 Premio consolazione'}</div>
-      <div class="reward-toast__gems"><span>💎</span> +${gems} gemme</div>
-    `;
-    document.body.appendChild(t);
-    requestAnimationFrame(() => t.classList.add('is-visible'));
-    setTimeout(() => t.classList.remove('is-visible'), 4200);
-    setTimeout(() => t.remove(), 4800);
-    return;
+/** Mostra l'overlay fullscreen di fine partita. Adatta i testi/sprite
+ *  in base alla modalità (trainer/AI/PvP) e mostra la reward animata. */
+async function showEndGameScreen(result, gemReward) {
+  const overlay = $('#endgameOverlay');
+  if (!overlay) return;
+
+  // ---- Determina trainer info (solo se mode=trainer) ----
+  let trainer = null;
+  if (MODE === 'trainer' && TRAINER_ID) {
+    try {
+      const { getTrainer } = await import('./data/trainers.js?v=3');
+      trainer = getTrainer(TRAINER_ID);
+    } catch {}
   }
-  toast.classList.remove('hidden');
-  toast.classList.add('toast--reward');
-  toast.innerHTML = `
-    <div class="reward-toast__title">${isWin ? '🏆 Vittoria!' : '🎁 Premio consolazione'}</div>
-    <div class="reward-toast__gems"><span>💎</span> +${gems} gemme</div>
-  `;
-  setTimeout(() => {
-    toast.classList.add('hidden');
-    toast.classList.remove('toast--reward');
-  }, 4200);
+
+  // ---- Sprite/icona ----
+  const spriteEl = $('#endgameSprite');
+  if (trainer?.sprite) {
+    spriteEl.innerHTML = `<img src="${trainer.sprite}" alt="${trainer.name}"
+      onerror="this.outerHTML='${trainer.badge ?? '⚔'}'" />`;
+  } else if (result === 'win') {
+    spriteEl.textContent = '🏆';
+  } else {
+    spriteEl.textContent = '💀';
+  }
+
+  // ---- Risultato / sottotitolo ----
+  const resultEl = $('#endgameResult');
+  const subEl    = $('#endgameSub');
+  if (result === 'win') {
+    resultEl.textContent = '🏆 Vittoria!';
+    resultEl.className   = 'endgame-panel__result endgame-panel__result--win';
+    if (trainer) subEl.textContent = `Hai battuto ${trainer.name} — ${trainer.title}`;
+    else if (MODE === 'pvp') subEl.textContent = 'Hai sconfitto il tuo avversario online';
+    else subEl.textContent = 'Hai sconfitto l\'AI';
+  } else {
+    resultEl.textContent = '💀 Sconfitta';
+    resultEl.className   = 'endgame-panel__result endgame-panel__result--lose';
+    if (trainer) subEl.textContent = `${trainer.name} ti ha battuto. Riprova!`;
+    else if (MODE === 'pvp') subEl.textContent = 'Il tuo avversario ha avuto la meglio';
+    else subEl.textContent = 'L\'AI ha avuto la meglio';
+  }
+
+  // ---- Reward ----
+  const rewardEl   = $('#endgameReward');
+  const amountEl   = $('#endgameRewardAmount');
+  if (gemReward > 0) {
+    rewardEl.classList.remove('hidden');
+    // Counter animato 0 → gemReward
+    const DUR = 900;
+    const startT = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - startT) / DUR);
+      const e = 1 - Math.pow(1 - t, 3);
+      amountEl.textContent = `+${Math.round(gemReward * e)}`;
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  } else {
+    rewardEl.classList.add('hidden');
+  }
+
+  // ---- Bottoni ----
+  const secondaryEl = $('#endgameSecondary');
+  const primaryEl   = $('#endgamePrimary');
+  // Reset listeners (clone trick) — l'overlay può essere mostrato più volte teoricamente
+  const sNew = secondaryEl.cloneNode(true);
+  const pNew = primaryEl.cloneNode(true);
+  secondaryEl.replaceWith(sNew);
+  primaryEl.replaceWith(pNew);
+
+  if (MODE === 'trainer') {
+    sNew.textContent = '← Allenatori';
+    sNew.addEventListener('click', () => { window.location.href = 'trainers.html'; });
+    if (result === 'win') {
+      pNew.textContent = 'Continua ▸';
+      pNew.addEventListener('click', () => { window.location.href = 'trainers.html'; });
+    } else {
+      pNew.textContent = '↻ Riprova';
+      pNew.addEventListener('click', () => { window.location.reload(); });
+    }
+  } else if (MODE === 'pvp') {
+    sNew.textContent = '← Home';
+    sNew.addEventListener('click', () => { window.location.href = 'index.html'; });
+    pNew.textContent = '🌐 Cerca match';
+    pNew.addEventListener('click', () => { window.location.href = 'online.html'; });
+  } else {
+    sNew.textContent = '← Home';
+    sNew.addEventListener('click', () => { window.location.href = 'index.html'; });
+    pNew.textContent = '↻ Rivincita';
+    pNew.addEventListener('click', () => { window.location.reload(); });
+  }
+
+  overlay.classList.remove('hidden');
+  requestAnimationFrame(() => overlay.classList.add('is-visible'));
 }
+
+/* showRewardToast() rimosso — sostituito da showEndGameScreen()
+   (overlay fullscreen più ricco con sprite trainer + reward animata). */
 
 /* ============================================================
    FASE LABEL

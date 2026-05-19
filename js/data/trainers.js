@@ -17,6 +17,7 @@ export const TRAINERS = [
     name:  'Brock',
     title: 'Capopalestra di Plumbeopoli',
     badge: '⛰',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/brock.png',
     color: '#a8a878',     // grigio roccia
     type:  'rock',
     /* 3 Pokemon: introduzione comodo per il giocatore col team minimo */
@@ -29,6 +30,7 @@ export const TRAINERS = [
     name:  'Misty',
     title: 'Capopalestra di Celestopoli',
     badge: '💧',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/misty.png',
     color: '#6890f0',
     type:  'water',
     team:  [120, 121],    // Staryu, Starmie
@@ -40,6 +42,7 @@ export const TRAINERS = [
     name:  'Lt. Surge',
     title: 'Capopalestra di Aranciopoli',
     badge: '⚡',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/ltsurge.png',
     color: '#f8d030',
     type:  'electric',
     team:  [100, 81, 26], // Voltorb, Magnemite, Raichu
@@ -51,6 +54,7 @@ export const TRAINERS = [
     name:  'Erika',
     title: 'Capopalestra di Azzurropoli',
     badge: '🌿',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/erika.png',
     color: '#78c850',
     type:  'grass',
     team:  [71, 114, 45], // Victreebel, Tangela, Vileplume
@@ -62,6 +66,7 @@ export const TRAINERS = [
     name:  'Koga',
     title: 'Capopalestra di Fucsiapoli',
     badge: '☠',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/koga.png',
     color: '#a040a0',
     type:  'poison',
     team:  [109, 89, 110], // Koffing, Muk, Weezing
@@ -73,6 +78,7 @@ export const TRAINERS = [
     name:  'Sabrina',
     title: 'Capopalestra di Zafferanopoli',
     badge: '🔮',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/sabrina.png',
     color: '#f85888',
     type:  'psychic',
     team:  [64, 122, 49, 65], // Kadabra, Mr. Mime, Venomoth, Alakazam
@@ -84,6 +90,7 @@ export const TRAINERS = [
     name:  'Blaine',
     title: 'Capopalestra di Cromolitopoli',
     badge: '🔥',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/blaine.png',
     color: '#f08030',
     type:  'fire',
     team:  [58, 77, 78, 59], // Growlithe, Ponyta, Rapidash, Arcanine
@@ -95,6 +102,7 @@ export const TRAINERS = [
     name:  'Giovanni',
     title: 'Capopalestra di Smeraldopoli',
     badge: '⛰',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/giovanni.png',
     color: '#e0c068',
     type:  'ground',
     team:  [111, 51, 31, 34, 112], // Rhyhorn, Dugtrio, Nidoqueen, Nidoking, Rhydon
@@ -106,6 +114,7 @@ export const TRAINERS = [
     name:  'Lance',
     title: 'Elite Four — Drago',
     badge: '🐲',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/lance.png',
     color: '#7038f8',
     type:  'dragon',
     team:  [130, 148, 142, 148, 149], // Gyarados, Dragonair, Aerodactyl, Dragonair, Dragonite
@@ -117,6 +126,7 @@ export const TRAINERS = [
     name:  'Blue',
     title: 'Campione di Kanto',
     badge: '👑',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/blue.png',
     color: '#ffcb05',
     type:  'normal',
     /* Team da Campione: 6 Pokemon, mix di tipi, include uno starter finale */

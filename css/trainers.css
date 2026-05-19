@@ -1,0 +1,370 @@
+/* ============================================================
+   trainers.css — Pagina lista Allenatori Kanto
+   ============================================================ */
+
+.trainers-page {
+  background:
+    radial-gradient(ellipse at top, rgba(255, 203, 5, 0.06), transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(112, 56, 248, 0.10), transparent 50%),
+    var(--bg-0);
+  min-height: 100dvh;
+}
+
+.trainers-progress {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: rgba(255, 203, 5, 0.12);
+  border: 1px solid rgba(255, 203, 5, 0.3);
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-feature-settings: "tnum";
+}
+
+/* Lista verticale di trainer card */
+.trainers-list {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-4) var(--sp-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.trainer-card {
+  --trainer-color: var(--accent);
+  display: grid;
+  grid-template-columns: 44px 60px 1fr auto;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--trainer-color) 12%, var(--bg-1)) 0%,
+    var(--bg-1) 60%);
+  border: 1px solid color-mix(in srgb, var(--trainer-color) 32%, var(--border));
+  border-radius: var(--r-3);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.trainer-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--trainer-color) 0%, transparent 50%);
+  opacity: 0.06;
+  pointer-events: none;
+}
+.trainer-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px color-mix(in srgb, var(--trainer-color) 55%, transparent);
+  border-color: var(--trainer-color);
+}
+.trainer-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+.trainer-card.is-beaten {
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--success) 14%, var(--bg-1)) 0%,
+    var(--bg-1) 60%);
+  border-color: color-mix(in srgb, var(--success) 35%, var(--border));
+}
+
+.trainer-card__num {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: color-mix(in srgb, var(--trainer-color) 80%, white);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--trainer-color) 60%, transparent);
+  font-feature-settings: "tnum";
+  letter-spacing: 0.03em;
+}
+
+.trainer-card__badge {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  font-size: 1.7rem;
+  background: radial-gradient(circle, color-mix(in srgb, var(--trainer-color) 35%, transparent) 0%, transparent 70%);
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--trainer-color) 45%, transparent);
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--trainer-color) 40%, transparent));
+}
+
+.trainer-card__main { min-width: 0; }
+.trainer-card__name {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.trainer-card__title {
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+.trainer-card__team {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.trainer-card__pkmn {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  position: relative;
+}
+.trainer-card__pkmn[data-rarity="pseudo"]   { border-color: #ffcb05; box-shadow: 0 0 8px rgba(255,203,5,0.4); }
+.trainer-card__pkmn[data-rarity="epic"]     { border-color: #a040a0; }
+.trainer-card__pkmn[data-rarity="rare"]     { border-color: #6890f0; }
+.trainer-card__pkmn[data-rarity="uncommon"] { border-color: #78c850; }
+.trainer-card__pkmn img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.trainer-card__right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+.trainer-card__reward {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.trainer-card__hint {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.trainer-card__status {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.trainer-card__status--beaten {
+  color: #2a7a3d;
+  background: rgba(77, 173, 91, 0.18);
+  border: 1px solid rgba(77, 173, 91, 0.45);
+}
+.trainer-card__status--locked {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .trainer-card {
+    grid-template-columns: 36px 48px 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--sp-2) var(--sp-3);
+    padding: var(--sp-3);
+  }
+  .trainer-card__right {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--sp-2);
+    border-top: 1px solid var(--border);
+  }
+  .trainer-card__badge { width: 44px; height: 44px; font-size: 1.4rem; }
+  .trainer-card__pkmn  { width: 24px; height: 24px; }
+  .trainer-card__pkmn img { width: 26px; height: 26px; }
+}
+
+/* ============================================================
+   TRAINER MODAL — preview team + sfida
+   ============================================================ */
+.trainer-modal {
+  --trainer-color: var(--accent);
+  min-width: 360px;
+  max-width: 560px;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.modal__close-x {
+  position: absolute;
+  top: 12px; right: 12px;
+  z-index: 2;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.modal__close-x:hover { background: rgba(0,0,0,0.7); }
+
+.trainer-modal__head {
+  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--trainer-color) 35%, var(--bg-1)) 0%,
+    var(--bg-1) 80%);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  border-bottom: 1px solid color-mix(in srgb, var(--trainer-color) 30%, var(--border));
+}
+.trainer-modal__badge {
+  width: 64px; height: 64px;
+  display: grid; place-items: center;
+  font-size: 2.2rem;
+  background: radial-gradient(circle, color-mix(in srgb, var(--trainer-color) 45%, transparent) 0%, transparent 70%);
+  border-radius: 50%;
+  border: 2px solid var(--trainer-color);
+  flex-shrink: 0;
+}
+.trainer-modal__name {
+  margin: 0 0 2px;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--text);
+}
+.trainer-modal__title-sub {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  letter-spacing: 0.02em;
+}
+.trainer-modal__intro {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-5);
+  background: rgba(255, 255, 255, 0.02);
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.45;
+}
+
+.trainer-modal__team-section { padding: var(--sp-4) var(--sp-5) var(--sp-3); }
+.trainer-modal__section-label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: var(--sp-3);
+}
+.trainer-modal__team {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: var(--sp-2);
+}
+.trainer-modal__pkmn {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid var(--border);
+  border-radius: var(--r-2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.trainer-modal__pkmn[data-rarity="pseudo"]   { border-color: #ffcb05; box-shadow: 0 0 10px rgba(255,203,5,0.45); }
+.trainer-modal__pkmn[data-rarity="epic"]     { border-color: #a040a0; }
+.trainer-modal__pkmn[data-rarity="rare"]     { border-color: #6890f0; }
+.trainer-modal__pkmn[data-rarity="uncommon"] { border-color: #78c850; }
+.trainer-modal__pkmn-img {
+  width: 100%;
+  flex: 1;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.3);
+}
+.trainer-modal__pkmn-img.is-fallback { image-rendering: pixelated; object-fit: contain; }
+.trainer-modal__pkmn-name {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 3px 2px;
+  background: rgba(0, 0, 0, 0.85);
+  color: var(--text);
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trainer-modal__reward {
+  margin: var(--sp-3) var(--sp-5);
+  padding: var(--sp-3) var(--sp-4);
+  background: linear-gradient(90deg, rgba(255, 203, 5, 0.12), transparent);
+  border: 1px solid rgba(255, 203, 5, 0.3);
+  border-radius: var(--r-2);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-feature-settings: "tnum";
+}
+.trainer-modal__reward span:first-child { font-size: 1.1rem; }
+.trainer-modal__reward b {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+.trainer-modal__reward-sub {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.trainer-modal__reward.is-claimed {
+  background: rgba(77, 173, 91, 0.10);
+  border-color: rgba(77, 173, 91, 0.3);
+}
+.trainer-modal__reward.is-claimed b { color: var(--success); }
+
+.trainer-modal__actions {
+  padding: var(--sp-4) var(--sp-5) var(--sp-5);
+  display: flex;
+  gap: var(--sp-3);
+  justify-content: flex-end;
+  border-top: 1px solid var(--border);
+}
+.trainer-modal__actions .btn--primary {
+  background: linear-gradient(135deg, var(--trainer-color), color-mix(in srgb, var(--trainer-color) 70%, black));
+  border-color: var(--trainer-color);
+}
+
+@media (max-width: 480px) {
+  .trainer-modal { min-width: 0; width: calc(100vw - 24px); }
+}
+
+/* Variant per page-hero header */
+.page-hero--trainers {
+  background:
+    radial-gradient(ellipse at top right, rgba(255, 203, 5, 0.16), transparent 60%),
+    radial-gradient(ellipse at bottom left, rgba(112, 56, 248, 0.16), transparent 60%),
+    var(--bg-1);
+}

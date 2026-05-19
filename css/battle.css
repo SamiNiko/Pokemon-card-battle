@@ -1163,3 +1163,49 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
 @media (max-width: 480px) {
   .move-picker { min-width: 0; width: calc(100vw - 32px); }
 }
+
+/* ============================================================
+   REWARD TOAST — popup gemme post-battaglia online
+   ============================================================ */
+.reward-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.85);
+  z-index: 10000;
+  min-width: 280px;
+  padding: var(--sp-5) var(--sp-6);
+  background: radial-gradient(ellipse at top, rgba(255, 224, 74, 0.22) 0%, rgba(22, 28, 48, 0.97) 60%);
+  border: 2px solid var(--accent);
+  border-radius: var(--r-4);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7),
+              0 0 60px -10px rgba(255, 203, 5, 0.6);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.reward-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.reward-toast__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin-bottom: 10px;
+  text-shadow: 0 0 12px rgba(255, 203, 5, 0.6);
+}
+.reward-toast__gems {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fff;
+  font-feature-settings: "tnum";
+  animation: reward-gems-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.reward-toast__gems span { margin-right: 8px; }
+@keyframes reward-gems-pop {
+  0%   { transform: scale(0.6) rotate(-8deg); opacity: 0;   }
+  60%  { transform: scale(1.25) rotate(4deg); opacity: 1;   }
+  100% { transform: scale(1) rotate(0deg);    opacity: 1;   }
+}

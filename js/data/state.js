@@ -52,6 +52,12 @@ const DEFAULT_STATE = {
      team da 3-6 carte) senza dover ancora farmare gemme. */
   freeSummonsLeft: 6,
 
+  /* ---- Allenatori sconfitti ----
+     Array di ID trainer (vedi js/data/trainers.js) già battuti. Determina
+     l'ordine di sblocco (progressione sequenziale) e l'assegnazione delle
+     reward (solo prima vittoria). */
+  trainersBeaten: [],
+
   /* ---- Inventario oggetti acquistati ----
      { itemId: quantity }. Si popola dallo shop. */
   inventory: {},
@@ -256,6 +262,32 @@ export function consumeFreeSummon() {
   const cur = Math.max(0, s.freeSummonsLeft ?? 0);
   if (cur <= 0) return false;
   s.freeSummonsLeft = cur - 1;
+  saveState();
+  return true;
+}
+
+/* ================================================================
+   TRAINERS (allenatori sconfitti per progressione)
+   ================================================================ */
+
+/** Lista degli ID di trainer già battuti. */
+export function getTrainersBeaten() {
+  const s = getState();
+  if (!Array.isArray(s.trainersBeaten)) s.trainersBeaten = [];
+  return s.trainersBeaten;
+}
+
+/** Verifica se un trainer è già stato battuto. */
+export function isTrainerBeaten(id) {
+  return getTrainersBeaten().includes(id);
+}
+
+/** Marca un trainer come sconfitto. Ritorna true se è la PRIMA VOLTA
+ *  (rilevante per assegnare la reward in gemme una volta sola). */
+export function markTrainerBeaten(id) {
+  const beaten = getTrainersBeaten();
+  if (beaten.includes(id)) return false;
+  beaten.push(id);
   saveState();
   return true;
 }

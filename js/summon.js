@@ -31,8 +31,8 @@ const sleep = ms => new Promise(resolve => {
   setTimeout(() => clearInterval(i), ms + 100);
 });
 
-const COST_SINGLE = 160;
-const COST_MULTI  = 1600;
+const COST_SINGLE = 100;
+const COST_MULTI  = 1000;
 
 /* ================================================================
    POOL — fonte di verità: js/data/rarity.js

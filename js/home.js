@@ -362,8 +362,14 @@ $('#btnPlay').addEventListener('click',       () => openModal('#playModal'));
 $('#btnCollection').addEventListener('click', () => { window.location.href = 'collection.html'; });
 $('#btnSummon').addEventListener('click',     () => { window.location.href = 'summon.html'; });
 $('#btnSettings').addEventListener('click',   () => { window.location.href = 'settings.html'; });
-$('#btnPlayStory').addEventListener('click',  () => { window.location.href = 'story.html'; });
-$('#btnPlayOnline').addEventListener('click', () => { window.location.href = 'online.html'; });
+// Le opzioni del modal "Gioca":
+//   - Allenatori → trainers.html (sostituto temporaneo della Storia)
+//   - AI random  → battle.html?mode=ai (team avversario casuale)
+//   - Online     → online.html (matchmaking PvP)
+$id('btnPlayTrainers')?.addEventListener('click', () => { window.location.href = 'trainers.html'; });
+$id('btnPlayAI')?.addEventListener('click',       () => { window.location.href = 'battle.html?mode=ai'; });
+$id('btnPlayOnline')?.addEventListener('click',   () => { window.location.href = 'online.html'; });
+// (Storia "btnPlayStory" rimosso dal modal — verrà ripristinato quando la modalità sarà pronta)
 
 // Chiudi modali
 document.querySelectorAll('[data-close-modal]').forEach(el =>

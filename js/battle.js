@@ -6,7 +6,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
-import { getState, getActiveTeam, getEquipped } from './data/state.js?v=6';
+import { getState, getActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=6';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js';
 import { getPassive }                          from './data/passives.js';
@@ -19,9 +19,13 @@ import { openCardModal }                       from './data/card-modal.js?v=9';
 import { SFX }                                 from './data/sfx.js';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
 
-/* ---- Modalità: 'ai' (default vs CPU) | 'pvp' (online vs altro player) ---- */
+/* ---- Modalità: 'ai' (CPU random) | 'pvp' (online) | 'trainer' (Allenatore Kanto) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
-const MODE       = URL_PARAMS.get('mode') === 'pvp' ? 'pvp' : 'ai';
+const _modeParam = URL_PARAMS.get('mode');
+const MODE       = _modeParam === 'pvp'     ? 'pvp'
+                 : _modeParam === 'trainer' ? 'trainer'
+                 :                            'ai';
+const TRAINER_ID = MODE === 'trainer' ? URL_PARAMS.get('id') : null;
 
 /* ---- Utility ---- */
 const $ = (s, r = document) => r.querySelector(s);
@@ -159,11 +163,44 @@ async function init() {
     if (enemyAvatarEl)  enemyAvatarEl.textContent  = (bs.pvp.opponentName[0] ?? 'P').toUpperCase();
     if (playerNameEl)   playerNameEl.textContent   = myName;
     if (playerAvatarEl) playerAvatarEl.textContent = (myName[0] ?? 'T').toUpperCase();
-  } else {
-    // ---- AI mode (default) ----
+  } else if (MODE === 'trainer') {
+    // ---- TRAINER mode ----
+    // Carica il team del trainer da js/data/trainers.js. Se l'id non
+    // esiste o il team è vuoto, fallback al team random.
+    const { getTrainer } = await import('./data/trainers.js?v=1');
+    const t = getTrainer(TRAINER_ID);
     const playerTeam = getActiveTeam();
     bs.playerTeamIds = playerTeam.length > 0 ? playerTeam : [25, 6, 9, 3, 94, 65];
-    bs.enemyTeamIds  = [6, 9, 3, 25, 94, 65];
+    if (t && Array.isArray(t.team) && t.team.length > 0) {
+      bs.enemyTeamIds = [...t.team];
+      // Personalizza nome/avatar avversario col trainer
+      const enemyNameEl   = $('#enemyName');
+      const enemyAvatarEl = $('#enemyAvatar');
+      if (enemyNameEl)   enemyNameEl.textContent   = t.name;
+      if (enemyAvatarEl) enemyAvatarEl.textContent = t.badge ?? (t.name[0] ?? 'T');
+    } else {
+      bs.enemyTeamIds = pickRandomEnemyTeam(6);
+    }
+  } else {
+    // ---- AI mode (default): team avversario casuale dal pool dei 151 ----
+    const playerTeam = getActiveTeam();
+    bs.playerTeamIds = playerTeam.length > 0 ? playerTeam : [25, 6, 9, 3, 94, 65];
+    bs.enemyTeamIds  = pickRandomEnemyTeam(6);
+  }
+
+  // Helper: pick random enemy team (no leggendari per equilibrio)
+  function pickRandomEnemyTeam(n) {
+    const ids = [];
+    const NON_LEGENDARY_MAX = 150;
+    const used = new Set();
+    while (ids.length < n) {
+      const r = 1 + Math.floor(Math.random() * NON_LEGENDARY_MAX);
+      if (used.has(r)) continue;
+      if ([144, 145, 146, 150, 151].includes(r)) continue;  // skip leggendari
+      used.add(r);
+      ids.push(r);
+    }
+    return ids;
   }
 
   // HP e PP iniziali — player e enemy separati per evitare collisioni di ID
@@ -1432,12 +1469,54 @@ function isTeamWiped(teamIds, side) {
   return teamIds.every(id => dead.has(id));
 }
 
-function endGame(result) {
+/* Reward gemme per modalità ONLINE (PvP). Nessun cap giornaliero per ora
+   (early access con cerchia ristretta). Per AI/storia/allenatori le reward
+   sono gestite altrove (es. story-state.js, trainers.js). */
+const ONLINE_REWARD_WIN  = 50;
+const ONLINE_REWARD_LOSS = 10;
+const ONLINE_REWARD_DRAW = 25;   // edge case se mai si arriva qui
+
+async function endGame(result) {
   bs.phase = 'ended';
   stopTimer();
   setPhase(result === 'win' ? '🏆 Hai vinto!' : '💀 Hai perso!');
   log(result === 'win' ? 'Hai vinto la battaglia!' : 'Hai perso la battaglia.', result === 'win' ? 'win' : 'lose');
   if (result === 'win') SFX.victory(); else SFX.defeat();
+
+  // ---- Reward in gemme ---------------------------------------------
+  // PvP: win 50, loss 10, draw 25 (sempre).
+  // Trainer: reward custom (vedi data/trainers.js) SOLO alla PRIMA vittoria.
+  // AI random: nessuna reward (allenamento puro).
+  let gemReward = 0;
+  if (MODE === 'pvp') {
+    gemReward = result === 'win'  ? ONLINE_REWARD_WIN
+              : result === 'lose' ? ONLINE_REWARD_LOSS
+              :                     ONLINE_REWARD_DRAW;
+    const gs = getState();
+    gs.gems = (gs.gems ?? 0) + gemReward;
+    saveState();
+    log(`💎 Hai ricevuto +${gemReward} gemme!`, 'item');
+  } else if (MODE === 'trainer' && result === 'win' && TRAINER_ID) {
+    // Marca battuto + assegna reward UNA SOLA volta
+    const alreadyBeaten = isTrainerBeaten(TRAINER_ID);
+    if (!alreadyBeaten) {
+      markTrainerBeaten(TRAINER_ID);
+      // Carica reward dal modulo trainers
+      try {
+        const { getTrainer } = await import('./data/trainers.js?v=1');
+        const t = getTrainer(TRAINER_ID);
+        if (t && typeof t.reward === 'number' && t.reward > 0) {
+          gemReward = t.reward;
+          const gs = getState();
+          gs.gems = (gs.gems ?? 0) + gemReward;
+          saveState();
+          log(`🏆 PRIMA VITTORIA contro ${t.name}! +${gemReward} gemme!`, 'item');
+        }
+      } catch (e) { console.warn('trainer reward failed', e); }
+    } else {
+      log(`Hai battuto di nuovo questo Allenatore. Nessuna nuova ricompensa.`, 'info');
+    }
+  }
 
   // Registra il risultato nella cronologia (una sola volta)
   if (!bs.matchRecorded) {
@@ -1468,6 +1547,41 @@ function endGame(result) {
   // con la navigazione alla home. Evita che doppio click triggeri entrambi.
   btn.removeEventListener('click', confirmTurn);
   btn.addEventListener('click', () => { window.location.href = 'index.html'; }, { once: true });
+
+  // Reward toast: appare al centro con animazione pop (solo se ho dato gemme)
+  if (gemReward > 0) {
+    showRewardToast(gemReward, result === 'win');
+  }
+}
+
+/** Toast riepilogo reward post-battaglia (gemme guadagnate). */
+function showRewardToast(gems, isWin) {
+  // Riusa il toast esistente in fondo, ma con stile reward
+  const toast = $('#toast');
+  if (!toast) {
+    // Fallback: crea un toast volante
+    const t = document.createElement('div');
+    t.className = 'reward-toast';
+    t.innerHTML = `
+      <div class="reward-toast__title">${isWin ? '🏆 Vittoria!' : '🎁 Premio consolazione'}</div>
+      <div class="reward-toast__gems"><span>💎</span> +${gems} gemme</div>
+    `;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('is-visible'));
+    setTimeout(() => t.classList.remove('is-visible'), 4200);
+    setTimeout(() => t.remove(), 4800);
+    return;
+  }
+  toast.classList.remove('hidden');
+  toast.classList.add('toast--reward');
+  toast.innerHTML = `
+    <div class="reward-toast__title">${isWin ? '🏆 Vittoria!' : '🎁 Premio consolazione'}</div>
+    <div class="reward-toast__gems"><span>💎</span> +${gems} gemme</div>
+  `;
+  setTimeout(() => {
+    toast.classList.add('hidden');
+    toast.classList.remove('toast--reward');
+  }, 4200);
 }
 
 /* ============================================================

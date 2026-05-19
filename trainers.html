@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d0e16" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pokémon card game" />
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
+  <title>Pokémon Card Battle — Allenatori</title>
+  <link rel="stylesheet" href="css/base.css?v=8" />
+  <link rel="stylesheet" href="css/page-hero.css?v=1" />
+  <link rel="stylesheet" href="css/trainers.css?v=1" />
+  <script src="js/register-sw.js?v=1" defer></script>
+</head>
+<body class="trainers-page">
+
+  <!-- Header -->
+  <header class="page-hero page-hero--trainers">
+    <a class="page-hero__back" href="index.html" aria-label="Torna alla home">←</a>
+    <div class="page-hero__logo">
+      <span class="page-hero__ball" aria-hidden="true"></span>
+      <div class="page-hero__text">
+        <h1 class="page-hero__title">Allenatori Kanto</h1>
+        <p class="page-hero__tagline">Sconfiggili in ordine · Ricompensa alla prima vittoria</p>
+      </div>
+    </div>
+    <div class="page-hero__extra">
+      <span class="trainers-progress" id="trainersProgress">0 / 10</span>
+    </div>
+  </header>
+
+  <!-- Lista allenatori -->
+  <main class="trainers-list" id="trainersList" aria-label="Lista allenatori">
+    <!-- popolata da JS -->
+  </main>
+
+  <!-- Modal preview team del trainer + bottone sfida -->
+  <div class="modal hidden" id="trainerModal" role="dialog" aria-modal="true" aria-labelledby="trainerModalTitle">
+    <div class="modal__backdrop" data-trainer-close></div>
+    <div class="modal__panel trainer-modal">
+      <button class="modal__close-x" data-trainer-close aria-label="Chiudi">✕</button>
+      <header class="trainer-modal__head">
+        <div class="trainer-modal__badge" id="trainerModalBadge">⛰</div>
+        <div class="trainer-modal__name-block">
+          <h2 class="trainer-modal__name" id="trainerModalTitle">—</h2>
+          <p class="trainer-modal__title-sub" id="trainerModalTitleSub">—</p>
+        </div>
+      </header>
+      <p class="trainer-modal__intro" id="trainerModalIntro">—</p>
+
+      <div class="trainer-modal__team-section">
+        <span class="trainer-modal__section-label">Team avversario</span>
+        <div class="trainer-modal__team" id="trainerModalTeam"></div>
+      </div>
+
+      <div class="trainer-modal__reward" id="trainerModalReward">
+        <span>💎</span>
+        <b id="trainerModalRewardAmount">0</b>
+        <span class="trainer-modal__reward-sub">alla prima vittoria</span>
+      </div>
+
+      <div class="trainer-modal__actions">
+        <button class="btn" data-trainer-close type="button">Annulla</button>
+        <button class="btn btn--primary" id="trainerModalFight" type="button">⚔ Sfidalo</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/trainers.js?v=1"></script>
+</body>
+</html>

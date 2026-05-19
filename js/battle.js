@@ -411,7 +411,7 @@ function openMovePicker(pkmn) {
   const sel = bs.selectedMoves.get(pkmn.id) ?? 'basic1';
 
   titleEl.textContent = `Mossa di ${cap(pkmn.name)}`;
-  subEl.textContent   = `PP attuali: ${pp}/3 · Quale mossa userà nel prossimo turno?`;
+  subEl.innerHTML     = `PP attuali: ${pp}/3 · <span style="opacity:.7">tasto destro per i dettagli della carta</span>`;
 
   // Formato moves: [base1, base2, finisher] (nuovo) o [basic, finisher] (legacy)
   let options = [];
@@ -566,19 +566,25 @@ function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
     `;
   }
 
-  // Click sx:
-  //   - Carta del giocatore (qualunque slot, anche bench): apre il MOVE PICKER
-  //     per scegliere quale mossa userà nel prossimo turno (basic1/basic2/finisher).
-  //     Il picker ha anche un bottone "Vedi carta" che apre il card-modal completo.
-  //   - Carta avversaria o pokemon KO: apre direttamente il card-modal di dettaglio.
+  // Click handlers:
+  //   - Carta del giocatore (bench o campo) viva, fuori da resolving:
+  //       click sx → MOVE PICKER (selezione mossa per il prossimo turno)
+  //       click dx → CARD MODAL (dettagli completi: stat/mosse/passiva)
+  //     Separazione per velocità: il picker è frequente, il modal è
+  //     consultazione → due input distinti evitano il passaggio forzato.
+  //   - Carte avversarie o KO o in fase resolving: qualsiasi click apre
+  //     direttamente il card-modal.
   // Soppresso durante il drag (vedi onDragEnd / onTouchDragEnd).
+  const isOwnAndActive = side === 'self' && !bs.playerDeadIds.has(pkmn.id) && bs.phase !== 'resolving';
   el.addEventListener('click', e => {
     if (el.classList.contains('was-dragged')) return;
-    if (side === 'self' && !bs.playerDeadIds.has(pkmn.id) && bs.phase !== 'resolving') {
-      openMovePicker(pkmn);
-    } else {
-      openCardModal(pkmn.id);
-    }
+    if (isOwnAndActive) openMovePicker(pkmn);
+    else                openCardModal(pkmn.id);
+  });
+  el.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    if (el.classList.contains('was-dragged')) return;
+    openCardModal(pkmn.id);
   });
 
   // Drag & drop solo per carte del giocatore (non morte, non in fase resolving)

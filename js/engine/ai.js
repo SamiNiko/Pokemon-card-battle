@@ -9,8 +9,13 @@
 
 import { getTypeEffectiveness } from '../data/types.js';
 import { getScaledStats }       from '../data/stats-scaling.js?v=3';
+import { getPassive }           from '../data/passives.js';
+import { calcDamage }           from './combat.js';
 
 const FRONT_SLOTS = ['front-left', 'front-center', 'front-right'];
+const BACK_SLOTS  = ['back-left',  'back-center',  'back-right'];
+const ALL_SLOTS   = [...FRONT_SLOTS, ...BACK_SLOTS];
+const COLUMNS     = ['left', 'center', 'right'];
 const ROWS        = ['front', 'back'];
 
 /**
@@ -48,24 +53,76 @@ export function aiPlaceCards(teamIds, deadIds, findPokemon, opts = {}) {
     return { pkmn, score };
   }).sort((a, b) => b.score - a.score);
 
-  // I 3 migliori vanno in campo, ordinati per speed in front-left/center/right
-  // (slot center privilegia il più offensivo, ai lati i secondari)
+  // I 3 migliori vanno in campo
   const top3 = scored.slice(0, 3).map(s => s.pkmn);
   if (top3.length === 0) return new Map();
 
-  // Sort: il più offensivo al centro, gli altri ai lati (su scaled stats)
+  // Sort per offense (pmiù offensivi prima nel greedy assignment)
   const offOf = p => { const sc = getScaledStats(p); return Math.max(sc.atk, sc.spAtk); };
   const sortedByOffense = [...top3].sort((a, b) => offOf(b) - offOf(a));
-  // Layout: [left, center, right] — quello più offensivo va al centro
-  const layout = [];
-  if (sortedByOffense[1]) layout.push(sortedByOffense[1]); // left = secondo
-  if (sortedByOffense[0]) layout.push(sortedByOffense[0]); // center = primo
-  if (sortedByOffense[2]) layout.push(sortedByOffense[2]); // right = terzo
 
-  const field = new Map();
-  layout.forEach((pkmn, i) => {
-    field.set(FRONT_SLOTS[i], pkmn);
-  });
+  /* ASSEGNAZIONE INTELLIGENTE (vs il vecchio "tutto in front"):
+     1. Per ogni Pokemon, calcola la sua slot ideale = una delle sue activeSlots
+        di passiva (se ce l'ha), così la passiva si attiva in battle.
+     2. Greedy: assegna in ordine di offense, ogni Pokemon prende la sua slot
+        ideale se libera, altrimenti la migliore slot front libera che copra
+        una colonna ancora non coperta.
+     3. Vincolo: cerchiamo di coprire tutte e 3 le colonne (left/center/right)
+        per non lasciare buchi in cui il giocatore farebbe direct damage. */
+  const field         = new Map();
+  const usedSlots     = new Set();
+  const coveredCols   = new Set();
+
+  function tryAssign(pkmn, slotKey) {
+    if (usedSlots.has(slotKey)) return false;
+    field.set(slotKey, pkmn);
+    usedSlots.add(slotKey);
+    coveredCols.add(slotKey.split('-')[1]);
+    return true;
+  }
+
+  // Pass 1: prova a piazzare ognuno in una sua activeSlot di passiva
+  const stillNeed = [];
+  for (const pkmn of sortedByOffense) {
+    const pass = getPassive(pkmn.id);
+    const preferred = pass?.activeSlots ?? [];
+    // Tra le preferite, scegli quella che ALSO copre una colonna nuova
+    let placed = false;
+    const uncoveredPreferred = preferred.filter(s => !coveredCols.has(s.split('-')[1]));
+    for (const slot of uncoveredPreferred) {
+      if (tryAssign(pkmn, slot)) { placed = true; break; }
+    }
+    // Se non ha trovato preferite uncovered, prendi la prima preferita libera
+    if (!placed) {
+      for (const slot of preferred) {
+        if (tryAssign(pkmn, slot)) { placed = true; break; }
+      }
+    }
+    if (!placed) stillNeed.push(pkmn);
+  }
+
+  // Pass 2: pokemon rimanenti — piazza per coprire colonne mancanti
+  for (const pkmn of stillNeed) {
+    let placed = false;
+    // Prima cerca front-slot in colonna scoperta
+    for (const col of COLUMNS) {
+      if (coveredCols.has(col)) continue;
+      if (tryAssign(pkmn, `front-${col}`)) { placed = true; break; }
+    }
+    if (!placed) {
+      // Tutte le colonne sono coperte; fallback: prima slot front libera
+      for (const slot of FRONT_SLOTS) {
+        if (tryAssign(pkmn, slot)) { placed = true; break; }
+      }
+      // Nemmeno front libero (= già 3 in front) → tenta back
+      if (!placed) {
+        for (const slot of BACK_SLOTS) {
+          if (tryAssign(pkmn, slot)) { placed = true; break; }
+        }
+      }
+    }
+  }
+
   return field;
 }
 
@@ -95,17 +152,20 @@ export function aiChooseMoves({ attackerField, defenderField, attackerPP, movese
     const isNew    = set.length >= 3;
     const base1    = set[0];
     const base2    = isNew ? set[1] : set[0];
-    const finisher = isNew ? set[2] : set[1];
+    const finisher = isNew ? { ...set[2], isFinisher: true } : { ...set[1], isFinisher: true };
     const pp = attackerPP?.get(attacker.id) ?? 0;
     const canFinisher = pp >= 3;
 
     // Trova target nella stessa colonna (front prima, poi back)
     const col = slotKey.split('-')[1];
     let target = null;
+    let targetSlot = null;
     for (const row of ROWS) {
-      const pkmn = defenderField.get(`${row}-${col}`);
+      const tKey = `${row}-${col}`;
+      const pkmn = defenderField.get(tKey);
       if (pkmn && !defenderDead?.has(pkmn.id)) {
         target = pkmn;
+        targetSlot = tKey;
         break;
       }
     }
@@ -116,35 +176,39 @@ export function aiChooseMoves({ attackerField, defenderField, attackerPP, movese
       continue;
     }
 
-    // Calcola danno atteso con ciascuna mossa
-    const b1Dmg       = estimateDamage(attacker, base1,    target);
-    const b2Dmg       = estimateDamage(attacker, base2,    target);
-    const finisherDmg = canFinisher ? estimateDamage(attacker, finisher, target) : -1;
-    const bestBaseDmg = Math.max(b1Dmg, b2Dmg);
-    const bestBaseKey = b1Dmg >= b2Dmg ? 'basic1' : 'basic2';
+    // Calcola danno atteso usando calcDamage che considera le passive
+    // (boost di tipo, resistenze, immunità, STAB raddoppiato, ecc.)
+    const dmgOpts = { attackerSlot: slotKey, defenderSlot: targetSlot, isFullHP: false };
+    const b1Res        = calcDamage(attacker, base1, target, dmgOpts);
+    const b2Res        = calcDamage(attacker, base2, target, dmgOpts);
+    const finisherRes  = canFinisher ? calcDamage(attacker, finisher, target, dmgOpts) : null;
+    const b1Dmg        = b1Res.damage;
+    const b2Dmg        = b2Res.damage;
+    const finisherDmg  = finisherRes?.damage ?? -1;
+    const bestBaseDmg  = Math.max(b1Dmg, b2Dmg);
+    const bestBaseKey  = b1Dmg >= b2Dmg ? 'basic1' : 'basic2';
 
     if (finisherDmg < 0) {
       selections.set(attacker.id, bestBaseKey);
       continue;
     }
 
-    // Scegli la mossa che fa più danno al target
-    selections.set(attacker.id, finisherDmg > bestBaseDmg ? 'finisher' : bestBaseKey);
+    // Scegli la mossa che fa più danno al target.
+    // EXTRA: se base move basta a uccidere il target (overkill), risparmia
+    // i PP del finisher per un futuro target con più HP.
+    const targetMaxHP = getScaledStats(target).hp;
+    const baseKills = bestBaseDmg >= targetMaxHP * 0.95;   // soglia tolerance
+    if (baseKills) {
+      selections.set(attacker.id, bestBaseKey);
+    } else {
+      selections.set(attacker.id, finisherDmg > bestBaseDmg ? 'finisher' : bestBaseKey);
+    }
   }
 
   return selections;
 }
 
 /* ---- Helpers ---- */
-
-/** Stima il danno di una mossa (stessa formula di combat.js calcDamage). */
-function estimateDamage(attacker, move, defender) {
-  if (!move || move.cat === 'status' || move.power === 0) return 0;
-  const stab    = attacker.types.includes(move.type) ? 1.5 : 1.0;
-  const typeEff = getTypeEffectiveness(move.type, defender.types);
-  const atkS = getScaledStats(attacker);
-  const defS = getScaledStats(defender);
-  const atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
-  const defStat = move.cat === 'physical' ? defS.def : defS.spDef;
-  return Math.max(1, Math.round((atkStat / defStat) * move.power * stab * typeEff));
-}
+/* (estimateDamage rimosso: ora usiamo calcDamage dal combat engine che già
+   considera STAB, type effectiveness, passive boost/resist, immunità,
+   stab_boost di Adattabilità, ecc.) */

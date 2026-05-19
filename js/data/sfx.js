@@ -208,6 +208,33 @@ export const SFX = {
   /* Shop */
   purchase:   () => arpeggio([659, 880, 1108], { stepDur: 0.08, type: 'square', vol: 0.20 }),
   insufficient: () => { tone({ freq: 220, duration: 0.10, type: 'square', vol: 0.18 }); setTimeout(() => tone({ freq: 165, duration: 0.14, type: 'square', vol: 0.16 }), 100); },
+
+  /* Trainer / progressione */
+  // Gong drammatico — incontro con un trainer (start battaglia trainer)
+  trainerIntro: () => {
+    tone({ freq: 110, duration: 0.5, type: 'sine', vol: 0.30 });
+    setTimeout(() => tone({ freq: 165, duration: 0.45, type: 'sine', vol: 0.24 }), 80);
+    setTimeout(() => noise({ duration: 0.5, vol: 0.10, filterFreq: 80 }), 0);
+  },
+  // Jingle vittoria contro trainer (più ricco della victory standard)
+  trainerVictory: () => {
+    arpeggio([523, 659, 784, 1047, 1319, 1568, 2093], { stepDur: 0.10, type: 'square', vol: 0.22 });
+    setTimeout(() => tone({ freq: 2093, duration: 0.45, type: 'sine', vol: 0.20 }), 700);
+  },
+  // Sblocco prossimo trainer (chime fairy)
+  unlock: () => {
+    arpeggio([1047, 1319, 1568, 2093], { stepDur: 0.08, type: 'sine', vol: 0.22 });
+    setTimeout(() => tone({ freq: 2637, duration: 0.30, type: 'sine', vol: 0.18 }), 250);
+  },
+  // Gemme che arrivano (coin pickup)
+  gemReward: () => {
+    arpeggio([1568, 1976, 2349], { stepDur: 0.06, type: 'square', vol: 0.18 });
+  },
+  // Selezione mossa nel move-picker (più morbido del click standard)
+  moveSelect: () => {
+    tone({ freq: 660, duration: 0.05, type: 'sine', vol: 0.15 });
+    setTimeout(() => tone({ freq: 990, duration: 0.07, type: 'sine', vol: 0.16 }), 40);
+  },
 };
 
 /* ============================================================

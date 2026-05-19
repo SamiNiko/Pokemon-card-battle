@@ -187,6 +187,8 @@ async function init() {
           enemyAvatarEl.textContent = t.badge ?? (t.name[0] ?? 'T');
         }
       }
+      // SFX intro drammatico — annuncia l'inizio della sfida col trainer
+      setTimeout(() => SFX.trainerIntro?.(), 400);
     } else {
       bs.enemyTeamIds = pickRandomEnemyTeam(6);
     }
@@ -521,6 +523,7 @@ document.addEventListener('click', e => {
     const key = opt.dataset.moveSel;
     bs.selectedMoves.set(movePickerPkmnId, key);
     updateCardMove(movePickerPkmnId, 'self');
+    SFX.moveSelect?.();
     closeMovePicker();
     return;
   }
@@ -1490,7 +1493,13 @@ async function endGame(result) {
   stopTimer();
   setPhase(result === 'win' ? '🏆 Hai vinto!' : '💀 Hai perso!');
   log(result === 'win' ? 'Hai vinto la battaglia!' : 'Hai perso la battaglia.', result === 'win' ? 'win' : 'lose');
-  if (result === 'win') SFX.victory(); else SFX.defeat();
+  // Trainer victory ha un jingle dedicato (più ricco); per AI/PvP standard
+  if (result === 'win') {
+    if (MODE === 'trainer') SFX.trainerVictory?.();
+    else                    SFX.victory();
+  } else {
+    SFX.defeat();
+  }
 
   // ---- Reward in gemme ---------------------------------------------
   // PvP: win 50, loss 10, draw 25 (sempre).
@@ -1505,6 +1514,7 @@ async function endGame(result) {
     gs.gems = (gs.gems ?? 0) + gemReward;
     saveState();
     log(`💎 Hai ricevuto +${gemReward} gemme!`, 'item');
+    SFX.gemReward?.();
   } else if (MODE === 'trainer' && result === 'win' && TRAINER_ID) {
     // Marca battuto + assegna reward UNA SOLA volta
     const alreadyBeaten = isTrainerBeaten(TRAINER_ID);
@@ -1520,6 +1530,9 @@ async function endGame(result) {
           gs.gems = (gs.gems ?? 0) + gemReward;
           saveState();
           log(`🏆 PRIMA VITTORIA contro ${t.name}! +${gemReward} gemme!`, 'item');
+          SFX.gemReward?.();
+          // Suono separato di "sblocco" se non era l'ultimo trainer
+          setTimeout(() => SFX.unlock?.(), 600);
         }
       } catch (e) { console.warn('trainer reward failed', e); }
     } else {

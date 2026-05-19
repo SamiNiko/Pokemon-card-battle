@@ -16,7 +16,7 @@
    }
 */
 
-import { getState, saveState } from './state.js?v=5';
+import { getState, saveState } from './state.js?v=6';
 
 const DEFAULT_STORY_STATE = {
   currentScene:      'biancavilla',

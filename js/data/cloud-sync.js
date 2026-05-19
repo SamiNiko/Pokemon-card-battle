@@ -8,7 +8,7 @@
 */
 
 import { supabase, getSession, onAuthChange }          from './supabase.js';
-import { getState, saveState, onSave, resetState }     from './state.js?v=5';
+import { getState, saveState, onSave, resetState }     from './state.js?v=6';
 
 const SAVE_DEBOUNCE_MS  = 1500;
 const CLOUD_USED_FLAG   = 'pkmn_cloud_account_used';  // anti-dupe device flag

@@ -9,7 +9,7 @@
 import { findPokemon }                       from './pokeapi.js';
 import { MOVESETS }                          from './movesets.js?v=3';
 import { getRarity, tierStars, tierLabel }   from './rarity.js';
-import { getEquipped }                       from './state.js?v=5';
+import { getEquipped }                       from './state.js?v=6';
 import { findItem }                          from './items.js?v=3';
 import { typeLabel }                          from './types.js';
 import { getPassive }                        from './passives.js';

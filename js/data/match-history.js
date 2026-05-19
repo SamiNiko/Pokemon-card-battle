@@ -8,7 +8,7 @@
    propaga automaticamente come parte dello stato.
    ============================================================ */
 
-import { getState, saveState } from './state.js?v=5';
+import { getState, saveState } from './state.js?v=6';
 
 const MAX_HISTORY = 50;   // numero massimo di partite tenute in cronologia
 

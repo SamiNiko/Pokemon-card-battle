@@ -6,7 +6,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState, addPokemonOrLevelUp } from './data/state.js?v=5';
+import { getState, saveState, addPokemonOrLevelUp, getFreeSummonsLeft, consumeFreeSummon } from './data/state.js?v=6';
 import { MOVESETS }                    from './data/movesets.js?v=3';
 import { getSummonablePool, PULL_RATES, tierLabel } from './data/rarity.js';
 import { typeLabel }                                from './data/types.js';
@@ -144,6 +144,17 @@ function addToOwned(id) {
 function updateWallet() {
   $('walletGems').textContent = getGems();
   $('walletEuro').textContent = gs.pokeuro ?? 0;
+  // Aggiorna anche il costo visibile sul bottone ×1: se ci sono summon
+  // gratuite, mostra "GRATIS · N rimaste" al posto del costo in gemme.
+  const freeLeft = getFreeSummonsLeft();
+  const costEl = $('pull1Cost');
+  if (costEl) {
+    if (freeLeft > 0) {
+      costEl.innerHTML = `<span style="color:#5ee8d8">🎁 GRATIS</span> <span class="pull-btn__tag">${freeLeft} rimaste</span>`;
+    } else {
+      costEl.innerHTML = `<span>💎</span> ${COST_SINGLE}`;
+    }
+  }
 }
 
 /* ================================================================
@@ -179,14 +190,27 @@ function buildBanner() {
 
 let pendingPullN = 0;
 
+/** Calcola il costo effettivo di una summon. Per ×1, se ci sono ancora
+ *  free summons disponibili, il costo è 0 (gratis onboarding). */
+function actualCost(n) {
+  if (n === 1 && getFreeSummonsLeft() > 0) return 0;
+  return n === 1 ? COST_SINGLE : COST_MULTI;
+}
+
 function showConfirm(n) {
   pendingPullN = n;
-  const cost   = n === 1 ? COST_SINGLE : COST_MULTI;
+  const cost   = actualCost(n);
+  const free   = n === 1 && cost === 0;
   const after  = Math.max(0, getGems() - cost);
 
   $('confirmTitle').textContent   = `Summon ×${n}`;
-  $('confirmCost').innerHTML      = `💎 ${cost} gemme`;
-  $('confirmAfter').textContent   = `Dopo: ${after} gemme  (hai ${getGems()})`;
+  if (free) {
+    $('confirmCost').innerHTML    = `🎁 <b style="color:#5ee8d8">GRATIS</b> · Onboarding (${getFreeSummonsLeft()} rimaste)`;
+    $('confirmAfter').textContent = `Dopo: ${getFreeSummonsLeft() - 1} pull gratuite rimaste`;
+  } else {
+    $('confirmCost').innerHTML    = `💎 ${cost} gemme`;
+    $('confirmAfter').textContent = `Dopo: ${after} gemme  (hai ${getGems()})`;
+  }
   $('confirmModal').classList.remove('hidden');
 }
 
@@ -199,7 +223,11 @@ $('confirmOk').addEventListener('click', async () => {
 });
 
 $('btnPull1').addEventListener('click', () => {
-  if (getGems() < COST_SINGLE) { alert('Gemme insufficienti!'); return; }
+  // Gratis se ci sono ancora pull onboarding
+  if (getFreeSummonsLeft() === 0 && getGems() < COST_SINGLE) {
+    alert('Gemme insufficienti!');
+    return;
+  }
   showConfirm(1);
 });
 
@@ -433,13 +461,17 @@ let pullQueue = []; // risultati ancora da rivelare
 let pullAll   = []; // tutti i risultati (per il riepilogo)
 
 async function handlePull(n) {
-  const cost = n === 1 ? COST_SINGLE : COST_MULTI;
-  if (getGems() < cost) { alert('Gemme insufficienti!'); return; }
+  // Tenta prima di consumare una summon gratuita (solo ×1)
+  const wasFree = n === 1 && consumeFreeSummon();
+  const cost = wasFree ? 0 : (n === 1 ? COST_SINGLE : COST_MULTI);
+  if (!wasFree && getGems() < cost) { alert('Gemme insufficienti!'); return; }
 
   pullSkipRequested = false;
 
   const results = doPulls(n);
-  spendGems(cost);
+  if (!wasFree) spendGems(cost);
+  else updateWallet();   // aggiorna anche il counter "free pulls left" nell'UI
+
   // Aggiungi o livella-su ogni Pokemon. Salvo l'esito su ogni entry così il
   // reveal può mostrare "Nuovo!" o "LV +1" appropriatamente.
   results.forEach(r => {
@@ -1267,8 +1299,8 @@ document.addEventListener('keydown', e => {
     await loadAllPokemon();
     gs = getState();
 
-    // Debug: gemme se a 0
-    if ((gs.gems ?? 0) === 0) { gs.gems = 9999; saveState(); }
+    // (Debug rimosso: i nuovi account partono con 0 gemme e 6 summon
+    // gratuite — vedi state.freeSummonsLeft.)
 
     updateWallet();
     buildBanner();

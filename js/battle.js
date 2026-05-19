@@ -6,7 +6,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
-import { getState, getActiveTeam, getEquipped } from './data/state.js?v=5';
+import { getState, getActiveTeam, getEquipped } from './data/state.js?v=6';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js';
 import { getPassive }                          from './data/passives.js';

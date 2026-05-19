@@ -46,6 +46,12 @@ const DEFAULT_STATE = {
   gems:    0,
   pokeuro: 0,
 
+  /* ---- Onboarding ----
+     freeSummonsLeft: numero di summon ×1 ancora gratuite. Default 6 → un
+     nuovo account può costruire un team completo (Pokemon Card Battle ha
+     team da 3-6 carte) senza dover ancora farmare gemme. */
+  freeSummonsLeft: 6,
+
   /* ---- Inventario oggetti acquistati ----
      { itemId: quantity }. Si popola dallo shop. */
   inventory: {},
@@ -232,6 +238,26 @@ export function addPokemonOrLevelUp(pokemonId) {
     return { gained: false, leveledUp: true, alreadyMax: false, newLevel: cur + 1 };
   }
   return { gained: false, leveledUp: false, alreadyMax: true, newLevel: cur };
+}
+
+/* ================================================================
+   FREE SUMMONS (onboarding) — 6 pull ×1 gratuiti per i nuovi account
+   ================================================================ */
+
+/** Restituisce quante summon ×1 gratis sono ancora disponibili. */
+export function getFreeSummonsLeft() {
+  return Math.max(0, getState().freeSummonsLeft ?? 0);
+}
+
+/** Consuma 1 summon gratuita. Da chiamare PRIMA di eventuali addebiti
+ *  in gemme: se ritorna true, lo spend va saltato. */
+export function consumeFreeSummon() {
+  const s = getState();
+  const cur = Math.max(0, s.freeSummonsLeft ?? 0);
+  if (cur <= 0) return false;
+  s.freeSummonsLeft = cur - 1;
+  saveState();
+  return true;
 }
 
 /* ================================================================
@@ -443,6 +469,15 @@ function readAndMigrate() {
         merged.gearByTeam[i] = {};
       }
     }
+  }
+
+  // Migrazione: freeSummonsLeft. Default 6 per i NUOVI account (loaded == null).
+  // Per i save preesistenti senza il campo, parto da 0: hanno già giocato,
+  // non posso regalargli pull gratis retroattivi.
+  if (loaded && typeof loaded.freeSummonsLeft !== 'number') {
+    merged.freeSummonsLeft = 0;
+  } else if (!loaded) {
+    merged.freeSummonsLeft = 6;
   }
 
   // Migrazione: aggiungi matchHistory + lifetimeStats se mancano (save pre-stats)

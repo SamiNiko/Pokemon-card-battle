@@ -19,7 +19,7 @@
    ============================================================ */
 
 import { getRarity }                from './rarity.js';
-import { getLevel, MAX_LEVEL }       from './state.js?v=5';
+import { getLevel, MAX_LEVEL }       from './state.js?v=6';
 
 /**
  * Moltiplicatori per rarità:

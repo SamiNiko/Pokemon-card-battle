@@ -10,7 +10,7 @@ import {
   importSave,
 } from './data/state.js?v=5';
 
-import { initTutorial }     from './data/tutorial.js';
+import { initTutorial }     from './data/tutorial.js?v=3';
 import { SFX, getVolume, setVolume, unlockAudio } from './data/sfx.js';
 
 /* Supabase + cloud sync caricati dinamicamente. Se la CDN è bloccata

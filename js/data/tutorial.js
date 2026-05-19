@@ -1,8 +1,11 @@
 /* ============================================================
-   tutorial.js — Onboarding slide tour
+   tutorial.js — Onboarding guidato con spotlight
    ============================================================
-   - Mostra una sequenza di "card" centrali con icona + testo
-   - Prima esecuzione: dopo welcome overlay, alla prima apertura
+   - Step di 2 tipi:
+       'welcome'/'closing' → card centrale (modal classico)
+       'spotlight'         → maschera scura + tooltip ancorato a un
+                             elemento reale della UI (target selector)
+   - Prima esecuzione: dopo il welcome overlay, alla prima apertura
      della home. Salva flag in localStorage al completamento/skip.
    - Riavviabile dalle Impostazioni con { force: true }.
 
@@ -13,44 +16,74 @@
      resetTutorial()                    → cancella il flag.
    ============================================================ */
 
-const FLAG_KEY = 'pkmn_tutorial_done_v1';
+const FLAG_KEY = 'pkmn_tutorial_done_v2';   // bump versione: nuovo tutorial
 
+/* Definizione step. type:
+     - 'welcome'/'closing': testo centrato.
+     - 'spotlight': evidenzia un elemento via selector + tooltip ancorato.
+   Per 'spotlight':
+     target       — CSS selector dell'elemento da evidenziare
+     placement    — 'top'|'bottom'|'left'|'right' (default 'bottom')
+     padding      — pixel di buffer attorno all'hole (default 12) */
 const STEPS = [
   {
+    type:  'welcome',
     icon:  '👋',
     title: 'Benvenuto, allenatore!',
-    body:  'Costruisci la tua squadra di Pokémon, sfida i Capipalestra di Kanto e i giocatori di tutto il mondo. Ti mostro le basi in pochi secondi.',
+    body:  'Costruisci la tua squadra, sfida i bot e i giocatori di tutto il mondo. Ti accompagno in un giro veloce: <b>2 minuti</b> e sei pronto.',
     accent:'#5ee8d8',
   },
   {
-    icon:  '✨',
-    title: 'Apri pacchetti — Summon',
-    body:  'Dalla home, tocca <b>Summon</b> per aprire un pacchetto e ottenere nuovi Pokémon. Più rara è la carta, più forte sarà in battaglia. I primi pacchetti sono gratis!',
-    accent:'#99a8ff',
+    type:    'spotlight',
+    target:  '#btnSummon',
+    placement: 'right',
+    icon:    '✨',
+    title:   'Summon — apri pacchetti',
+    body:    'Da qui apri pacchetti e ottieni nuovi Pokémon. Più <b>rara</b> è la carta, più sarà forte in battaglia. I primi pacchetti sono gratis: parti da qui!',
+    accent:  '#99a8ff',
   },
   {
-    icon:  '📦',
-    title: 'Collezione & Team',
-    body:  'In <b>Collezione</b> vedi tutti i Pokémon che possiedi. Crea fino a <b>4 team</b> diversi con da 3 a 6 carte ciascuno. Il team selezionato è quello che porti in battaglia.',
-    accent:'#4dad5b',
+    type:    'spotlight',
+    target:  '#btnCollection',
+    placement: 'right',
+    icon:    '📦',
+    title:   'Collezione — team & Pokémon',
+    body:    'Tutti i Pokémon che ottieni finiscono qui. Crei fino a <b>4 team</b> diversi, scegli il team che vuoi giocare e visualizzi ogni carta con stat, mosse e passiva.',
+    accent:  '#4dad5b',
   },
   {
-    icon:  '⚔',
-    title: 'La battaglia',
-    body:  'Posiziona fino a <b>3 carte</b> sul campo (griglia 3×2). Ogni turno scegli quale mossa usare: <b>Base</b> sempre disponibile, <b>Finisher</b> più forte ma costa 3 PP. Vince chi azzera gli HP avversari.',
-    accent:'#ffcb05',
+    type:    'spotlight',
+    target:  '#btnPlay',
+    placement: 'right',
+    icon:    '⚔',
+    title:   'Gioca — battaglie',
+    body:    'Da qui entri in battaglia: <b>contro AI</b> per allenarti, in <b>storia</b> per affrontare i capi-palestra di Kanto, o <b>online</b> contro altri giocatori.',
+    accent:  '#ffcb05',
   },
   {
-    icon:  '🛍',
-    title: 'Oggetti tenuti — Negozio',
-    body:  'Nel <b>Negozio</b> compri oggetti che i Pokémon possono <b>tenere</b> in battaglia: bacche curative, potenziamenti di tipo, difese, scelte irreversibili. Ogni Pokémon può tenere 1 oggetto per team.',
-    accent:'#f4a017',
+    type:    'spotlight',
+    target:  '.menu-btn--shop',
+    placement: 'right',
+    icon:    '🛍',
+    title:   'Negozio — oggetti tenuti',
+    body:    'Compri oggetti che i Pokémon possono <b>tenere</b> in battaglia: bacche curative, potenziamenti di tipo, difese, scelte irreversibili. Ogni Pokémon può tenere 1 oggetto per team.',
+    accent:  '#f4a017',
   },
   {
-    icon:  '🎉',
-    title: 'Sei pronto!',
-    body:  'Comincia da <b>Summon</b> per ottenere le tue prime carte, poi vai in <b>Collezione</b> per impostare il team. Buona caccia, allenatore! Potrai rivedere questo tutorial dalle <b>Impostazioni</b>.',
-    accent:'#ffcb05',
+    type:    'spotlight',
+    target:  '#btnSettings',
+    placement: 'right',
+    icon:    '⚙',
+    title:   'Impostazioni',
+    body:    'Audio, grafica, account, cloud sync. In fondo trovi anche il bottone per <b>rivedere questo tutorial</b> quando vuoi.',
+    accent:  '#a040a0',
+  },
+  {
+    type:    'welcome',     // riusa il layout centrato
+    icon:    '🎉',
+    title:   'Sei pronto!',
+    body:    'Comincia da <b>✨ Summon</b> per ottenere le prime carte, poi <b>📦 Collezione</b> per impostare il team e infine <b>⚔ Gioca</b> per il tuo primo match. Buona caccia, allenatore!',
+    accent:  '#ffcb05',
   },
 ];
 
@@ -66,121 +99,206 @@ function markDone() {
   try { localStorage.setItem(FLAG_KEY, '1'); } catch {}
 }
 
+let currentStep = 0;
+let overlayEl   = null;
+let resizeRaf   = null;
+
 /** Mostra il tutorial. Se {force:false} e il flag è settato, non fa nulla. */
 export function initTutorial({ force = false } = {}) {
   if (!force && isTutorialDone()) return;
 
-  // Crea l'overlay una volta sola
-  let overlay = document.getElementById('tutorialOverlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'tutorialOverlay';
-    overlay.className = 'tutorial-overlay';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
-    overlay.innerHTML = `
-      <div class="tutorial-overlay__backdrop" data-tutorial-skip></div>
-      <div class="tutorial-card" role="document">
-        <button class="tutorial-card__close" data-tutorial-skip aria-label="Salta tutorial">✕</button>
+  // Cleanup eventuale istanza precedente
+  document.getElementById('tutorialOverlay')?.remove();
 
-        <div class="tutorial-card__icon-wrap">
-          <span class="tutorial-card__icon" id="tutorialIcon">👋</span>
-        </div>
+  overlayEl = document.createElement('div');
+  overlayEl.id = 'tutorialOverlay';
+  overlayEl.className = 'tutorial-overlay';
+  overlayEl.setAttribute('role', 'dialog');
+  overlayEl.setAttribute('aria-modal', 'true');
+  overlayEl.innerHTML = `
+    <div class="tutorial-overlay__backdrop" data-tutorial-skip></div>
+    <div class="tutorial-spotlight" aria-hidden="true"></div>
+    <div class="tutorial-card" role="document">
+      <button class="tutorial-card__close" data-tutorial-skip aria-label="Salta tutorial">✕</button>
 
-        <div class="tutorial-card__step-info">
-          <span class="tutorial-card__step-num" id="tutorialStepNum">1 / ${STEPS.length}</span>
-          <div class="tutorial-card__dots" id="tutorialDots"></div>
-        </div>
-
-        <h2 class="tutorial-card__title" id="tutorialTitle">—</h2>
-        <p class="tutorial-card__body" id="tutorialBody">—</p>
-
-        <div class="tutorial-card__actions">
-          <button class="btn tutorial-card__btn-back" id="btnTutorialBack" type="button">← Indietro</button>
-          <button class="btn btn--primary tutorial-card__btn-next" id="btnTutorialNext" type="button">Avanti →</button>
-        </div>
+      <div class="tutorial-card__icon-wrap">
+        <span class="tutorial-card__icon">👋</span>
       </div>
-    `;
-    document.body.appendChild(overlay);
 
-    // Dots
-    const dotsRoot = overlay.querySelector('#tutorialDots');
-    STEPS.forEach((_, i) => {
-      const dot = document.createElement('span');
-      dot.className = 'tutorial-card__dot';
-      dot.dataset.step = String(i);
-      dotsRoot.appendChild(dot);
-    });
+      <div class="tutorial-card__step-info">
+        <span class="tutorial-card__step-num">1 / ${STEPS.length}</span>
+        <div class="tutorial-card__dots"></div>
+      </div>
 
-    // Listeners
-    overlay.querySelectorAll('[data-tutorial-skip]').forEach(el => {
-      el.addEventListener('click', () => endTutorial(overlay));
-    });
-    overlay.querySelector('#btnTutorialBack').addEventListener('click', () => {
-      stepDelta(-1, overlay);
-    });
-    overlay.querySelector('#btnTutorialNext').addEventListener('click', () => {
-      const next = currentStep + 1;
-      if (next >= STEPS.length) {
-        endTutorial(overlay);
-      } else {
-        stepDelta(+1, overlay);
-      }
-    });
-    // ESC = salta
-    document.addEventListener('keydown', e => {
-      if (overlay.classList.contains('is-visible') && e.key === 'Escape') {
-        endTutorial(overlay);
-      }
-    });
-  }
+      <h2 class="tutorial-card__title">—</h2>
+      <p class="tutorial-card__body">—</p>
+
+      <div class="tutorial-card__actions">
+        <button class="btn tutorial-card__btn-back" type="button">← Indietro</button>
+        <button class="btn btn--primary tutorial-card__btn-next" type="button">Avanti →</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlayEl);
+
+  // Dots
+  const dotsRoot = overlayEl.querySelector('.tutorial-card__dots');
+  STEPS.forEach(() => {
+    const dot = document.createElement('span');
+    dot.className = 'tutorial-card__dot';
+    dotsRoot.appendChild(dot);
+  });
+
+  // Listeners
+  overlayEl.querySelectorAll('[data-tutorial-skip]').forEach(el => {
+    el.addEventListener('click', () => endTutorial());
+  });
+  overlayEl.querySelector('.tutorial-card__btn-back').addEventListener('click', () => stepDelta(-1));
+  overlayEl.querySelector('.tutorial-card__btn-next').addEventListener('click', () => {
+    if (currentStep + 1 >= STEPS.length) endTutorial();
+    else stepDelta(+1);
+  });
+
+  // ESC = salta
+  document.addEventListener('keydown', onKeyDown);
+
+  // Riposiziona spotlight al resize/scroll
+  window.addEventListener('resize',  scheduleReposition);
+  window.addEventListener('scroll',  scheduleReposition, true);
 
   currentStep = 0;
-  renderStep(overlay);
-  // Apri con un tick di delay per permettere transition CSS
-  requestAnimationFrame(() => overlay.classList.add('is-visible'));
-  // Disabilita scroll body durante il tutorial
-  document.body.style.overflow = 'hidden';
+  renderStep();
+  requestAnimationFrame(() => overlayEl.classList.add('is-visible'));
 }
 
-let currentStep = 0;
+function onKeyDown(e) {
+  if (!overlayEl?.classList.contains('is-visible')) return;
+  if (e.key === 'Escape')    endTutorial();
+  if (e.key === 'ArrowRight' && currentStep + 1 < STEPS.length) stepDelta(+1);
+  if (e.key === 'ArrowLeft'  && currentStep > 0)                stepDelta(-1);
+}
 
-function stepDelta(delta, overlay) {
+function stepDelta(delta) {
   const next = Math.max(0, Math.min(STEPS.length - 1, currentStep + delta));
   if (next === currentStep) return;
   currentStep = next;
-  // Sotto-animazione: fade della card
-  const card = overlay.querySelector('.tutorial-card');
+  const card = overlayEl.querySelector('.tutorial-card');
   card.classList.add('is-transitioning');
   setTimeout(() => {
-    renderStep(overlay);
+    renderStep();
     card.classList.remove('is-transitioning');
-  }, 150);
+  }, 140);
 }
 
-function renderStep(overlay) {
+function renderStep() {
   const step = STEPS[currentStep];
-  overlay.querySelector('#tutorialIcon').textContent  = step.icon;
-  overlay.querySelector('#tutorialTitle').textContent = step.title;
-  overlay.querySelector('#tutorialBody').innerHTML    = step.body;
-  overlay.querySelector('#tutorialStepNum').textContent = `${currentStep + 1} / ${STEPS.length}`;
-  overlay.style.setProperty('--tutorial-accent', step.accent ?? '#ffcb05');
+  overlayEl.querySelector('.tutorial-card__icon').textContent  = step.icon ?? '·';
+  overlayEl.querySelector('.tutorial-card__title').textContent = step.title;
+  overlayEl.querySelector('.tutorial-card__body').innerHTML    = step.body;
+  overlayEl.querySelector('.tutorial-card__step-num').textContent = `${currentStep + 1} / ${STEPS.length}`;
+  overlayEl.style.setProperty('--tutorial-accent', step.accent ?? '#ffcb05');
 
-  // Dots
-  overlay.querySelectorAll('.tutorial-card__dot').forEach((dot, i) => {
+  overlayEl.querySelectorAll('.tutorial-card__dot').forEach((dot, i) => {
     dot.classList.toggle('is-active', i === currentStep);
     dot.classList.toggle('is-past',   i <  currentStep);
   });
 
-  // Pulsanti
-  overlay.querySelector('#btnTutorialBack').disabled = currentStep === 0;
-  overlay.querySelector('#btnTutorialNext').textContent =
+  overlayEl.querySelector('.tutorial-card__btn-back').disabled  = currentStep === 0;
+  overlayEl.querySelector('.tutorial-card__btn-next').textContent =
     currentStep === STEPS.length - 1 ? '✓ Inizia' : 'Avanti →';
+
+  // Mode classes
+  overlayEl.classList.toggle('is-spotlight', step.type === 'spotlight');
+
+  // Spotlight: aggancia il buco e posiziona la card vicino al target
+  if (step.type === 'spotlight') {
+    repositionSpotlight();
+  } else {
+    // No spotlight: card centrata, niente buco
+    const spot = overlayEl.querySelector('.tutorial-spotlight');
+    spot.style.opacity = '0';
+    spot.style.pointerEvents = 'none';
+    const card = overlayEl.querySelector('.tutorial-card');
+    card.style.position = '';
+    card.style.left     = '';
+    card.style.top      = '';
+  }
 }
 
-function endTutorial(overlay) {
-  overlay.classList.remove('is-visible');
+function scheduleReposition() {
+  if (resizeRaf) cancelAnimationFrame(resizeRaf);
+  resizeRaf = requestAnimationFrame(() => {
+    if (STEPS[currentStep]?.type === 'spotlight') repositionSpotlight();
+  });
+}
+
+/* Sposta il "buco" della maschera sopra il target e la card vicino. */
+function repositionSpotlight() {
+  const step = STEPS[currentStep];
+  const target = document.querySelector(step.target);
+  const spot = overlayEl.querySelector('.tutorial-spotlight');
+  const card = overlayEl.querySelector('.tutorial-card');
+
+  if (!target) {
+    // Fallback: se il target non esiste in pagina, comportati come welcome
+    spot.style.opacity = '0';
+    card.style.position = '';
+    card.style.left = '';
+    card.style.top = '';
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  const pad  = step.padding ?? 12;
+
+  spot.style.opacity = '1';
+  spot.style.left   = `${rect.left   - pad}px`;
+  spot.style.top    = `${rect.top    - pad}px`;
+  spot.style.width  = `${rect.width  + pad * 2}px`;
+  spot.style.height = `${rect.height + pad * 2}px`;
+
+  // Posiziona la card vicino al target. placement preferito: 'left'/'right'/'top'/'bottom'
+  // Se non c'è spazio, fallback al centro pagina.
+  const cardRect = card.getBoundingClientRect();
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const gap = 24;
+  let cx, cy;
+
+  const place = step.placement ?? 'bottom';
+  if (place === 'left' && rect.left - gap - cardRect.width > 8) {
+    cx = rect.left  - gap - cardRect.width;
+    cy = Math.max(8, Math.min(vh - cardRect.height - 8, rect.top + rect.height / 2 - cardRect.height / 2));
+  } else if (place === 'right' && rect.right + gap + cardRect.width < vw - 8) {
+    cx = rect.right + gap;
+    cy = Math.max(8, Math.min(vh - cardRect.height - 8, rect.top + rect.height / 2 - cardRect.height / 2));
+  } else if (place === 'top' && rect.top - gap - cardRect.height > 8) {
+    cy = rect.top - gap - cardRect.height;
+    cx = Math.max(8, Math.min(vw - cardRect.width - 8, rect.left + rect.width / 2 - cardRect.width / 2));
+  } else if (place === 'bottom' && rect.bottom + gap + cardRect.height < vh - 8) {
+    cy = rect.bottom + gap;
+    cx = Math.max(8, Math.min(vw - cardRect.width - 8, rect.left + rect.width / 2 - cardRect.width / 2));
+  } else {
+    // Fallback: posiziona al centro orizzontale, sotto se possibile sennò sopra
+    cx = (vw - cardRect.width) / 2;
+    cy = rect.bottom + gap + cardRect.height < vh - 8
+       ? rect.bottom + gap
+       : Math.max(8, rect.top - gap - cardRect.height);
+  }
+
+  card.style.position = 'fixed';
+  card.style.left = `${cx}px`;
+  card.style.top  = `${cy}px`;
+}
+
+function endTutorial() {
+  if (!overlayEl) return;
+  overlayEl.classList.remove('is-visible');
   document.body.style.overflow = '';
   markDone();
-  setTimeout(() => { overlay.remove(); }, 350);
+  document.removeEventListener('keydown', onKeyDown);
+  window.removeEventListener('resize', scheduleReposition);
+  window.removeEventListener('scroll', scheduleReposition, true);
+  const ref = overlayEl;
+  overlayEl = null;
+  setTimeout(() => ref.remove(), 350);
 }

@@ -26,11 +26,51 @@
   backdrop-filter: blur(8px);
   cursor: pointer;
 }
+/* In modalità spotlight il backdrop normale è invisibile (la maschera
+   è gestita dal box-shadow gigante della .tutorial-spotlight) */
+.tutorial-overlay.is-spotlight .tutorial-overlay__backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* "Buco" trasparente nella maschera: in realtà è un rettangolo
+   posizionato sopra il target con un box-shadow gigante che oscura
+   tutto il resto della pagina. Cattura anche i click → l'utente può
+   toccare il target spotlighted senza accidentalmente skippare. */
+.tutorial-spotlight {
+  position: fixed;
+  pointer-events: none;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(13, 14, 22, 0.88);
+  z-index: 1;
+  opacity: 0;
+  transition: left 0.35s cubic-bezier(0.22, 0.84, 0.36, 1),
+              top  0.35s cubic-bezier(0.22, 0.84, 0.36, 1),
+              width  0.35s cubic-bezier(0.22, 0.84, 0.36, 1),
+              height 0.35s cubic-bezier(0.22, 0.84, 0.36, 1),
+              opacity 0.25s ease;
+}
+/* Bordo glow ciano attorno al buco: rinforza la guida visiva */
+.tutorial-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid var(--tutorial-accent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--tutorial-accent) 70%, transparent),
+              inset 0 0 16px color-mix(in srgb, var(--tutorial-accent) 30%, transparent);
+  animation: tutorial-spotlight-pulse 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes tutorial-spotlight-pulse {
+  0%, 100% { opacity: 0.65; transform: scale(1);    }
+  50%      { opacity: 1.00; transform: scale(1.02); }
+}
 
 /* Card centrale */
 .tutorial-card {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: min(440px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
@@ -43,9 +83,30 @@
               0 0 0 1px rgba(255, 255, 255, 0.04) inset,
               0 0 80px -20px var(--tutorial-accent);
   transform: scale(0.92);
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              left      0.35s cubic-bezier(0.22, 0.84, 0.36, 1),
+              top       0.35s cubic-bezier(0.22, 0.84, 0.36, 1);
 }
 .tutorial-overlay.is-visible .tutorial-card { transform: scale(1); }
+
+/* In modalità spotlight la card è più compatta: meno padding, icona
+   inline col titolo (non più cerchio gigante). Niente max-width così
+   grande perché la card viene posizionata a lato del target. */
+.tutorial-overlay.is-spotlight .tutorial-card {
+  width: min(360px, calc(100vw - 32px));
+  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+  text-align: left;
+}
+.tutorial-overlay.is-spotlight .tutorial-card__icon-wrap {
+  width: 56px;
+  height: 56px;
+  margin: 0 0 var(--sp-3);
+  background: radial-gradient(circle, color-mix(in srgb, var(--tutorial-accent) 30%, transparent) 0%, transparent 70%);
+}
+.tutorial-overlay.is-spotlight .tutorial-card__icon { font-size: 2.2rem; }
+.tutorial-overlay.is-spotlight .tutorial-card__step-info { justify-content: flex-start; }
+.tutorial-overlay.is-spotlight .tutorial-card__title { font-size: 1.15rem; }
+.tutorial-overlay.is-spotlight .tutorial-card__body  { font-size: 0.85rem; margin-bottom: var(--sp-4); }
 
 /* Close X */
 .tutorial-card__close {

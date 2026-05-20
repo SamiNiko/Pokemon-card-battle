@@ -128,12 +128,12 @@
         <input type="range" class="setting-row__slider" id="sfxVol" min="0" max="100" value="80" />
       </div>
 
-      <div class="setting-row setting-row--coming">
+      <div class="setting-row">
         <div class="setting-row__info">
-          <div class="setting-row__label">Musica di sottofondo</div>
-          <div class="setting-row__hint">In arrivo</div>
+          <div class="setting-row__label">Volume musica</div>
+          <div class="setting-row__hint" id="bgmVolHint">50% · musica di sottofondo</div>
         </div>
-        <input type="range" class="setting-row__slider" min="0" max="100" value="50" disabled />
+        <input type="range" class="setting-row__slider" id="bgmVol" min="0" max="100" value="50" />
       </div>
     </section>
 
@@ -212,6 +212,6 @@
     <span id="toastMsg"></span>
   </div>
 
-  <script type="module" src="js/settings.js?v=9"></script>
+  <script type="module" src="js/settings.js?v=10"></script>
 </body>
 </html>

@@ -19,11 +19,13 @@
 
 const KEY_MASTER  = 'pkmn_audio_master';
 const KEY_SFX     = 'pkmn_audio_sfx';
+const KEY_BGM     = 'pkmn_audio_bgm';
 const KEY_ENABLED = 'pkmn_audio_enabled';
 
 let ctx = null;
 let masterGain = null;
 let sfxGain    = null;
+let bgmGain    = null;
 let unlocked   = false;
 
 function ensureCtx() {
@@ -33,13 +35,28 @@ function ensureCtx() {
     ctx = new AC();
     masterGain = ctx.createGain();
     sfxGain    = ctx.createGain();
+    bgmGain    = ctx.createGain();
     sfxGain.connect(masterGain);
+    bgmGain.connect(masterGain);
     masterGain.connect(ctx.destination);
     applyVolumes();
   } catch (e) {
     console.warn('[sfx] Web Audio non disponibile:', e.message);
     ctx = null;
   }
+  return ctx;
+}
+
+/** Restituisce il nodo gain BGM (per il modulo bgm.js). Richiama ensureCtx
+ *  in modo che il context sia inizializzato anche se BGM è il primo a
+ *  partire. */
+export function getBgmGain() {
+  ensureCtx();
+  return bgmGain;
+}
+/** Restituisce il context (per moduli avanzati come bgm.js). */
+export function getAudioContext() {
+  ensureCtx();
   return ctx;
 }
 
@@ -54,15 +71,18 @@ function applyVolumes() {
   if (!masterGain || !sfxGain) return;
   const m = readVol(KEY_MASTER, 80) / 100;
   const s = readVol(KEY_SFX, 80) / 100;
+  const b = readVol(KEY_BGM, 50) / 100;
   const enabled = (localStorage.getItem(KEY_ENABLED) ?? '1') === '1';
   masterGain.gain.value = enabled ? m : 0;
   sfxGain.gain.value    = s;
+  if (bgmGain) bgmGain.gain.value = b;
 }
 
 /** Imposta volumi (0-100) e persiste. Se passi null lascia invariato. */
-export function setVolume({ master, sfx, enabled } = {}) {
+export function setVolume({ master, sfx, bgm, enabled } = {}) {
   if (master   != null) localStorage.setItem(KEY_MASTER,  String(master));
   if (sfx      != null) localStorage.setItem(KEY_SFX,     String(sfx));
+  if (bgm      != null) localStorage.setItem(KEY_BGM,     String(bgm));
   if (enabled  != null) localStorage.setItem(KEY_ENABLED, enabled ? '1' : '0');
   applyVolumes();
 }
@@ -71,6 +91,7 @@ export function getVolume() {
   return {
     master:  readVol(KEY_MASTER, 80),
     sfx:     readVol(KEY_SFX, 80),
+    bgm:     readVol(KEY_BGM, 50),
     enabled: (localStorage.getItem(KEY_ENABLED) ?? '1') === '1',
   };
 }

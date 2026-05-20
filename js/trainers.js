@@ -8,6 +8,9 @@ import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { TRAINERS, getTrainer, getUnlockedTrainers, getTrainerTotalStars, getTrainerDifficulty } from './data/trainers.js?v=8';
 import { getTrainersBeaten, isTrainerBeaten } from './data/state.js?v=6';
 import { getRarity, tierStars }               from './data/rarity.js';
+import { playBGM }                            from './data/bgm.js?v=1';
+
+playBGM('trainers');
 
 const $  = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));

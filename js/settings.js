@@ -254,8 +254,10 @@ function initAudioControls() {
   const enabledEl = $('audioEnabled');
   const masterEl  = $('masterVol');
   const sfxEl     = $('sfxVol');
+  const bgmEl     = $('bgmVol');
   const masterHint = $('masterVolHint');
   const sfxHint    = $('sfxVolHint');
+  const bgmHint    = $('bgmVolHint');
   if (!enabledEl || !masterEl || !sfxEl) return;
 
   // Carica valori salvati
@@ -263,8 +265,10 @@ function initAudioControls() {
   enabledEl.checked = v.enabled;
   masterEl.value    = v.master;
   sfxEl.value       = v.sfx;
+  if (bgmEl) bgmEl.value = v.bgm ?? 50;
   masterHint.textContent = `${v.master}%`;
   sfxHint.textContent    = `${v.sfx}% · tocca lo slider per anteprima`;
+  if (bgmHint) bgmHint.textContent = `${v.bgm ?? 50}% · musica di sottofondo`;
 
   // Toggle abilitato/disabilitato
   enabledEl.addEventListener('change', () => {
@@ -285,6 +289,16 @@ function initAudioControls() {
     sfxHint.textContent = `${sfxEl.value}% · tocca lo slider per anteprima`;
   });
   sfxEl.addEventListener('change', () => { unlockAudio(); SFX.hit(); });
+
+  // Slider BGM: regola volume musica di sottofondo (live, no anteprima
+  // perché il loop sta già suonando in pagina)
+  if (bgmEl) {
+    bgmEl.addEventListener('input', () => {
+      setVolume({ bgm: parseInt(bgmEl.value, 10) });
+      if (bgmHint) bgmHint.textContent = `${bgmEl.value}% · musica di sottofondo`;
+    });
+    bgmEl.addEventListener('change', () => { unlockAudio(); });
+  }
 }
 
 init();

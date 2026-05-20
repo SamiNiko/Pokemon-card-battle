@@ -11,6 +11,11 @@ import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped } from './
 import { findItem }                    from './data/items.js?v=3';
 import { openCardModal }                from './data/card-modal.js?v=9';
 import { initTutorial, isTutorialDone } from './data/tutorial.js?v=3';
+import { playBGM }                      from './data/bgm.js?v=1';
+
+// Avvia subito la BGM della home (parte dopo il primo gesto utente per via
+// delle restrizioni browser sull'autoplay audio)
+playBGM('home');
 
 const $ = sel => document.querySelector(sel);
 const $id = id => document.getElementById(id);

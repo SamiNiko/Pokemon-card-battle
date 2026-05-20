@@ -18,6 +18,7 @@ import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js?v=9';
 import { SFX }                                 from './data/sfx.js';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
+import { playBGM }                             from './data/bgm.js?v=1';
 
 /* ---- Modalità: 'ai' (CPU random) | 'pvp' (online) | 'trainer' (Allenatore Kanto) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -26,6 +27,10 @@ const MODE       = _modeParam === 'pvp'     ? 'pvp'
                  : _modeParam === 'trainer' ? 'trainer'
                  :                            'ai';
 const TRAINER_ID = MODE === 'trainer' ? URL_PARAMS.get('id') : null;
+
+// BGM: 'boss' per match contro un trainer (più drammatico), 'battle' per
+// gli scontri standard contro AI random o online.
+playBGM(MODE === 'trainer' ? 'boss' : 'battle');
 
 /* ---- Utility ---- */
 const $ = (s, r = document) => r.querySelector(s);

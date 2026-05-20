@@ -18,7 +18,7 @@ import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js?v=9';
 import { SFX }                                 from './data/sfx.js';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
-import { playBGM }                             from './data/bgm.js?v=5';
+import { playBGM }                             from './data/bgm.js?v=6';
 
 /* ---- Modalità: 'ai' (CPU random) | 'pvp' (online) | 'trainer' (Allenatore Kanto) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);

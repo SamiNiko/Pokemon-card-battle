@@ -428,7 +428,9 @@ export function playBGM(name) {
    'collection', 'settings', ecc. risolvono tutti a 'menu.mp3', quindi
    navigando tra menu deve continuare lo STESSO file. */
 const RESUME_KEY = 'pkmn_bgm_resume';
-const RESUME_MAX_AGE_MS = 10_000;   // resume valido solo se entro 10 secondi
+const RESUME_MAX_AGE_MS = 60_000;   // resume valido entro 60 secondi (copre
+                                    // il caso "utente apre pagina ma non
+                                    // interagisce subito = audio context locked")
 
 function readResumeState(url) {
   try {
@@ -459,8 +461,22 @@ function clearResumeState() {
   try { localStorage.removeItem(RESUME_KEY); } catch {}
 }
 
-/* Salva la posizione prima di lasciare la pagina (pagehide è più affidabile
-   di unload su mobile e Safari). */
+/* Salva la posizione prima di lasciare la pagina. pagehide è più affidabile
+   di unload su mobile e Safari, ma per sicurezza salviamo anche periodicamente
+   ogni secondo durante la riproduzione → anche se nessun evento di unload
+   scattasse, abbiamo sempre uno snapshot recente in localStorage. */
+let periodicSaveHandle = null;
+function startPeriodicSave() {
+  if (periodicSaveHandle) return;
+  periodicSaveHandle = setInterval(saveResumeState, 1000);
+}
+function stopPeriodicSave() {
+  if (periodicSaveHandle) {
+    clearInterval(periodicSaveHandle);
+    periodicSaveHandle = null;
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.addEventListener('pagehide',       saveResumeState);
   window.addEventListener('beforeunload',   saveResumeState);
@@ -483,9 +499,21 @@ function playFileTrack(url, trackName) {
   // riprendi dal punto esatto. Il match è sull'URL (non sul nome traccia)
   // così navigando tra menu (home/collection/settings/ecc → tutti menu.mp3)
   // l'audio continua senza saltare.
+  //
+  // IMPORTANTE: settare audio.currentTime PRIMA che l'audio abbia caricato
+  // i metadati viene SILENZIOSAMENTE IGNORATO dai browser → il fix è
+  // applicare il seek dentro l'evento 'loadedmetadata'. Se i metadati
+  // erano già pronti (caso SW cache hit), readyState >= 1 e applichiamo subito.
   const resumed = readResumeState(url);
   if (resumed) {
-    audio.currentTime = resumed.currentTime;
+    const applySeek = () => {
+      try { audio.currentTime = resumed.currentTime; } catch (e) {}
+    };
+    if (audio.readyState >= 1 /* HAVE_METADATA */) {
+      applySeek();
+    } else {
+      audio.addEventListener('loadedmetadata', applySeek, { once: true });
+    }
     clearResumeState();   // consuma lo state (one-shot)
   }
 
@@ -522,6 +550,7 @@ function playFileTrack(url, trackName) {
   });
 
   currentFilePlayer = { audio, srcNode, gainNode };
+  startPeriodicSave();   // salva snapshot ogni 1s per il resume tra pagine
 }
 
 /** Fade out + stop di un file player. */
@@ -647,6 +676,7 @@ export function stopBGM() {
     fadeOutFile(currentFilePlayer, CROSSFADE_S);
     currentFilePlayer = null;
   }
+  stopPeriodicSave();
   currentName = null;
   pendingPlay = null;
 }

@@ -12,6 +12,11 @@ import {
 
 import { initTutorial }     from './data/tutorial.js?v=3';
 import { SFX, getVolume, setVolume, unlockAudio } from './data/sfx.js';
+import { playBGM }                                from './data/bgm.js?v=4';
+
+// BGM anche in Impostazioni così l'utente può regolare il volume mentre
+// la sente in tempo reale. Stesso brano della home/menu.
+playBGM('settings');
 
 /* Supabase + cloud sync caricati dinamicamente. Se la CDN è bloccata
    (es. ad-blocker aggressivo di Opera GX) la pagina resta funzionante

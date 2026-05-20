@@ -11,7 +11,7 @@
   <title>Pokémon Card Battle — Credits</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
   <link rel="stylesheet" href="css/page-hero.css?v=1" />
-  <link rel="stylesheet" href="css/credits.css?v=1" />
+  <link rel="stylesheet" href="css/credits.css?v=2" />
 </head>
 <body class="credits-page">
 
@@ -173,5 +173,10 @@
     <a class="credits-back" href="index.html">← Torna alla home</a>
   </main>
 
+  <script type="module">
+    // BGM: stesso brano dei menu (resume continua dalla pagina precedente)
+    import { playBGM } from './js/data/bgm.js?v=4';
+    playBGM('credits');
+  </script>
 </body>
 </html>

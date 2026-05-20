@@ -18,7 +18,7 @@ import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js?v=9';
 import { SFX }                                 from './data/sfx.js';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
-import { playBGM }                             from './data/bgm.js?v=2';
+import { playBGM }                             from './data/bgm.js?v=4';
 
 /* ---- Modalità: 'ai' (CPU random) | 'pvp' (online) | 'trainer' (Allenatore Kanto) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -28,15 +28,30 @@ const MODE       = _modeParam === 'pvp'     ? 'pvp'
                  :                            'ai';
 const TRAINER_ID = MODE === 'trainer' ? URL_PARAMS.get('id') : null;
 
-// BGM:
-//   - 'boss-oak' per la battaglia segreta contro il Prof. Oak (track dedicata)
-//   - 'boss' per gli altri trainer (più drammatico del battle standard)
-//   - 'battle' per AI random o online
-playBGM(
-  MODE === 'trainer' && TRAINER_ID === 'oak' ? 'boss-oak'
-  : MODE === 'trainer'                       ? 'boss'
-  :                                            'battle'
-);
+// BGM: scelta differenziata per tipo di battaglia. Se il file MP3
+// corrispondente non esiste, bgm.js fa fallback al loop procedurale.
+const TRAINER_CATEGORIES = {
+  // Capipalestra → battle-gym
+  brock:'gym', misty:'gym', surge:'gym', erika:'gym',
+  koga:'gym',  sabrina:'gym', blaine:'gym', giovanni:'gym',
+  // Boss intermedi → battle-trainer
+  rocketboss:'trainer', rival:'trainer',
+  // Elite Four + Champion → battle-champion
+  lorelei:'champion', bruno:'champion', agatha:'champion',
+  lance:'champion', blue:'champion',
+  // Oak ha la sua traccia dedicata
+  oak: 'oak',
+};
+function pickBattleTrack() {
+  if (MODE !== 'trainer') return 'battle';
+  const cat = TRAINER_CATEGORIES[TRAINER_ID];
+  if (cat === 'oak')      return 'boss-oak';
+  if (cat === 'gym')      return 'battle-gym';
+  if (cat === 'trainer')  return 'battle-trainer';
+  if (cat === 'champion') return 'battle-champion';
+  return 'boss';   // fallback per trainer non mappato (e per AI = 'battle')
+}
+playBGM(pickBattleTrack());
 
 /* ---- Utility ---- */
 const $ = (s, r = document) => r.querySelector(s);

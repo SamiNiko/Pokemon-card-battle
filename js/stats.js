@@ -19,6 +19,9 @@ import {
   getRarity, tierLabel, tierStars, tierColor,
 } from './data/rarity.js';
 import { openCardModal } from './data/card-modal.js?v=9';
+import { playBGM }       from './data/bgm.js?v=4';
+
+playBGM('stats');
 
 const $ = id => document.getElementById(id);
 

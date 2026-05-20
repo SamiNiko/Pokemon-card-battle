@@ -36,15 +36,28 @@ import { getAudioContext, getBgmGain } from './sfx.js';
    procedurale definito in TRACKS più sotto.
    ============================================================ */
 const FILE_TRACKS = {
-  // Music di menu generica per tutte le pagine non-battaglia
+  // Music di menu generica per tutte le pagine non-battaglia + settings/credits
   menu:       'assets/audio/menu.mp3',
   home:       'assets/audio/menu.mp3',
   collection: 'assets/audio/menu.mp3',
   summon:     'assets/audio/menu.mp3',
   trainers:   'assets/audio/menu.mp3',
   shop:       'assets/audio/menu.mp3',
-  // Music dedicata per la battaglia con Prof. Oak
-  'boss-oak': 'assets/audio/oak-battle.mp3',
+  settings:   'assets/audio/menu.mp3',
+  credits:    'assets/audio/menu.mp3',
+  stats:      'assets/audio/menu.mp3',
+
+  // Battaglie differenziate per tipo trainer
+  //   'battle-gym'      → capipalestra (Brock, Misty, ..., Giovanni)
+  //   'battle-trainer'  → Boss Rocket + Rivale (battaglie intermedie)
+  //   'battle-champion' → Elite Four + Blue Champion
+  //   'boss-oak'        → Prof. Oak (easter egg)
+  // Se uno dei file manca, il sistema fa fallback al loop procedurale
+  // 'boss' o 'battle' definito sotto in TRACKS.
+  'battle-gym':      'assets/audio/gym-battle.mp3',
+  'battle-trainer':  'assets/audio/trainer-battle.mp3',
+  'battle-champion': 'assets/audio/champion-battle.mp3',
+  'boss-oak':        'assets/audio/oak-battle.mp3',
 };
 
 /* ============================================================
@@ -401,18 +414,80 @@ export function playBGM(name) {
 
   // Priorità: file MP3/OGG se mappato in FILE_TRACKS
   if (FILE_TRACKS[name]) {
-    playFileTrack(FILE_TRACKS[name]);
+    playFileTrack(FILE_TRACKS[name], name);
   } else {
     playProceduralTrack(TRACKS[name], name);
   }
 }
 
-/** Avvia un file audio (MP3/OGG) come BGM con loop nativo + crossfade. */
-function playFileTrack(url) {
+/* Resume state: salviamo la posizione del player in localStorage prima di
+   navigare via, così la nuova pagina può riprendere DALLO STESSO punto.
+   Il gap percepito è ~200-400ms (page reload + audio decode).
+
+   CHIAVE: l'URL del file (non il nome della traccia) — perché 'home',
+   'collection', 'settings', ecc. risolvono tutti a 'menu.mp3', quindi
+   navigando tra menu deve continuare lo STESSO file. */
+const RESUME_KEY = 'pkmn_bgm_resume';
+const RESUME_MAX_AGE_MS = 10_000;   // resume valido solo se entro 10 secondi
+
+function readResumeState(url) {
+  try {
+    const raw = localStorage.getItem(RESUME_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    if (s.url !== url) return null;
+    if (Date.now() - s.savedAt > RESUME_MAX_AGE_MS) return null;
+    return s;
+  } catch { return null; }
+}
+function saveResumeState() {
+  try {
+    if (currentFilePlayer?.audio && currentName) {
+      const url = FILE_TRACKS[currentName];
+      if (!url) return;
+      const s = {
+        url,
+        name: currentName,
+        currentTime: currentFilePlayer.audio.currentTime,
+        savedAt: Date.now(),
+      };
+      localStorage.setItem(RESUME_KEY, JSON.stringify(s));
+    }
+  } catch {}
+}
+function clearResumeState() {
+  try { localStorage.removeItem(RESUME_KEY); } catch {}
+}
+
+/* Salva la posizione prima di lasciare la pagina (pagehide è più affidabile
+   di unload su mobile e Safari). */
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide',       saveResumeState);
+  window.addEventListener('beforeunload',   saveResumeState);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) saveResumeState();
+  });
+}
+
+/** Avvia un file audio (MP3/OGG) come BGM con loop nativo + crossfade.
+ *  Se è la stessa traccia di un saveResumeState recente (cambio pagina),
+ *  riprende esattamente da quella posizione → continuità tra pagine. */
+function playFileTrack(url, trackName) {
   const ctx = getAudioContext();
   const audio = new Audio(url);
   audio.loop = true;
+  audio.preload = 'auto';   // carica il file completo, no solo metadata
   audio.crossOrigin = 'anonymous';
+
+  // RESUME: se lo STESSO FILE era in riproduzione su pagina precedente,
+  // riprendi dal punto esatto. Il match è sull'URL (non sul nome traccia)
+  // così navigando tra menu (home/collection/settings/ecc → tutti menu.mp3)
+  // l'audio continua senza saltare.
+  const resumed = readResumeState(url);
+  if (resumed) {
+    audio.currentTime = resumed.currentTime;
+    clearResumeState();   // consuma lo state (one-shot)
+  }
 
   // Routing via Web Audio per usare bgmGain (volume controllabile da Settings)
   let srcNode;
@@ -430,7 +505,9 @@ function playFileTrack(url) {
 
   const gainNode = ctx.createGain();
   gainNode.gain.value = 0;
-  gainNode.gain.linearRampToValueAtTime(FILE_TARGET_VOL, ctx.currentTime + CROSSFADE_S);
+  // Crossfade più rapido se stiamo facendo resume (no fade out della vecchia traccia)
+  const fadeIn = resumed ? 0.15 : CROSSFADE_S;
+  gainNode.gain.linearRampToValueAtTime(FILE_TARGET_VOL, ctx.currentTime + fadeIn);
   srcNode.connect(gainNode).connect(getBgmGain());
 
   audio.play().catch(err => {

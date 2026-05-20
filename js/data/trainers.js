@@ -219,6 +219,30 @@ export const TRAINERS = [
     reward: 3500,
     intro: 'Heh, finalmente! Sono io, Blue, il Campione di Kanto. Vediamo se hai le carte per battermi.',
   },
+
+  // ============================================================
+  // EASTER EGG — Prof. Oak (battaglia segreta tagliata da R/B)
+  // ============================================================
+  // Il team di Oak era programmato nel codice di Pokémon Rosso/Blu ma
+  // l'evento non venne mai attivato. Dataminato: 6 Pokemon livello 65+,
+  // include TUTTI e 3 gli starter finali Kanto (il vero "padre" dei
+  // Pokemon). Sblocco solo dopo aver battuto Blue Campione.
+  {
+    id:    'oak',
+    name:  'Prof. Oak',
+    title: 'Battaglia segreta — Pallet Town',
+    badge: '🔬',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/oak.png',
+    color: '#dc4f4f',     // bianco-rosso (camice da scienziato)
+    type:  'normal',
+    /* Team canon Oak (dataminato R/B): Pidgeot, Tauros, Exeggutor, Arcanine,
+       Gyarados, + starter finale che batte quello del Rival. Per il mio gioco
+       semplificato uso Venusaur al posto di Exeggutor per includere TUTTI E 3
+       gli starter finali. */
+    team:  [3, 6, 9, 130, 143, 128], // Venusaur(4), Charizard(4), Blastoise(4), Gyarados(4), Snorlax(4), Tauros(3) — 23★
+    reward: 5000,
+    intro: 'Aspetta! Una battaglia con me? Hmm… molto bene. Ti mostrerò la VERA forza dei Pokémon.',
+  },
 ];
 
 /** Restituisce il trainer con quell'id, o null. */
@@ -264,5 +288,6 @@ export function getTrainerDifficulty(trainerOrId) {
   if (stars <= 12) return { tier: 3, label: 'Difficile',   color: '#f5d050' };
   if (stars <= 15) return { tier: 4, label: 'Molto Forte', color: '#c8a8ff' };
   if (stars <= 19) return { tier: 5, label: 'Lega',        color: '#ff66cc' };
-  return                 { tier: 6, label: 'Campione',    color: '#ffcb05' };
+  if (stars <= 22) return { tier: 6, label: 'Campione',    color: '#ffcb05' };
+  return                 { tier: 7, label: 'Maestro',     color: '#ff3344' };
 }

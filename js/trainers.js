@@ -5,7 +5,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { TRAINERS, getTrainer, getUnlockedTrainers, getTrainerTotalStars, getTrainerDifficulty } from './data/trainers.js?v=7';
+import { TRAINERS, getTrainer, getUnlockedTrainers, getTrainerTotalStars, getTrainerDifficulty } from './data/trainers.js?v=8';
 import { getTrainersBeaten, isTrainerBeaten } from './data/state.js?v=6';
 import { getRarity, tierStars }               from './data/rarity.js';
 
@@ -64,7 +64,7 @@ function renderList() {
     const constellationHTML = `
       <div class="trainer-card__constellation" title="Difficoltà: ${diff.label}" style="--diff-color:${diff.color}">
         <span class="trainer-card__diff-label">${diff.label}</span>
-        <span class="trainer-card__stars">${'★'.repeat(Math.min(6, diff.tier))}<span class="trainer-card__stars-dim">${'★'.repeat(6 - Math.min(6, diff.tier))}</span></span>
+        <span class="trainer-card__stars">${'★'.repeat(Math.min(7, diff.tier))}<span class="trainer-card__stars-dim">${'★'.repeat(7 - Math.min(7, diff.tier))}</span></span>
         <span class="trainer-card__star-count">${stars}★ totali</span>
       </div>`;
 
@@ -122,7 +122,7 @@ function openTrainerModal(id) {
     diffEl.style.setProperty('--diff-color', diff.color);
     diffEl.innerHTML = `
       <span class="trainer-modal__diff-label">${diff.label}</span>
-      <span class="trainer-modal__diff-stars">${'★'.repeat(Math.min(6, diff.tier))}<span class="trainer-modal__diff-stars-dim">${'★'.repeat(6 - Math.min(6, diff.tier))}</span></span>
+      <span class="trainer-modal__diff-stars">${'★'.repeat(Math.min(7, diff.tier))}<span class="trainer-modal__diff-stars-dim">${'★'.repeat(7 - Math.min(7, diff.tier))}</span></span>
       <span class="trainer-modal__diff-count">${stars}★ team</span>
     `;
   }

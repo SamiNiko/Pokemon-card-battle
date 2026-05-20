@@ -81,7 +81,7 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/koga.png',
     color: '#a040a0',
     type:  'poison',
-    team:  [15, 89, 110, 24, 49], // Beedrill(2★), Muk(2★), Weezing(2★), Arbok(2★), Venomoth(2★) — 10★
+    team:  [109, 89, 110, 49, 15], // Koffing(1) canon, Muk(2), Weezing(2), Venomoth(2), Beedrill(2) — 9★
     reward: 450,
     intro: 'L\'arte del ninja-veleno richiede pazienza… e silenzio.',
   },
@@ -123,7 +123,7 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/giovanni-gen3.png',
     color: '#705848',
     type:  'dark',
-    team:  [53, 97, 24, 110, 94, 105], // Persian(2), Hypno(2), Arbok(2), Weezing(2), Gengar(4), Marowak(2) — 14★
+    team:  [33, 115, 111, 31, 94], // Nidorino(2), Kangaskhan(3), Rhyhorn(2), Nidoqueen(3), Gengar(4) — 14★ (canon Silph Co.)
     reward: 900,
     intro: 'Bambino impertinente… il Team Rocket non perdona chi si mette in mezzo.',
   },
@@ -147,7 +147,7 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/blue-gen3.png',
     color: '#3b4cca',
     type:  'normal',
-    team:  [18, 65, 130, 8, 128, 58], // Pidgeot(4), Alakazam(3), Gyarados(4), Wartortle(2), Tauros(3), Growlithe(1) — 17★
+    team:  [17, 64, 8, 130, 128, 53], // Pidgeotto(2), Kadabra(3), Wartortle(2), Gyarados(4), Tauros(3), Persian(2) — 16★ (canon Silph rival)
     reward: 1400,
     intro: 'Heh, ci incontriamo di nuovo! Stavolta ti distruggo.',
   },
@@ -163,7 +163,7 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/lorelei-gen3.png',
     color: '#98d8d8',
     type:  'ice',
-    team:  [87, 91, 131, 124, 134, 73], // Dewgong(2), Cloyster(2), Lapras(3), Jynx(3), Vaporeon(3), Tentacruel(3) — 16★
+    team:  [87, 91, 73, 124, 131, 134], // Dewgong(2), Cloyster(2), Tentacruel(3), Jynx(3), Lapras(3), Vaporeon(3) — 16★ (Lorelei canon + Vaporeon)
     reward: 1800,
     intro: 'Sono la prima dell\'Elite Four. Senti il freddo dell\'inverno eterno!',
   },

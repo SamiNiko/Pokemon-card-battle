@@ -167,7 +167,7 @@ async function init() {
     // ---- TRAINER mode ----
     // Carica il team del trainer da js/data/trainers.js. Se l'id non
     // esiste o il team è vuoto, fallback al team random.
-    const { getTrainer } = await import('./data/trainers.js?v=6');
+    const { getTrainer } = await import('./data/trainers.js?v=7');
     const t = getTrainer(TRAINER_ID);
     const playerTeam = getActiveTeam();
     bs.playerTeamIds = playerTeam.length > 0 ? playerTeam : [25, 6, 9, 3, 94, 65];
@@ -1522,7 +1522,7 @@ async function endGame(result) {
       markTrainerBeaten(TRAINER_ID);
       // Carica reward dal modulo trainers
       try {
-        const { getTrainer } = await import('./data/trainers.js?v=6');
+        const { getTrainer } = await import('./data/trainers.js?v=7');
         const t = getTrainer(TRAINER_ID);
         if (t && typeof t.reward === 'number' && t.reward > 0) {
           gemReward = t.reward;
@@ -1584,7 +1584,7 @@ async function showEndGameScreen(result, gemReward) {
   let trainer = null;
   if (MODE === 'trainer' && TRAINER_ID) {
     try {
-      const { getTrainer } = await import('./data/trainers.js?v=6');
+      const { getTrainer } = await import('./data/trainers.js?v=7');
       trainer = getTrainer(TRAINER_ID);
     } catch {}
   }

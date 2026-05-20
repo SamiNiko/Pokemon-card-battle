@@ -5,7 +5,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { TRAINERS, getTrainer, getUnlockedTrainers, getTrainerTotalStars, getTrainerDifficulty } from './data/trainers.js?v=6';
+import { TRAINERS, getTrainer, getUnlockedTrainers, getTrainerTotalStars, getTrainerDifficulty } from './data/trainers.js?v=7';
 import { getTrainersBeaten, isTrainerBeaten } from './data/state.js?v=6';
 import { getRarity, tierStars }               from './data/rarity.js';
 

@@ -504,10 +504,16 @@ function playFileTrack(url, trackName) {
   }
 
   const gainNode = ctx.createGain();
-  gainNode.gain.value = 0;
-  // Crossfade più rapido se stiamo facendo resume (no fade out della vecchia traccia)
-  const fadeIn = resumed ? 0.15 : CROSSFADE_S;
-  gainNode.gain.linearRampToValueAtTime(FILE_TARGET_VOL, ctx.currentTime + fadeIn);
+  if (resumed) {
+    // GAP-FREE: per il resume settiamo il volume target direttamente,
+    // senza alcun ramp. Combinato col SW pre-cache, il cambio di pagina
+    // è quasi impercettibile.
+    gainNode.gain.value = FILE_TARGET_VOL;
+  } else {
+    // Prima volta che parte questa traccia → crossfade normale
+    gainNode.gain.value = 0;
+    gainNode.gain.linearRampToValueAtTime(FILE_TARGET_VOL, ctx.currentTime + CROSSFADE_S);
+  }
   srcNode.connect(gainNode).connect(getBgmGain());
 
   audio.play().catch(err => {

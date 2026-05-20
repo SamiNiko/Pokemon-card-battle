@@ -12,11 +12,12 @@
    Versioning: bumpa CACHE_VERSION quando vuoi forzare un refresh
    completo della cache (es. dopo cambi major).
    ============================================================ */
-const CACHE_VERSION = 'v25';
+const CACHE_VERSION = 'v26';
 const STATIC_CACHE  = `shc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `shc-runtime-${CACHE_VERSION}`;
 
-/* File da pre-cachare al primo install — il "core shell" dell'app */
+/* File da pre-cachare al primo install — il "core shell" dell'app +
+   tracce audio principali (così il primo cambio pagina non aspetta la rete). */
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -24,7 +25,12 @@ const PRECACHE_URLS = [
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
   './assets/icons/apple-touch-icon.png',
+  './assets/audio/menu.mp3',
+  './assets/audio/oak-battle.mp3',
 ];
+
+/* Audio files: cache-first (raramente cambiano, pesanti da scaricare) */
+const AUDIO_RE = /\/assets\/audio\/[^/]+\.(mp3|ogg|wav|m4a)$/i;
 
 /* Domini di runtime (dati live, NON da cachare aggressivamente) */
 const LIVE_HOSTS = [
@@ -78,6 +84,12 @@ self.addEventListener('fetch', event => {
   // manifest.json → network first (così cambi di nome/icone PWA arrivano subito)
   if (url.pathname.endsWith('/manifest.json') || url.pathname === '/manifest.json') {
     event.respondWith(networkFirst(req));
+    return;
+  }
+
+  // Audio → cache first (file grossi, raramente cambiano)
+  if (AUDIO_RE.test(url.pathname)) {
+    event.respondWith(cacheFirst(req));
     return;
   }
 

@@ -12,7 +12,7 @@ import {
 
 import { initTutorial }     from './data/tutorial.js?v=3';
 import { SFX, getVolume, setVolume, unlockAudio } from './data/sfx.js';
-import { playBGM }                                from './data/bgm.js?v=4';
+import { playBGM }                                from './data/bgm.js?v=5';
 
 // BGM anche in Impostazioni così l'utente può regolare il volume mentre
 // la sente in tempo reale. Stesso brano della home/menu.

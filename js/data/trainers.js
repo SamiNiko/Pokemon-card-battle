@@ -1,27 +1,39 @@
 /* ============================================================
-   trainers.js — I 10 Allenatori di Kanto
+   trainers.js — I 15 Allenatori della Lega Kanto
    ------------------------------------------------------------
-   Capipalestra (8) + Elite Four (1) + Campione (1).
-   Ognuno ha un team predefinito, un titolo, un colore tematico,
-   una reward gemme alla PRIMA VITTORIA.
+   8 Capipalestra + 1 Boss Rocket (Silph Co.) + Rivale +
+   4 Elite Four + Campione = 15 totali.
 
-   I dati sono per ora hardcoded — quando avremo la modalità Storia
-   completa, verranno fusi con story-state.js.
+   Ogni trainer ha un team a difficoltà CRESCENTE: i primi hanno
+   2-3 Pokemon prevalentemente Comuni/Non Comuni, gli ultimi hanno
+   5-6 Pokemon con Rari, Epici e Pseudo Leggendari.
+
+   Stars del team (somma rarità): indicatore approssimativo della
+   difficoltà — usato dalla UI per mostrare le "costellazioni".
+
+   Reward in gemme alla PRIMA vittoria, scalata con la forza:
+     1-3:  100-200 (entry)
+     4-7:  250-700 (mid-game)
+     8-10: 700-1300 (mid-late)
+     11-15: 1700-3500 (Elite Four + Campione)
    ============================================================ */
 
-/* Sblocco sequenziale: ogni trainer richiede aver battuto il precedente.
-   Eccezione: il primo (Brock) è sempre sbloccato. */
+import { getRarity, tierStars } from './rarity.js';
+
+/* Sblocco sequenziale: ogni trainer richiede aver battuto il precedente. */
 export const TRAINERS = [
+  // ============================================================
+  // 8 CAPIPALESTRA KANTO
+  // ============================================================
   {
     id:    'brock',
     name:  'Brock',
     title: 'Capopalestra di Plumbeopoli',
     badge: '⛰',
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/brock.png',
-    color: '#a8a878',     // grigio roccia
+    color: '#a8a878',
     type:  'rock',
-    /* 3 Pokemon: introduzione comodo per il giocatore col team minimo */
-    team:  [74, 95],      // Geodude, Onix
+    team:  [74, 95],      // Geodude(1★), Onix(1★) — 2★
     reward: 100,
     intro: 'Il mio team di Roccia è solido come pietra! Vediamo se ce la fai.',
   },
@@ -33,7 +45,7 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/misty.png',
     color: '#6890f0',
     type:  'water',
-    team:  [120, 121],    // Staryu, Starmie
+    team:  [120, 121],    // Staryu(1★), Starmie(2★) — 3★
     reward: 150,
     intro: 'Le mie sirene acquatiche ti spazzeranno via!',
   },
@@ -45,7 +57,7 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/ltsurge.png',
     color: '#f8d030',
     type:  'electric',
-    team:  [100, 81, 26], // Voltorb, Magnemite, Raichu
+    team:  [100, 81, 26], // Voltorb(1★), Magnemite(1★), Raichu(4★) — 6★
     reward: 200,
     intro: 'Stai per friggere, recluta!',
   },
@@ -57,8 +69,8 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/erika.png',
     color: '#78c850',
     type:  'grass',
-    team:  [71, 114, 45], // Victreebel, Tangela, Vileplume
-    reward: 250,
+    team:  [71, 114, 45], // Victreebel(3★), Tangela(2★), Vileplume(3★) — 8★
+    reward: 300,
     intro: 'Oh… avevi un appuntamento? Combattiamo allora.',
   },
   {
@@ -69,8 +81,8 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/koga.png',
     color: '#a040a0',
     type:  'poison',
-    team:  [109, 89, 110], // Koffing, Muk, Weezing
-    reward: 400,
+    team:  [15, 89, 110, 24, 49], // Beedrill(2★), Muk(2★), Weezing(2★), Arbok(2★), Venomoth(2★) — 10★
+    reward: 450,
     intro: 'L\'arte del ninja-veleno richiede pazienza… e silenzio.',
   },
   {
@@ -81,8 +93,8 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/sabrina.png',
     color: '#f85888',
     type:  'psychic',
-    team:  [64, 122, 49, 65], // Kadabra, Mr. Mime, Venomoth, Alakazam
-    reward: 500,
+    team:  [64, 122, 49, 65], // Kadabra(3★), Mr.Mime(3★), Venomoth(2★), Alakazam(3★) — 11★
+    reward: 550,
     intro: 'Ho previsto la tua sconfitta. Non puoi sfuggire al destino.',
   },
   {
@@ -93,9 +105,27 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/blaine.png',
     color: '#f08030',
     type:  'fire',
-    team:  [58, 77, 78, 59], // Growlithe, Ponyta, Rapidash, Arcanine
-    reward: 600,
+    team:  [78, 126, 38, 59], // Rapidash(3★), Magmar(3★), Ninetales(4★), Arcanine(3★) — 13★
+    reward: 700,
     intro: 'Indovinello: cosa brucia di più, il fuoco o la sconfitta?',
+  },
+
+  // ============================================================
+  // BOSS INTERMEDI (Silph Co.)
+  // ============================================================
+  {
+    id:    'rocketboss',
+    name:  'Boss Team Rocket',
+    title: 'Silph Co. — Quartier Generale',
+    badge: '🥷',
+    /* Usa il sprite "giovanni-gen3.png" → versione Rocket di Giovanni
+       (diversa dal Giovanni-capopalestra HGSS). */
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/giovanni-gen3.png',
+    color: '#705848',
+    type:  'dark',
+    team:  [53, 97, 24, 110, 94, 105], // Persian(2), Hypno(2), Arbok(2), Weezing(2), Gengar(4), Marowak(2) — 14★
+    reward: 900,
+    intro: 'Bambino impertinente… il Team Rocket non perdona chi si mette in mezzo.',
   },
   {
     id:    'giovanni',
@@ -105,9 +135,61 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/giovanni.png',
     color: '#e0c068',
     type:  'ground',
-    team:  [111, 51, 31, 34, 112], // Rhyhorn, Dugtrio, Nidoqueen, Nidoking, Rhydon
-    reward: 800,
-    intro: 'Una volta capo del Team Rocket. Ora ti distruggerò.',
+    team:  [111, 51, 31, 34, 112, 28], // Rhyhorn(2), Dugtrio(2), Nidoqueen(3), Nidoking(3), Rhydon(3), Sandslash(2) — 15★
+    reward: 1100,
+    intro: 'Mi hai svelato. Ora sono solo un Capopalestra… ma il più forte di Kanto.',
+  },
+  {
+    id:    'rival',
+    name:  'Rivale',
+    title: 'Lega Pokémon — Sfida finale',
+    badge: '🤺',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/blue-gen3.png',
+    color: '#3b4cca',
+    type:  'normal',
+    team:  [18, 65, 130, 8, 128, 58], // Pidgeot(4), Alakazam(3), Gyarados(4), Wartortle(2), Tauros(3), Growlithe(1) — 17★
+    reward: 1400,
+    intro: 'Heh, ci incontriamo di nuovo! Stavolta ti distruggo.',
+  },
+
+  // ============================================================
+  // ELITE FOUR
+  // ============================================================
+  {
+    id:    'lorelei',
+    name:  'Petra',
+    title: 'Elite Four — Ghiaccio/Acqua',
+    badge: '❄',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/lorelei-gen3.png',
+    color: '#98d8d8',
+    type:  'ice',
+    team:  [87, 91, 131, 124, 134, 73], // Dewgong(2), Cloyster(2), Lapras(3), Jynx(3), Vaporeon(3), Tentacruel(3) — 16★
+    reward: 1800,
+    intro: 'Sono la prima dell\'Elite Four. Senti il freddo dell\'inverno eterno!',
+  },
+  {
+    id:    'bruno',
+    name:  'Bruno',
+    title: 'Elite Four — Lotta',
+    badge: '👊',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/bruno.png',
+    color: '#c03028',
+    type:  'fighting',
+    team:  [76, 107, 106, 68, 62, 95], // Golem(3), Hitmonchan(3), Hitmonlee(3), Machamp(3), Poliwrath(3), Onix(1) — 16★
+    reward: 2100,
+    intro: 'I miei Pokémon e io abbiamo allenato corpo e spirito. Mostrami se sei degno.',
+  },
+  {
+    id:    'agatha',
+    name:  'Agatha',
+    title: 'Elite Four — Spettro',
+    badge: '👻',
+    sprite: 'https://play.pokemonshowdown.com/sprites/trainers/agatha-gen3.png',
+    color: '#705898',
+    type:  'ghost',
+    team:  [94, 94, 93, 24, 110, 42], // Gengar(4), Gengar(4), Haunter(2), Arbok(2), Weezing(2), Golbat(2) — 16★
+    reward: 2400,
+    intro: 'Ah, eccoti! L\'ultima generazione è sempre troppo arrogante. Vediamo le tue paure.',
   },
   {
     id:    'lance',
@@ -117,10 +199,14 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/lance.png',
     color: '#7038f8',
     type:  'dragon',
-    team:  [130, 148, 142, 148, 149], // Gyarados, Dragonair, Aerodactyl, Dragonair, Dragonite
-    reward: 1000,
+    team:  [130, 142, 148, 148, 149, 6], // Gyarados(4), Aerodactyl(3), Dragonair(2)×2 canon R/B, Dragonite(5), Charizard(4) — 20★
+    reward: 2800,
     intro: 'Ho atteso a lungo un avversario degno. Saprai onorarmi?',
   },
+
+  // ============================================================
+  // CAMPIONE
+  // ============================================================
   {
     id:    'blue',
     name:  'Blue',
@@ -129,9 +215,8 @@ export const TRAINERS = [
     sprite: 'https://play.pokemonshowdown.com/sprites/trainers/blue.png',
     color: '#ffcb05',
     type:  'normal',
-    /* Team da Campione: 6 Pokemon, mix di tipi, include uno starter finale */
-    team:  [18, 65, 112, 130, 59, 6], // Pidgeot, Alakazam, Rhydon, Gyarados, Arcanine, Charizard
-    reward: 1500,
+    team:  [18, 65, 112, 130, 59, 6], // Pidgeot(4★), Alakazam(3★), Rhydon(3★), Gyarados(4★), Arcanine(3★), Charizard(4★) — 21★
+    reward: 3500,
     intro: 'Heh, finalmente! Sono io, Blue, il Campione di Kanto. Vediamo se hai le carte per battermi.',
   },
 ];
@@ -160,4 +245,24 @@ export function getUnlockedTrainers(beatenIds = []) {
     }
   }
   return unlocked;
+}
+
+/** Somma delle stars del team di un trainer (indicatore di difficoltà).
+ *  Usato dall'UI per mostrare la "costellazione" del trainer. */
+export function getTrainerTotalStars(trainerOrId) {
+  const t = typeof trainerOrId === 'string' ? getTrainer(trainerOrId) : trainerOrId;
+  if (!t) return 0;
+  return (t.team ?? []).reduce((sum, id) => sum + tierStars(getRarity(id)), 0);
+}
+
+/** Tier di difficoltà di un trainer (per icona / colore in UI).
+ *  Basato sulla somma stelle del team. */
+export function getTrainerDifficulty(trainerOrId) {
+  const stars = getTrainerTotalStars(trainerOrId);
+  if (stars <= 5)  return { tier: 1, label: 'Facile',      color: '#80c860' };
+  if (stars <= 9)  return { tier: 2, label: 'Medio',       color: '#88b4ff' };
+  if (stars <= 12) return { tier: 3, label: 'Difficile',   color: '#f5d050' };
+  if (stars <= 15) return { tier: 4, label: 'Molto Forte', color: '#c8a8ff' };
+  if (stars <= 19) return { tier: 5, label: 'Lega',        color: '#ff66cc' };
+  return                 { tier: 6, label: 'Campione',    color: '#ffcb05' };
 }

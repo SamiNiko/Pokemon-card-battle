@@ -5,9 +5,9 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { TRAINERS, getTrainer, getUnlockedTrainers } from './data/trainers.js?v=3';
+import { TRAINERS, getTrainer, getUnlockedTrainers, getTrainerTotalStars, getTrainerDifficulty } from './data/trainers.js?v=6';
 import { getTrainersBeaten, isTrainerBeaten } from './data/state.js?v=6';
-import { getRarity }                          from './data/rarity.js';
+import { getRarity, tierStars }               from './data/rarity.js';
 
 const $  = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
@@ -38,6 +38,8 @@ function renderList() {
     const beaten   = isTrainerBeaten(t.id);
     const unlock   = unlocked.has(t.id);
     const teamPkmn = t.team.map(id => findPokemon(id)).filter(Boolean);
+    const diff     = getTrainerDifficulty(t);
+    const stars    = getTrainerTotalStars(t);
 
     const card = document.createElement('button');
     card.type  = 'button';
@@ -47,16 +49,24 @@ function renderList() {
 
     // Team preview: 6 sprite circolari (anche se team < 6, riempie)
     const teamHTML = teamPkmn.map(p => `
-      <span class="trainer-card__pkmn" data-rarity="${getRarity(p.id)}" title="${p.name}">
+      <span class="trainer-card__pkmn" data-rarity="${getRarity(p.id)}" title="${p.name} · ${'★'.repeat(tierStars(getRarity(p.id)))}">
         <img src="${p.sprite.default}" alt="${p.name}" loading="lazy" />
       </span>
     `).join('');
 
-    // Avatar: usa lo sprite del trainer (PokeAPI HGSS) con fallback all'emoji
+    // Avatar: usa lo sprite del trainer (Pokemon Showdown) con fallback all'emoji
     const avatarHTML = t.sprite
       ? `<img class="trainer-card__sprite" src="${t.sprite}" alt="${t.name}"
              onerror="this.outerHTML='${t.badge}'" />`
       : t.badge;
+
+    // Costellazione: somma stelle del team + tier difficoltà (Facile→Campione)
+    const constellationHTML = `
+      <div class="trainer-card__constellation" title="Difficoltà: ${diff.label}" style="--diff-color:${diff.color}">
+        <span class="trainer-card__diff-label">${diff.label}</span>
+        <span class="trainer-card__stars">${'★'.repeat(Math.min(6, diff.tier))}<span class="trainer-card__stars-dim">${'★'.repeat(6 - Math.min(6, diff.tier))}</span></span>
+        <span class="trainer-card__star-count">${stars}★ totali</span>
+      </div>`;
 
     card.innerHTML = `
       <div class="trainer-card__num">${String(idx + 1).padStart(2, '0')}</div>
@@ -65,6 +75,7 @@ function renderList() {
         <h3 class="trainer-card__name">${t.name}</h3>
         <p class="trainer-card__title">${t.title}</p>
         <div class="trainer-card__team">${teamHTML}</div>
+        ${constellationHTML}
       </div>
       <div class="trainer-card__right">
         ${beaten
@@ -102,6 +113,19 @@ function openTrainerModal(id) {
   $('#trainerModalTitle').textContent     = t.name;
   $('#trainerModalTitleSub').textContent  = t.title;
   $('#trainerModalIntro').textContent     = t.intro;
+
+  // Indicatore difficoltà sul modal
+  const diff = getTrainerDifficulty(t);
+  const stars = getTrainerTotalStars(t);
+  const diffEl = $('#trainerModalDifficulty');
+  if (diffEl) {
+    diffEl.style.setProperty('--diff-color', diff.color);
+    diffEl.innerHTML = `
+      <span class="trainer-modal__diff-label">${diff.label}</span>
+      <span class="trainer-modal__diff-stars">${'★'.repeat(Math.min(6, diff.tier))}<span class="trainer-modal__diff-stars-dim">${'★'.repeat(6 - Math.min(6, diff.tier))}</span></span>
+      <span class="trainer-modal__diff-count">${stars}★ team</span>
+    `;
+  }
 
   // Team preview con artwork PNG
   const teamEl = $('#trainerModalTeam');

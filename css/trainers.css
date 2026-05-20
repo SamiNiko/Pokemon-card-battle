@@ -124,6 +124,39 @@
   gap: 4px;
   flex-wrap: wrap;
 }
+
+/* COSTELLAZIONE — indicatore di difficoltà sotto al team */
+.trainer-card__constellation {
+  --diff-color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.62rem;
+  font-feature-settings: "tnum";
+}
+.trainer-card__diff-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--diff-color);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--diff-color) 50%, transparent);
+}
+.trainer-card__stars {
+  font-size: 0.7rem;
+  color: var(--diff-color);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--diff-color) 60%, transparent);
+  letter-spacing: 0.04em;
+}
+.trainer-card__stars-dim {
+  color: rgba(255, 255, 255, 0.12);
+  text-shadow: none;
+}
+.trainer-card__star-count {
+  color: var(--text-muted);
+  margin-left: auto;
+  letter-spacing: 0.02em;
+}
 .trainer-card__pkmn {
   width: 28px;
   height: 28px;
@@ -273,6 +306,39 @@
   font-size: 0.78rem;
   color: var(--text-dim);
   letter-spacing: 0.02em;
+}
+
+/* Indicatore difficoltà nel modal (sotto al titolo) */
+.trainer-modal__difficulty {
+  --diff-color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 0.7rem;
+  font-feature-settings: "tnum";
+}
+.trainer-modal__diff-label {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--diff-color);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--diff-color) 60%, transparent);
+  padding: 3px 9px;
+  background: color-mix(in srgb, var(--diff-color) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--diff-color) 45%, transparent);
+  border-radius: 999px;
+}
+.trainer-modal__diff-stars {
+  font-size: 0.95rem;
+  color: var(--diff-color);
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--diff-color) 60%, transparent);
+}
+.trainer-modal__diff-stars-dim { color: rgba(255, 255, 255, 0.15); text-shadow: none; }
+.trainer-modal__diff-count {
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
 }
 .trainer-modal__intro {
   margin: 0;

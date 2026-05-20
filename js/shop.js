@@ -7,7 +7,7 @@ import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non dispon
 
 import { getState, saveState, ownsItem, addItem } from './data/state.js?v=6';
 import { ITEMS, ITEM_CATEGORIES, findItem } from './data/items.js?v=3';
-import { playBGM }                          from './data/bgm.js?v=1';
+import { playBGM }                          from './data/bgm.js?v=2';
 
 playBGM('shop');
 

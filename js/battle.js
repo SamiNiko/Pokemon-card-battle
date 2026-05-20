@@ -18,7 +18,7 @@ import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js?v=9';
 import { SFX }                                 from './data/sfx.js';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
-import { playBGM }                             from './data/bgm.js?v=1';
+import { playBGM }                             from './data/bgm.js?v=2';
 
 /* ---- Modalità: 'ai' (CPU random) | 'pvp' (online) | 'trainer' (Allenatore Kanto) ---- */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -28,9 +28,15 @@ const MODE       = _modeParam === 'pvp'     ? 'pvp'
                  :                            'ai';
 const TRAINER_ID = MODE === 'trainer' ? URL_PARAMS.get('id') : null;
 
-// BGM: 'boss' per match contro un trainer (più drammatico), 'battle' per
-// gli scontri standard contro AI random o online.
-playBGM(MODE === 'trainer' ? 'boss' : 'battle');
+// BGM:
+//   - 'boss-oak' per la battaglia segreta contro il Prof. Oak (track dedicata)
+//   - 'boss' per gli altri trainer (più drammatico del battle standard)
+//   - 'battle' per AI random o online
+playBGM(
+  MODE === 'trainer' && TRAINER_ID === 'oak' ? 'boss-oak'
+  : MODE === 'trainer'                       ? 'boss'
+  :                                            'battle'
+);
 
 /* ---- Utility ---- */
 const $ = (s, r = document) => r.querySelector(s);

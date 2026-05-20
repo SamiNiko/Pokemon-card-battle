@@ -29,6 +29,25 @@
 import { getAudioContext, getBgmGain } from './sfx.js';
 
 /* ============================================================
+   FILE TRACKS — priorità sui loop procedurali
+   ------------------------------------------------------------
+   Se la chiave è qui, viene caricato il file MP3/OGG come
+   HTMLAudioElement (loop nativo). Se manca, fallback al loop
+   procedurale definito in TRACKS più sotto.
+   ============================================================ */
+const FILE_TRACKS = {
+  // Music di menu generica per tutte le pagine non-battaglia
+  menu:       'assets/audio/menu.mp3',
+  home:       'assets/audio/menu.mp3',
+  collection: 'assets/audio/menu.mp3',
+  summon:     'assets/audio/menu.mp3',
+  trainers:   'assets/audio/menu.mp3',
+  shop:       'assets/audio/menu.mp3',
+  // Music dedicata per la battaglia con Prof. Oak
+  'boss-oak': 'assets/audio/oak-battle.mp3',
+};
+
+/* ============================================================
    COSTANTI MUSICALI
    ============================================================ */
 // Note → frequenze (A4 = 440 Hz, tuning equal temperament)
@@ -337,9 +356,11 @@ const TRACKS = {
 const CROSSFADE_S  = 1.2;     // secondi di crossfade tra brani
 const LOOK_AHEAD_S = 0.5;     // quanto in anticipo schedula le note
 const TICK_MS      = 100;     // intervallo dello scheduler
+const FILE_TARGET_VOL = 0.55; // volume target per i file MP3 (rispetto al bgmGain)
 
 let currentName = null;
-let currentVoiceNodes = [];   // gain nodes attivi (per fade out)
+let currentVoiceNodes = [];   // gain nodes attivi (per fade out) - procedural
+let currentFilePlayer = null; // { audio, srcNode, gainNode } - file-based
 let schedulerHandle = null;
 let nextStepTime = 0;
 let currentStep = 0;
@@ -352,9 +373,10 @@ function audioReady() {
   return !!c && c.state === 'running';
 }
 
-/** Avvia o crossfade verso un loop. */
+/** Avvia o crossfade verso un loop. Cerca prima un file in FILE_TRACKS,
+ *  altrimenti usa il loop procedurale in TRACKS. */
 export function playBGM(name) {
-  if (!TRACKS[name]) {
+  if (!FILE_TRACKS[name] && !TRACKS[name]) {
     console.warn('[bgm] traccia sconosciuta:', name);
     return;
   }
@@ -367,20 +389,91 @@ export function playBGM(name) {
     return;
   }
 
-  // Crossfade-out della traccia precedente
-  if (currentVoiceNodes.length) {
-    fadeOutVoices(currentVoiceNodes, CROSSFADE_S);
-  }
-  currentVoiceNodes = [];
-  currentName = name;
-  isPlayingFlag = true;
+  // Crossfade-out di QUALSIASI traccia precedente (procedurale o file)
+  if (currentVoiceNodes.length) fadeOutVoices(currentVoiceNodes, CROSSFADE_S);
+  if (currentFilePlayer)        fadeOutFile(currentFilePlayer, CROSSFADE_S);
+  currentVoiceNodes  = [];
+  currentFilePlayer  = null;
+  if (schedulerHandle) { clearTimeout(schedulerHandle); schedulerHandle = null; }
 
+  currentName    = name;
+  isPlayingFlag  = true;
+
+  // Priorità: file MP3/OGG se mappato in FILE_TRACKS
+  if (FILE_TRACKS[name]) {
+    playFileTrack(FILE_TRACKS[name]);
+  } else {
+    playProceduralTrack(TRACKS[name], name);
+  }
+}
+
+/** Avvia un file audio (MP3/OGG) come BGM con loop nativo + crossfade. */
+function playFileTrack(url) {
   const ctx = getAudioContext();
-  const track = TRACKS[name];
-  const stepDur = 60 / track.bpm / 4;   // durata di 1/16
+  const audio = new Audio(url);
+  audio.loop = true;
+  audio.crossOrigin = 'anonymous';
+
+  // Routing via Web Audio per usare bgmGain (volume controllabile da Settings)
+  let srcNode;
+  try {
+    srcNode = ctx.createMediaElementSource(audio);
+  } catch (e) {
+    // Alcuni browser non permettono di creare due source dallo stesso audio.
+    // Fallback: regola direttamente audio.volume (perderemo il crossfade gain).
+    console.warn('[bgm] createMediaElementSource fallito, fallback HTMLAudio:', e);
+    audio.volume = FILE_TARGET_VOL;
+    audio.play().catch(err => console.warn('[bgm] play fallito:', err));
+    currentFilePlayer = { audio, srcNode: null, gainNode: null };
+    return;
+  }
+
+  const gainNode = ctx.createGain();
+  gainNode.gain.value = 0;
+  gainNode.gain.linearRampToValueAtTime(FILE_TARGET_VOL, ctx.currentTime + CROSSFADE_S);
+  srcNode.connect(gainNode).connect(getBgmGain());
+
+  audio.play().catch(err => {
+    // Fallisce se l'utente non ha ancora interagito — riprova al prossimo gesto
+    console.warn('[bgm] audio.play() bloccato:', err.message);
+  });
+
+  currentFilePlayer = { audio, srcNode, gainNode };
+}
+
+/** Fade out + stop di un file player. */
+function fadeOutFile(player, durSec) {
+  const ctx = getAudioContext();
+  const t0 = ctx.currentTime;
+  if (player.gainNode) {
+    player.gainNode.gain.cancelScheduledValues(t0);
+    player.gainNode.gain.setValueAtTime(player.gainNode.gain.value, t0);
+    player.gainNode.gain.linearRampToValueAtTime(0, t0 + durSec);
+  } else if (player.audio) {
+    // Fallback senza Web Audio: fade JS-based
+    const start = player.audio.volume;
+    const steps = 20;
+    let i = 0;
+    const handle = setInterval(() => {
+      i++;
+      player.audio.volume = Math.max(0, start * (1 - i / steps));
+      if (i >= steps) { clearInterval(handle); player.audio.pause(); }
+    }, (durSec * 1000) / steps);
+    return;
+  }
+  setTimeout(() => {
+    try { player.audio.pause(); } catch {}
+    try { player.srcNode && player.srcNode.disconnect(); } catch {}
+    try { player.gainNode && player.gainNode.disconnect(); } catch {}
+  }, durSec * 1000 + 200);
+}
+
+/** Avvia un loop procedurale Web Audio (note schedulate ad anticipo). */
+function playProceduralTrack(track, name) {
+  const ctx = getAudioContext();
+  const stepDur = 60 / track.bpm / 4;
   const totalSteps = track.bars * 16;
 
-  // Crea per ogni voice un masterGain dedicato (per crossfade)
   const voiceGains = track.voices.map(v => {
     const g = ctx.createGain();
     g.gain.value = 0;
@@ -390,15 +483,13 @@ export function playBGM(name) {
   });
   currentVoiceNodes = voiceGains.map(x => x.gain);
 
-  // Scheduler ad anticipo
   nextStepTime = ctx.currentTime + 0.05;
-  currentStep = 0;
+  currentStep  = 0;
 
   function scheduler() {
     if (!isPlayingFlag || currentName !== name) return;
     const horizon = ctx.currentTime + LOOK_AHEAD_S;
     while (nextStepTime < horizon) {
-      // Scheduling: per ogni voce trova le note che iniziano in questo step
       for (const { voice, gain } of voiceGains) {
         for (const [step, dur, noteName, vel] of voice.notes) {
           if (step !== currentStep) continue;
@@ -468,6 +559,10 @@ export function stopBGM() {
   if (currentVoiceNodes.length) {
     fadeOutVoices(currentVoiceNodes, CROSSFADE_S);
     currentVoiceNodes = [];
+  }
+  if (currentFilePlayer) {
+    fadeOutFile(currentFilePlayer, CROSSFADE_S);
+    currentFilePlayer = null;
   }
   currentName = null;
   pendingPlay = null;

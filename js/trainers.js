@@ -158,7 +158,7 @@ function openTrainerModal(id) {
       <span class="trainer-modal__reward-sub">Nessuna ricompensa</span>
     `;
   } else {
-    const coinReward = Math.round(t.reward / 2);
+    const coinReward = t.reward;
     rewardEl.classList.remove('is-claimed');
     rewardEl.innerHTML = `
       <span>💎</span>

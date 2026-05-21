@@ -1176,19 +1176,44 @@ async function acquireOpponentTurnPvP() {
 
   setPhase('In attesa dell\'avversario…');
 
-  // Warning se l'attesa è troppo lunga (oltre 60s) — probabile problema di rete/server
+  // Warning a 45s, timeout duro a 90s → auto-vittoria.
+  // L'avversario potrebbe aver chiuso il tab senza che il server riesca
+  // a inviare opponentLeft (es. crash del browser, rete morta).
+  const SOFT_WARN_MS = 45_000;
+  const HARD_TIMEOUT_MS = 90_000;
+  let countdownHandle = null;
+  let secondsLeft = Math.floor((HARD_TIMEOUT_MS - SOFT_WARN_MS) / 1000);
+
   const warnTimer = setTimeout(() => {
-    if (bs.pvp.awaitOpponentResolver || bs.pvp.pendingOpponentAction === null) {
-      console.warn('[pvp] ⏳ Attesa avversario > 60s — possibile problema lato server o avversario');
-      setPhase('⚠️ Avversario non risponde da 60s…');
+    if (bs.pvp.awaitOpponentResolver) {
+      console.warn('[pvp] ⏳ Attesa avversario > 45s — avvio countdown auto-win');
+      setPhase(`⚠️ Avversario non risponde — vittoria automatica fra ${secondsLeft}s`);
+      countdownHandle = setInterval(() => {
+        secondsLeft -= 1;
+        if (secondsLeft > 0 && bs.pvp.awaitOpponentResolver) {
+          setPhase(`⚠️ Avversario non risponde — vittoria automatica fra ${secondsLeft}s`);
+        }
+      }, 1000);
     }
-  }, 60_000);
+  }, SOFT_WARN_MS);
+
+  const timeoutTimer = setTimeout(() => {
+    if (bs.pvp.awaitOpponentResolver) {
+      console.warn('[pvp] ⌛ Timeout duro 90s — risolvo come disconnessione (auto-win)');
+      bs.pvp.disconnected = true;
+      const resolver = bs.pvp.awaitOpponentResolver;
+      bs.pvp.awaitOpponentResolver = null;
+      resolver(null);
+    }
+  }, HARD_TIMEOUT_MS);
 
   const oppAction = await waitForOpponent();
   clearTimeout(warnTimer);
+  clearTimeout(timeoutTimer);
+  if (countdownHandle) clearInterval(countdownHandle);
 
   if (!oppAction) {
-    console.log('[pvp] waitForOpponent → null (disconnesso)');
+    console.log('[pvp] waitForOpponent → null (disconnesso o timeout)');
     return null;
   }
 
@@ -1587,7 +1612,7 @@ async function endGame(result) {
         const gs = getState();
         if (!gs.tutorialBattleRewarded) {
           tutorialGems  = 50;
-          tutorialCoins = 30;
+          tutorialCoins = 120;
           gs.gems    = (gs.gems    ?? 0) + tutorialGems;
           gs.pokeuro = (gs.pokeuro ?? 0) + tutorialCoins;
           gs.tutorialBattleRewarded = true;
@@ -1608,9 +1633,9 @@ async function endGame(result) {
   let gemReward = 0;
   let coinReward = 0;
   if (MODE === 'pvp') {
-    if (result === 'win')      { gemReward = ONLINE_REWARD_WIN;  coinReward = 30; }
-    else if (result === 'lose') { gemReward = ONLINE_REWARD_LOSS; coinReward = 5;  }
-    else                        { gemReward = ONLINE_REWARD_DRAW; coinReward = 15; }
+    if (result === 'win')      { gemReward = ONLINE_REWARD_WIN;  coinReward = 120; }
+    else if (result === 'lose') { gemReward = ONLINE_REWARD_LOSS; coinReward = 30;  }
+    else                        { gemReward = ONLINE_REWARD_DRAW; coinReward = 60;  }
     const gs = getState();
     gs.gems    = (gs.gems    ?? 0) + gemReward;
     gs.pokeuro = (gs.pokeuro ?? 0) + coinReward;
@@ -1628,7 +1653,7 @@ async function endGame(result) {
         const t = getTrainer(TRAINER_ID);
         if (t && typeof t.reward === 'number' && t.reward > 0) {
           gemReward  = t.reward;
-          coinReward = Math.round(t.reward / 2);  // pokeuro = metà delle gemme
+          coinReward = t.reward;                   // pokeuro = pari alle gemme (bilanciamento shop)
           const gs = getState();
           gs.gems    = (gs.gems    ?? 0) + gemReward;
           gs.pokeuro = (gs.pokeuro ?? 0) + coinReward;

@@ -1576,26 +1576,44 @@ async function endGame(result) {
     SFX.defeat();
   }
 
-  // TUTORIAL: mostra popup win/lose dedicato (con CTA che redirige a Allenatori o reload).
-  // NESSUNA reward, NESSUNA registrazione nel match history, NESSUNA card endGame.
+  // TUTORIAL: reward UNA SOLA VOLTA alla prima vittoria del tutorial, poi
+  // mostra popup win/lose. NESSUNA registrazione nel match history.
   if (IS_TUTORIAL) {
+    let tutorialGems = 0, tutorialCoins = 0;
+    if (result === 'win') {
+      try {
+        const gs = getState();
+        if (!gs.tutorialBattleRewarded) {
+          tutorialGems  = 50;
+          tutorialCoins = 30;
+          gs.gems    = (gs.gems    ?? 0) + tutorialGems;
+          gs.pokeuro = (gs.pokeuro ?? 0) + tutorialCoins;
+          gs.tutorialBattleRewarded = true;
+          saveState();
+          log(`🎓 Tutorial completato! +${tutorialGems} 💎 +${tutorialCoins} 🪙`, 'item');
+          SFX.gemReward?.();
+        }
+      } catch (e) { console.warn('[tutorial reward]', e); }
+    }
     setTimeout(() => showTutorialStep(result === 'win' ? 'win' : 'lose'), 1500);
     return;
   }
 
-  // ---- Reward in gemme ---------------------------------------------
-  // PvP: win 50, loss 10, draw 25 (sempre).
-  // Trainer: reward custom (vedi data/trainers.js) SOLO alla PRIMA vittoria.
+  // ---- Reward in gemme + pokeuro ----------------------------------
+  // PvP: win 50💎/30🪙, draw 25/15, lose 10/5
+  // Trainer (prima vittoria): reward gemme + pokeuro = metà gemme
   // AI random: nessuna reward (allenamento puro).
   let gemReward = 0;
+  let coinReward = 0;
   if (MODE === 'pvp') {
-    gemReward = result === 'win'  ? ONLINE_REWARD_WIN
-              : result === 'lose' ? ONLINE_REWARD_LOSS
-              :                     ONLINE_REWARD_DRAW;
+    if (result === 'win')      { gemReward = ONLINE_REWARD_WIN;  coinReward = 30; }
+    else if (result === 'lose') { gemReward = ONLINE_REWARD_LOSS; coinReward = 5;  }
+    else                        { gemReward = ONLINE_REWARD_DRAW; coinReward = 15; }
     const gs = getState();
-    gs.gems = (gs.gems ?? 0) + gemReward;
+    gs.gems    = (gs.gems    ?? 0) + gemReward;
+    gs.pokeuro = (gs.pokeuro ?? 0) + coinReward;
     saveState();
-    log(`💎 Hai ricevuto +${gemReward} gemme!`, 'item');
+    log(`Hai ricevuto +${gemReward} 💎 e +${coinReward} 🪙!`, 'item');
     SFX.gemReward?.();
   } else if (MODE === 'trainer' && result === 'win' && TRAINER_ID) {
     // Marca battuto + assegna reward UNA SOLA volta
@@ -1607,11 +1625,13 @@ async function endGame(result) {
         const { getTrainer } = await import('./data/trainers.js?v=8');
         const t = getTrainer(TRAINER_ID);
         if (t && typeof t.reward === 'number' && t.reward > 0) {
-          gemReward = t.reward;
+          gemReward  = t.reward;
+          coinReward = Math.round(t.reward / 2);  // pokeuro = metà delle gemme
           const gs = getState();
-          gs.gems = (gs.gems ?? 0) + gemReward;
+          gs.gems    = (gs.gems    ?? 0) + gemReward;
+          gs.pokeuro = (gs.pokeuro ?? 0) + coinReward;
           saveState();
-          log(`🏆 PRIMA VITTORIA contro ${t.name}! +${gemReward} gemme!`, 'item');
+          log(`🏆 PRIMA VITTORIA contro ${t.name}! +${gemReward} 💎 +${coinReward} 🪙`, 'item');
           SFX.gemReward?.();
           // Suono separato di "sblocco" se non era l'ultimo trainer
           setTimeout(() => SFX.unlock?.(), 600);
@@ -1653,12 +1673,12 @@ async function endGame(result) {
   btn.addEventListener('click', () => { window.location.href = 'index.html'; }, { once: true });
 
   // End-game overlay: appare dopo ~0.8s per non sovrapporsi all'animazione KO
-  setTimeout(() => showEndGameScreen(result, gemReward), 850);
+  setTimeout(() => showEndGameScreen(result, gemReward, coinReward), 850);
 }
 
 /** Mostra l'overlay fullscreen di fine partita. Adatta i testi/sprite
  *  in base alla modalità (trainer/AI/PvP) e mostra la reward animata. */
-async function showEndGameScreen(result, gemReward) {
+async function showEndGameScreen(result, gemReward, coinReward = 0) {
   const overlay = $('#endgameOverlay');
   if (!overlay) return;
 
@@ -1699,18 +1719,22 @@ async function showEndGameScreen(result, gemReward) {
     else subEl.textContent = 'L\'AI ha avuto la meglio';
   }
 
-  // ---- Reward ----
+  // ---- Reward (gemme + eventuali pokeuro) ----
   const rewardEl   = $('#endgameReward');
   const amountEl   = $('#endgameRewardAmount');
-  if (gemReward > 0) {
+  if (gemReward > 0 || coinReward > 0) {
     rewardEl.classList.remove('hidden');
-    // Counter animato 0 → gemReward
+    // Counter animato 0 → gemReward + suffisso pokeuro se presente
     const DUR = 900;
     const startT = performance.now();
     const step = (now) => {
       const t = Math.min(1, (now - startT) / DUR);
       const e = 1 - Math.pow(1 - t, 3);
-      amountEl.textContent = `+${Math.round(gemReward * e)}`;
+      const g = Math.round(gemReward  * e);
+      const c = Math.round(coinReward * e);
+      amountEl.innerHTML = coinReward > 0
+        ? `+${g} <span style="opacity:.7;font-size:.8em;">+ ${c}🪙</span>`
+        : `+${g}`;
       if (t < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);

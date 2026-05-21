@@ -238,8 +238,7 @@ document.addEventListener('keydown', e => {
 (function init() {
   gs = getState();
 
-  // Debug: regala un po' di pokéuro se sei a 0 (per testare)
-  if ((gs.pokeuro ?? 0) === 0) { gs.pokeuro = 9999; saveState(); }
+  // (Debug auto-refill 9999 pokeuro rimosso per il rilascio)
 
   updateWallet();
   renderTabs();

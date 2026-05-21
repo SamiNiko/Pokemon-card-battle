@@ -148,7 +148,7 @@ function openTrainerModal(id) {
     teamEl.appendChild(card);
   });
 
-  // Reward visibile solo se non già battuto
+  // Reward visibile solo se non già battuto. Mostriamo sia gemme che pokeuro.
   const rewardEl = $('#trainerModalReward');
   if (isTrainerBeaten(t.id)) {
     rewardEl.classList.add('is-claimed');
@@ -158,10 +158,14 @@ function openTrainerModal(id) {
       <span class="trainer-modal__reward-sub">Nessuna ricompensa</span>
     `;
   } else {
+    const coinReward = Math.round(t.reward / 2);
     rewardEl.classList.remove('is-claimed');
     rewardEl.innerHTML = `
       <span>💎</span>
       <b>${t.reward}</b>
+      <span style="margin: 0 8px; opacity:.5;">+</span>
+      <b>${coinReward}</b>
+      <span>🪙</span>
       <span class="trainer-modal__reward-sub">alla prima vittoria</span>
     `;
   }

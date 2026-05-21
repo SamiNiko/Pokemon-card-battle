@@ -245,44 +245,10 @@ $('btnPull10').addEventListener('click', () => {
   showConfirm(10);
 });
 
-/* ================================================================
-   DEBUG — pull forzato per testare animazioni
-   ================================================================ */
-
-$('btnDebug3').addEventListener('click',       () => debugForcePull('rare'));
-$('btnDebug4').addEventListener('click',       () => debugForcePull('epic'));
-$('btnDebug5').addEventListener('click',       () => debugForcePull('pseudo'));
-$('btnDebugFakeout').addEventListener('click', () => debugForcePull('pseudo', /* forceFakeout */ true));
-
-async function debugForcePull(rarity, forceFakeout = false) {
-  const pool = BANNER_POOL.filter(p => p.rarity === rarity);
-  if (pool.length === 0) {
-    alert(`Nessun Pokémon ${rarity} nel pool`);
-    return;
-  }
-  // Clono l'entry e aggiungo la fakeoutChain (force o random secondo config)
-  const raw   = pool[Math.floor(Math.random() * pool.length)];
-  const entry = { ...raw, fakeoutChain: planRarityChain(raw.rarity, forceFakeout) };
-
-  pullSkipRequested = false;
-
-  // NB: non aggiunge al posseduti e non scala gemme — è solo per test animazioni
-  pullAll   = [entry];
-  pullQueue = [entry];
-
-  $('pullOverlay').classList.remove('hidden');
-  $('starsScreen').classList.add('hidden');
-  $('revealScreen').classList.add('hidden');
-  $('summaryScreen').classList.add('hidden');
-
-  $('btnSkipPull').classList.remove('hidden');
-
-  // Anche il debug pull passa per l'intro, così posso verificare l'animazione completa
-  await summonIntro();
-  if (pullSkipRequested) { showSummary(); return; }
-
-  await showNextResult();
-}
+/* (Debug pull forzato rimosso per il rilascio.
+    Era usato durante lo sviluppo per testare le animazioni delle varie rarità.
+    Se serve riattivarlo in futuro: ripristina i 4 bottoni in summon.html
+    e la funzione debugForcePull qui sotto.) */
 
 /* ================================================================
    SKIP & HOLD-TO-CHARGE GATE

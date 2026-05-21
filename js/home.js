@@ -85,36 +85,6 @@ const NEWS_ITEMS = [
       cta: { label: '👑 Sfida gli Allenatori', href: 'trainers.html' },
     },
   },
-  {
-    id: 'audio',
-    icon: '🎵',
-    type: 'info',
-    badge: 'Aggiornamento',
-    title: 'Colonna sonora 8-bit + audio continuo',
-    preview: 'Tracce dedicate per menu / capipalestra / Elite Four / Champion · Zero gap tra pagine',
-    modal: {
-      subtitle: 'Sistema audio rifatto da zero',
-      sections: [
-        {
-          title: 'Tracce dedicate',
-          text: 'Musica diversa per: menu, battaglie vs capipalestra, vs Boss Rocket/Rivale, vs Elite Four & Champion, battaglia segreta Prof. Oak.',
-        },
-        {
-          title: 'Audio continuo',
-          text: 'Architettura iframe shell: l\'audio non si interrompe mai quando navighi tra le pagine del menu. Esperienza fluida senza salti.',
-        },
-        {
-          title: 'Effetti sonori',
-          text: '22 SFX procedurali via Web Audio API: hit, super effective, KO, finisher charge, level-up, gemme, e molto altro — zero file binari.',
-        },
-        {
-          title: 'Controlli',
-          text: 'In Impostazioni regoli Volume Generale, Effetti, Musica separatamente. Persistono tra le sessioni.',
-        },
-      ],
-      cta: { label: '⚙ Vai a Impostazioni', href: 'settings.html' },
-    },
-  },
 ];
 
 /* ================================================================
@@ -408,21 +378,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModa
     initTeamTabs(gs);
     buildBgSprites();
 
-    // Rifornimento gemme — collegato qui così gs è sicuramente disponibile
-    const refillBtn = $id('btnRefill');
-    if (refillBtn) {
-      refillBtn.addEventListener('click', () => {
-        gs.gems = (gs.gems ?? 0) + 9999;
-        saveState();
-        buildWallet(gs);
-        refillBtn.textContent = '✓ +9999';
-        refillBtn.classList.add('is-flash');
-        setTimeout(() => {
-          refillBtn.textContent = '+ 💎';
-          refillBtn.classList.remove('is-flash');
-        }, 1000);
-      });
-    }
+    // (Bottone debug "Refill gemme" rimosso per il rilascio)
 
     // Account: avatar + modal + banner ospite
     initAccountUI(gs);

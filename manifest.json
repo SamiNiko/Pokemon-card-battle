@@ -2,7 +2,7 @@
   "name": "Pokémon card game",
   "short_name": "Pokémon card game",
   "description": "Colleziona, evoca, combatti — Pokémon card battle",
-  "start_url": "./index.html",
+  "start_url": "./play.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "any",

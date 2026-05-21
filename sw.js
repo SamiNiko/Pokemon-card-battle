@@ -12,7 +12,7 @@
    Versioning: bumpa CACHE_VERSION quando vuoi forzare un refresh
    completo della cache (es. dopo cambi major).
    ============================================================ */
-const CACHE_VERSION = 'v27';
+const CACHE_VERSION = 'v28';
 const STATIC_CACHE  = `shc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `shc-runtime-${CACHE_VERSION}`;
 
@@ -21,6 +21,7 @@ const RUNTIME_CACHE = `shc-runtime-${CACHE_VERSION}`;
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './play.html',
   './manifest.json',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',

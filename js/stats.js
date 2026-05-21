@@ -19,7 +19,7 @@ import {
   getRarity, tierLabel, tierStars, tierColor,
 } from './data/rarity.js';
 import { openCardModal } from './data/card-modal.js?v=9';
-import { playBGM }       from './data/bgm.js?v=6';
+import { playBGM }       from './data/bgm.js?v=7';
 
 playBGM('stats');
 

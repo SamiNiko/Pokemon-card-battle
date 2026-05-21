@@ -29,6 +29,36 @@
 import { getAudioContext, getBgmGain } from './sfx.js';
 
 /* ============================================================
+   SHELL DETECTION — se siamo dentro l'iframe shell (play.html),
+   non gestiamo l'audio qui ma facciamo proxy via postMessage.
+   Lo shell ospita un audio element persistente che non muore al
+   cambio pagina interno → audio continuo zero-gap.
+   ============================================================ */
+const IS_IN_SHELL = (() => {
+  try { return window.parent !== window; }
+  catch { return false; }
+})();
+
+function shellPostMessage(msg) {
+  try { window.parent.postMessage(msg, '*'); } catch {}
+}
+
+/* Quando siamo nello shell, alcune funzioni diventano proxy.
+   Le tracce procedurali (battle/boss generici) restano comunque
+   gestite dentro l'iframe via Web Audio. */
+function shellPlay(name) {
+  shellPostMessage({ type: 'bgm:play', track: name });
+}
+function shellStop() {
+  shellPostMessage({ type: 'bgm:stop' });
+}
+
+/* Segnala allo shell che l'iframe è pronto (nasconde il loader) */
+if (IS_IN_SHELL && typeof window !== 'undefined') {
+  window.addEventListener('load', () => shellPostMessage({ type: 'bgm:ready' }));
+}
+
+/* ============================================================
    FILE TRACKS — priorità sui loop procedurali
    ------------------------------------------------------------
    Se la chiave è qui, viene caricato il file MP3/OGG come
@@ -387,11 +417,30 @@ function audioReady() {
 }
 
 /** Avvia o crossfade verso un loop. Cerca prima un file in FILE_TRACKS,
- *  altrimenti usa il loop procedurale in TRACKS. */
+ *  altrimenti usa il loop procedurale in TRACKS.
+ *
+ *  Quando siamo dentro l'iframe shell (play.html), facciamo proxy via
+ *  postMessage allo shell che ospita l'audio element persistente.
+ *  Per le tracce procedurali (no file MP3) gestiamo comunque internamente
+ *  perché lo shell non sa fare Web Audio scheduling. */
 export function playBGM(name) {
   if (!FILE_TRACKS[name] && !TRACKS[name]) {
     console.warn('[bgm] traccia sconosciuta:', name);
     return;
+  }
+  // SHELL MODE: proxy se la traccia è file-based (lo shell la gestisce)
+  if (IS_IN_SHELL && FILE_TRACKS[name]) {
+    shellPlay(name);
+    currentName    = name;
+    isPlayingFlag  = true;
+    return;
+  }
+  // SHELL MODE: traccia procedurale → ferma comunque l'audio shell
+  // (lo shell non ha la melodia, dovrebbe stare zitto durante battaglie
+  // procedurali). Il loop procedurale gira normalmente dentro l'iframe.
+  if (IS_IN_SHELL && !FILE_TRACKS[name]) {
+    shellStop();
+    // continua sotto col flow procedurale...
   }
   if (currentName === name && isPlayingFlag) return;  // già in riproduzione
 
@@ -664,6 +713,12 @@ function fadeOutVoices(gains, durSec) {
 
 /** Stop totale (fade out). */
 export function stopBGM() {
+  if (IS_IN_SHELL) {
+    shellStop();
+    isPlayingFlag = false;
+    currentName = null;
+    return;
+  }
   if (!isPlayingFlag) return;
   isPlayingFlag = false;
   if (schedulerHandle) clearTimeout(schedulerHandle);

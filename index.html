@@ -16,7 +16,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Home</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
-  <link rel="stylesheet" href="css/home.css?v=8" />
+  <link rel="stylesheet" href="css/home.css?v=9" />
   <link rel="stylesheet" href="css/card-modal.css?v=8" />
   <link rel="stylesheet" href="css/tutorial.css?v=3" />
   <link rel="preload" as="audio" href="assets/audio/menu.mp3" />
@@ -167,6 +167,13 @@
               <span class="menu-btn__hint">Oggetti tenuti per i tuoi Pokémon</span>
             </span>
           </button>
+          <button class="menu-btn menu-btn--tutorial" id="btnHomeTutorial" onclick="location.href='battle.html?mode=tutorial'">
+            <span class="menu-btn__bg" aria-hidden="true">📘</span>
+            <span class="menu-btn__text">
+              <span class="menu-btn__label">📘 Tutorial battaglia</span>
+              <span class="menu-btn__hint">Guida passo passo · Niente timer · Consigliato la prima volta</span>
+            </span>
+          </button>
         </nav>
 
         <!-- Notizie / Novità -->
@@ -225,13 +232,6 @@
     <div class="modal__panel play-modal">
       <h2 class="modal__title" id="playModalTitle">Scegli modalità</h2>
       <div class="modal__options">
-        <button class="play-option" id="btnPlayTutorial">
-          <span class="play-option__icon">📘</span>
-          <span class="play-option__text">
-            <span class="play-option__label">Tutorial battaglia</span>
-            <span class="play-option__hint">Guida passo passo · Niente timer · Consigliato la prima volta</span>
-          </span>
-        </button>
         <button class="play-option" id="btnPlayTrainers">
           <span class="play-option__icon">👑</span>
           <span class="play-option__text">
@@ -326,6 +326,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/home.js?v=14"></script>
+  <script type="module" src="js/home.js?v=15"></script>
 </body>
 </html>

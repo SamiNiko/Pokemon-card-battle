@@ -466,6 +466,20 @@
   box-shadow: 0 8px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(244,160,23,0.4);
 }
 
+/* Tutorial battaglia: ciano evidenziato per nuovi giocatori */
+.menu-btn--tutorial {
+  grid-column: span 2;
+  border-left-color: #5ee8d8;
+  background: linear-gradient(135deg, rgba(94,232,216,0.14) 0%, rgba(19,28,48,0.95) 60%);
+  min-height: 78px;
+}
+.menu-btn--tutorial .menu-btn__label { color: #5ee8d8; }
+.menu-btn--tutorial .menu-btn__bg    { right: 24px; font-size: 4.6rem; bottom: -16px; }
+.menu-btn--tutorial:hover {
+  background: linear-gradient(135deg, rgba(94,232,216,0.24) 0%, rgba(19,28,48,0.95) 60%);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(94,232,216,0.45);
+}
+
 
 /* ================================================================
    NOTIZIE

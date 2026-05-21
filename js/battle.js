@@ -312,9 +312,8 @@ async function init() {
     if (e.key === ' ' && bs.phase === 'placement') { e.preventDefault(); confirmTurn(); }
   });
 
-  // Pulsante speed-up (4d-3)
-  $('#btnSpeedUp')?.addEventListener('click', toggleSpeedUp);
-  updateSpeedUpBtn();
+  // (Bottone speed-up rimosso temporaneamente — la logica resta in sleep()
+  // ma il pulsante UI non è esposto. speedMultiplier resta 1×.)
 
   // Modal conferma uscita (4a-4)
   $('.battle__exit')?.addEventListener('click', e => {

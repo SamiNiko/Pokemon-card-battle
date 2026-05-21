@@ -19,14 +19,21 @@ import { openCardModal }                       from './data/card-modal.js?v=9';
 import { SFX }                                 from './data/sfx.js';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
 import { playBGM }                             from './data/bgm.js?v=7';
+import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-battle.js?v=1';
 
-/* ---- Modalità: 'ai' (CPU random) | 'pvp' (online) | 'trainer' (Allenatore Kanto) ---- */
+// Attiva il sistema di popup tutorial se siamo in mode=tutorial
+if (MODE === 'tutorial') setTutorialMode(true);
+
+/* ---- Modalità: 'ai' | 'pvp' | 'trainer' | 'tutorial' ----
+   tutorial = battaglia guidata con popup spiegativi, team fissi, no timer */
 const URL_PARAMS = new URLSearchParams(location.search);
 const _modeParam = URL_PARAMS.get('mode');
-const MODE       = _modeParam === 'pvp'     ? 'pvp'
-                 : _modeParam === 'trainer' ? 'trainer'
-                 :                            'ai';
+const MODE       = _modeParam === 'pvp'      ? 'pvp'
+                 : _modeParam === 'trainer'  ? 'trainer'
+                 : _modeParam === 'tutorial' ? 'tutorial'
+                 :                             'ai';
 const TRAINER_ID = MODE === 'trainer' ? URL_PARAMS.get('id') : null;
+const IS_TUTORIAL = MODE === 'tutorial';
 
 // BGM: scelta differenziata per tipo di battaglia. Se il file MP3
 // corrispondente non esiste, bgm.js fa fallback al loop procedurale.
@@ -218,6 +225,17 @@ async function init() {
     } else {
       bs.enemyTeamIds = pickRandomEnemyTeam(6);
     }
+  } else if (IS_TUTORIAL) {
+    // ---- TUTORIAL mode: team fissi, type matchup chiari per spiegare ----
+    // Player: Charizard(6) Fuoco/Volante + Squirtle(7) Acqua + Pikachu(25) Elettro
+    // Enemy:  Bulbasaur(1) Erba/Veleno + Caterpie(10) Coleottero + Pidgey(16) Volante
+    // Type matchup: Charizard (Fuoco) → Bulbasaur (Erba) = super efficace 2×
+    bs.playerTeamIds = [6, 7, 25];
+    bs.enemyTeamIds  = [1, 10, 16];
+    const enemyNameEl   = $('#enemyName');
+    const enemyAvatarEl = $('#enemyAvatar');
+    if (enemyNameEl)   enemyNameEl.textContent   = 'Tutorial';
+    if (enemyAvatarEl) enemyAvatarEl.textContent = '📘';
   } else {
     // ---- AI mode (default): team avversario casuale dal pool dei 151 ----
     const playerTeam = getActiveTeam();
@@ -271,6 +289,14 @@ async function init() {
   bindMovePickerStaticHandlers();
   updateSpeedPreview();
   startTimer();
+
+  // TUTORIAL: popup di benvenuto + placement subito dopo init
+  if (IS_TUTORIAL) {
+    setTimeout(async () => {
+      await showTutorialStep('welcome');
+      await showTutorialStep('placement');
+    }, 500);
+  }
 
   // Log iniziale: oggetti tenuti
   log(`Battaglia iniziata — ${bs.pvp ? 'PvP' : 'vs CPU'}`, 'turn');
@@ -653,8 +679,13 @@ function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
   const isOwnAndActive = side === 'self' && !bs.playerDeadIds.has(pkmn.id) && bs.phase !== 'resolving';
   el.addEventListener('click', e => {
     if (el.classList.contains('was-dragged')) return;
-    if (isOwnAndActive) openMovePicker(pkmn);
-    else                openCardModal(pkmn.id);
+    if (isOwnAndActive) {
+      // TUTORIAL: prima del move picker mostra il popup di spiegazione
+      if (IS_TUTORIAL) showTutorialStep('movePicker').then(() => openMovePicker(pkmn));
+      else             openMovePicker(pkmn);
+    } else {
+      openCardModal(pkmn.id);
+    }
   });
   el.addEventListener('contextmenu', e => {
     e.preventDefault();
@@ -706,6 +737,9 @@ function onDragStart(e) {
   highlightPassiveSlots(dragId);
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', String(dragId));
+
+  // TUTORIAL: spiega gli slot della passiva al primo dragstart
+  if (IS_TUTORIAL) showTutorialStep('passiveSlots');
 }
 
 function onDragEnd(e) {
@@ -931,6 +965,15 @@ function placeCardOnSlot(pokemonId, targetSlotKey, fromSlotKey) {
    TIMER
    ============================================================ */
 function startTimer() {
+  // In tutorial mode il timer è disabilitato: niente conto alla rovescia,
+  // l'utente può prendere tutto il tempo che vuole per leggere i popup.
+  if (IS_TUTORIAL) {
+    const el = $('#timerValue');
+    if (el) el.textContent = '∞';
+    const wrap = $('#turnTimer');
+    if (wrap) wrap.style.opacity = '0.4';
+    return;
+  }
   bs.timeLeft = TURN_SECONDS;
   updateTimerDisplay();
   bs.timerHandle = setInterval(() => {
@@ -1232,6 +1275,7 @@ async function playEvents(events) {
       setPhase(`⚡ Speed Tu: ${ev.playerSpeed} — Avversario: ${ev.enemySpeed} — ${label}`);
       log(`Velocità — Tu ${ev.playerSpeed} vs Avversario ${ev.enemySpeed} (${ev.first === 'player' ? 'tu attacchi prima' : 'loro attaccano prima'})`, 'speed');
       SFX.speedCheck();
+      if (IS_TUTORIAL) await showTutorialStep('speed');
       await sleep(ANIM.speedCheck);
     }
 
@@ -1298,6 +1342,9 @@ async function playEvents(events) {
         else if (ev.typeEff === 0)     SFX.immune();
         else if (ev.typeEff < 1)       SFX.weakHit();
         else                           SFX.hit();
+
+        // TUTORIAL: popup quando avviene il primo super-effective
+        if (IS_TUTORIAL && ev.typeEff >= 2) await showTutorialStep('typeEff');
 
         showDamageFloat(defEl, ev.damage, ev.typeEff, effText);
         updateCardHP(ev.targetId, ev.targetHPAfter, ev.defenderSide);
@@ -1372,6 +1419,9 @@ async function playEvents(events) {
       SFX.directHit();
       updateHPBar('player');
       updateHPBar('enemy');
+
+      // TUTORIAL: spiega il danno diretto al primo evento
+      if (IS_TUTORIAL) await showTutorialStep('directDamage');
 
       // PP: ora viene dall'engine (ev.ppAfter è già aggiornato)
       const atkPPMap2    = ev.attackerSide === 'player' ? bs.playerPkmnPP : bs.enemyPkmnPP;
@@ -1525,6 +1575,13 @@ async function endGame(result) {
     else                    SFX.victory();
   } else {
     SFX.defeat();
+  }
+
+  // TUTORIAL: mostra popup win/lose dedicato (con CTA che redirige a Allenatori o reload).
+  // NESSUNA reward, NESSUNA registrazione nel match history, NESSUNA card endGame.
+  if (IS_TUTORIAL) {
+    setTimeout(() => showTutorialStep(result === 'win' ? 'win' : 'lose'), 1500);
+    return;
   }
 
   // ---- Reward in gemme ---------------------------------------------

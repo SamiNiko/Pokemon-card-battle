@@ -1,0 +1,132 @@
+/* ============================================================
+   tutorial-battle.css — popup spiegativi durante la battaglia tutorial
+   ============================================================ */
+
+.tutb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.tutb-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tutb-overlay--top    { align-items: flex-start; padding-top: 80px; }
+.tutb-overlay--bottom { align-items: flex-end;   padding-bottom: 80px; }
+.tutb-overlay--center { align-items: center; }
+
+.tutb-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 14, 22, 0.78);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+.tutb-popup {
+  position: relative;
+  z-index: 1;
+  width: min(420px, calc(100vw - 32px));
+  background: linear-gradient(180deg, rgba(22, 28, 48, 0.97) 0%, rgba(15, 19, 32, 0.97) 100%);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+  border-radius: var(--r-4);
+  padding: var(--sp-6) var(--sp-5) var(--sp-5);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7),
+              0 0 100px -20px var(--accent);
+  transform: scale(0.92) translateY(8px);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.tutb-overlay.is-visible .tutb-popup {
+  transform: scale(1) translateY(0);
+}
+
+.tutb-popup__icon {
+  margin: 0 auto var(--sp-3);
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  font-size: 2.6rem;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 30%, transparent) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: tutb-icon-pulse 2.4s ease-in-out infinite;
+}
+@keyframes tutb-icon-pulse {
+  0%, 100% { transform: scale(1);    }
+  50%      { transform: scale(1.06); }
+}
+
+.tutb-popup__title {
+  margin: 0 0 var(--sp-3);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.tutb-popup__body {
+  margin: 0 0 var(--sp-5);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+.tutb-popup__body b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tutb-popup__cta {
+  display: inline-block;
+  padding: 10px 26px;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, black));
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  color: #1a1a1a;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 8px 24px -8px var(--accent);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.tutb-popup__cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px -8px var(--accent);
+}
+
+.tutb-popup__skip {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.tutb-popup__skip:hover {
+  background: rgba(0, 0, 0, 0.7);
+  color: var(--text);
+}
+
+@media (max-width: 480px) {
+  .tutb-popup { padding: var(--sp-5) var(--sp-4) var(--sp-4); }
+  .tutb-popup__icon { width: 60px; height: 60px; font-size: 2.2rem; }
+  .tutb-popup__title { font-size: 1rem; }
+  .tutb-popup__body { font-size: 0.85rem; }
+}

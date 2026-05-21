@@ -371,6 +371,7 @@ $('#btnSettings').addEventListener('click',   () => { window.location.href = 'se
 //   - Allenatori → trainers.html (sostituto temporaneo della Storia)
 //   - AI random  → battle.html?mode=ai (team avversario casuale)
 //   - Online     → online.html (matchmaking PvP)
+$id('btnPlayTutorial')?.addEventListener('click', () => { window.location.href = 'battle.html?mode=tutorial'; });
 $id('btnPlayTrainers')?.addEventListener('click', () => { window.location.href = 'trainers.html'; });
 $id('btnPlayAI')?.addEventListener('click',       () => { window.location.href = 'battle.html?mode=ai'; });
 $id('btnPlayOnline')?.addEventListener('click',   () => { window.location.href = 'online.html'; });

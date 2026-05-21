@@ -338,6 +338,7 @@
 .home__menu .menu-btn:nth-child(4) { animation-delay: 0.36s; }
 .home__menu .menu-btn:nth-child(5) { animation-delay: 0.42s; }
 .home__menu .menu-btn:nth-child(6) { animation-delay: 0.48s; }
+.home__menu .menu-btn:nth-child(7) { animation-delay: 0.54s; }
 @keyframes card-rise {
   0%   { opacity: 0; transform: translateY(18px) scale(0.97); }
   100% { opacity: 1; transform: translateY(0)    scale(1);    }

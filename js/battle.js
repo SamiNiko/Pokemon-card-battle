@@ -21,9 +21,6 @@ import { getScaledStats }                      from './data/stats-scaling.js?v=3
 import { playBGM }                             from './data/bgm.js?v=7';
 import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-battle.js?v=1';
 
-// Attiva il sistema di popup tutorial se siamo in mode=tutorial
-if (MODE === 'tutorial') setTutorialMode(true);
-
 /* ---- Modalità: 'ai' | 'pvp' | 'trainer' | 'tutorial' ----
    tutorial = battaglia guidata con popup spiegativi, team fissi, no timer */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -34,6 +31,9 @@ const MODE       = _modeParam === 'pvp'      ? 'pvp'
                  :                             'ai';
 const TRAINER_ID = MODE === 'trainer' ? URL_PARAMS.get('id') : null;
 const IS_TUTORIAL = MODE === 'tutorial';
+
+// Attiva il sistema di popup tutorial se siamo in mode=tutorial
+if (MODE === 'tutorial') setTutorialMode(true);
 
 // BGM: scelta differenziata per tipo di battaglia. Se il file MP3
 // corrispondente non esiste, bgm.js fa fallback al loop procedurale.
@@ -50,7 +50,9 @@ const TRAINER_CATEGORIES = {
   oak: 'oak',
 };
 function pickBattleTrack() {
-  if (MODE !== 'trainer') return 'battle';
+  // PvP / AI quick / Tutorial → traccia "trainer" (file MP3 disponibile).
+  // Solo i match "trainer" (capipalestra/elite/oak) usano la propria categoria.
+  if (MODE !== 'trainer') return 'battle-trainer';
   const cat = TRAINER_CATEGORIES[TRAINER_ID];
   if (cat === 'oak')      return 'boss-oak';
   if (cat === 'gym')      return 'battle-gym';

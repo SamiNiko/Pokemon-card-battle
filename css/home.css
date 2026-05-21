@@ -453,15 +453,12 @@
   box-shadow: 0 8px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(168,179,207,0.25);
 }
 
-/* Shop — occupa tutta la larghezza, arancione/warning */
+/* Shop — colonna singola accanto a Impostazioni, arancione/warning */
 .menu-btn--shop {
-  grid-column: span 2;
   border-left-color: var(--warning);
   background: linear-gradient(135deg, rgba(244,160,23,0.12) 0%, rgba(19,28,48,0.95) 60%);
-  min-height: 78px;
 }
 .menu-btn--shop .menu-btn__label { color: var(--warning); }
-.menu-btn--shop .menu-btn__bg    { right: 24px; font-size: 4.6rem; bottom: -16px; }
 .menu-btn--shop:hover {
   background: linear-gradient(135deg, rgba(244,160,23,0.22) 0%, rgba(19,28,48,0.95) 60%);
   box-shadow: 0 8px 26px rgba(0,0,0,0.45), 0 0 0 1px rgba(244,160,23,0.4);
@@ -929,8 +926,8 @@
     grid-template-columns: 1fr;
   }
 
-  /* Shop torna a larghezza singola */
-  .menu-btn--shop {
+  /* Tutorial torna a larghezza singola su mobile (la colonna è già una sola) */
+  .menu-btn--tutorial {
     grid-column: span 1;
   }
 

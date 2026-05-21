@@ -5,6 +5,30 @@
 
 ---
 
+## 2026-05-17 — Spreadsheet di selezione mosse + passive per Gen 1
+
+**File nuovo: `Pokemon_Mosse_Passive_Gen1.xlsx` nel workspace.**
+
+Generato a partire dal dataset `veekun/pokedex` (alternativa a PokeAPI bloccata dalla sandbox).
+Contiene 3 fogli per consentire a Samuel di scegliere a mano mosse e passive per ogni Pokémon di Gen 1:
+
+- **Gen 1** (foglio principale, 151 righe): per ogni Pokémon ci sono dropdown filtrati per Mossa Base 1 / Mossa Base 2 / Finisher / Passiva. Le potenze e l'effetto della passiva si popolano automaticamente via INDEX/MATCH.
+- **Movepool** (13198 righe): tutte le mosse imparabili (cross-gen) di ogni Pokémon, con nome italiano + EN + tipo + categoria + potenza. Tipo colorato Pokémon-canonico, categoria colorata (rosso Fisica / blu Speciale / grigio Stato), fasce alternate per blocchi Pokémon.
+- **Abilità** (395 righe): abilità ufficiali Gen 3+ (Erbaiuto/Aiutofuoco/Statico/ecc.) con descrizione in italiano. Cella "Nascosta" gialla per le hidden abilities.
+
+**Implementazione tecnica:**
+- 302 named ranges (`Mosse_<id>` + `Abilita_<id>`) → dropdown filtrati per Pokémon
+- 604 formule (4 per Pokémon: 3 lookup potenze + 1 lookup effetto passiva), 0 errori
+- Decisioni Q-prima-gen risolte: abilità canoniche (opzione A), movepool completo (tutte gen), PokeAPI alternative (veekun/pokedex), dropdown filtrato (opzione B), nomi italiani ufficiali Nintendo
+
+**Workflow per l'implementation chat (quando Samuel avrà compilato il foglio):**
+1. Leggere il foglio Gen 1 con `pd.read_excel`
+2. Mapparlo in `js/data/movesets.js` (sovrascrivere quello generato automaticamente prima)
+3. Eventualmente creare `js/data/passives.js` con abilità canoniche per Pokémon
+4. Far funzionare la passiva nel motore di combattimento (richiede nuovo task in ROADMAP)
+
+---
+
 ## 2026-05-14 — Match History + Stats + Mobile Polish
 
 **Nuova pagina Statistiche (`stats.html`):**

@@ -76,7 +76,9 @@
        L'src iniziale è impostato via script in base a ?p=... -->
   <iframe id="app" allow="autoplay; clipboard-read; clipboard-write" title="Gioco"></iframe>
 
-  <!-- Routing: legge ?p=pagename per supporto deep-link/bookmark -->
+  <!-- Routing: legge ?p=pagename per supporto deep-link/bookmark.
+       Inoltra anche location.hash (es. #access_token=... dopo OAuth Google)
+       all'iframe, così Supabase può completare la sessione. -->
   <script>
     (function() {
       const params = new URLSearchParams(location.search);
@@ -90,7 +92,13 @@
       const querySplit = initial.split('?');
       const basename = querySplit[0];
       if (!PAGE_WHITELIST.includes(basename)) initial = 'index.html';
-      document.getElementById('app').src = initial;
+      // Inoltra il fragment all'iframe (necessario per il callback OAuth Supabase)
+      const hash = location.hash || '';
+      document.getElementById('app').src = initial + hash;
+      // Pulisci il fragment dal parent URL così un refresh non rigioca i token
+      if (hash) {
+        try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+      }
     })();
   </script>
 

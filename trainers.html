@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <!-- shell-redirect: forza l'uso di play.html per audio continuo -->
-  <script>if(window.top===window){var f=location.pathname.split("/").pop()||"index.html";if(f!=="play.html"){location.replace("play.html?p="+encodeURIComponent(f+location.search));}}</script>
+  <script>if(window.top===window){var f=location.pathname.split("/").pop()||"index.html";if(f!=="play.html"){location.replace("play.html?p="+encodeURIComponent(f+location.search)+location.hash);}}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#0d0e16" />

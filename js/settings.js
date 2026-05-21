@@ -114,7 +114,11 @@ async function init() {
 
   // ---- Replay tutorial ----
   $('btnReplayTutorial')?.addEventListener('click', () => {
-    initTutorial({ force: true });
+    // Le spotlight del tutorial cercano elementi della HOME (#btnSummon, ecc.)
+    // → navigo alla home con un flag, poi home.js avvia il tutorial.
+    // Nello shell-mode l'iframe naviga senza ricaricare il documento esterno
+    // (audio continuo), nella modalità diretta funziona comunque.
+    window.location.href = 'index.html?tutorial=1';
   });
 
   // ---- Audio (master + sfx + toggle) ----

@@ -31,88 +31,88 @@ const NEWS_ITEMS = [
     type: 'banner',
     badge: 'Banner attivo',
     title: 'Kanto Standard',
-    preview: 'Dragonite ★★★★ disponibile · 124 Pokémon nel pool · Garanzia al ×10',
+    preview: 'Dragonite ★★★★★ · Charizard ★★★★ · 145 Pokémon nel pool · ★★★ garantito al ×10',
     modal: {
       subtitle: 'Attivo fino al prossimo aggiornamento',
       sections: [
         {
           title: 'Pokémon in evidenza',
-          text: 'Dragonite (#149) · Gengar (#94) · Gyarados (#130) · Lapras (#131) — i quattro Pokémon più iconici del pool.',
+          text: 'Dragonite (#149) · Gengar (#94) · Gyarados (#130) · Lapras (#131) — i Pokémon più iconici del pool.',
         },
         {
           title: 'Probabilità',
-          text: '★★★★ Epico: 0.5% — ★★★ Raro: 5.5% — ★★ Non comune: 24% — ★ Comune: 70%',
+          text: '★★★★★ Pseudo Leggendario: 0.3% — ★★★★ Epico: 2% — ★★★ Raro: 12% — ★★ Non Comune: 30% — ★ Comune: 55.7%',
         },
         {
           title: 'Garanzie',
-          text: 'Summon ×10: almeno 1 Pokémon ★★ (non comune) garantito se nessuna rarità superiore esce naturalmente.',
+          text: 'Summon ×10: almeno 1 Pokémon ★★★ (Raro o superiore) garantito. Prime 6 summon ×1 GRATIS per i nuovi account.',
         },
         {
           title: 'Pokémon non presenti',
-          text: '26 Pokémon sono esclusivi della Modalità Storia (starter, leggendari, fossili ecc.) e non compaiono nel banner.',
+          text: 'I 5 leggendari (Articuno, Zapdos, Moltres, Mewtwo, Mew) sono esclusivi della Modalità Storia e non compaiono nel banner.',
         },
       ],
       cta: { label: '✨ Vai al Summon', href: 'summon.html' },
     },
   },
   {
-    id: 'storia',
-    icon: '🗺',
-    type: 'coming',
-    badge: 'In arrivo',
-    title: 'Modalità Storia',
-    preview: 'Esplora Kanto · Sconfiggi i capipalestra · Ottieni Pokémon esclusivi e ricompense',
+    id: 'allenatori',
+    icon: '👑',
+    type: 'banner',
+    badge: 'Nuovo!',
+    title: 'Allenatori della Lega Kanto',
+    preview: '16 trainer da sfidare · Capipalestra, Elite Four, Champion + easter egg Prof. Oak',
     modal: {
-      subtitle: 'Prossimamente nel gioco',
+      subtitle: 'Sostituto temporaneo della Modalità Storia',
       sections: [
         {
-          title: 'Esplorazione',
-          text: 'Una mappa interattiva della regione di Kanto con capipalestra, allenatori NPC ed eventi speciali da sbloccare progressivamente.',
+          title: 'Chi sono',
+          text: '8 Capipalestra (Brock → Giovanni) + Boss Team Rocket + Rivale + 4 Elite Four (Lorelei, Bruno, Agatha, Lance) + Blue Campione + un easter egg segreto post-game.',
         },
         {
-          title: 'Pokémon esclusivi storia',
-          text: 'Bulbasaur, Charmander, Squirtle e le loro evoluzioni · Articuno, Zapdos, Moltres, Mewtwo, Mew · Pokémon fossili e altri.',
+          title: 'Sblocco progressivo',
+          text: 'Ogni allenatore richiede di aver battuto il precedente. Le team avversarie e la difficoltà crescono progressivamente (curva 2★→23★).',
         },
         {
           title: 'Ricompense',
-          text: 'Sconfiggere i capipalestra premia con 💎 Gemme, 🪙 Pokéuro e Pokémon rari ottenibili solo tramite la storia.',
+          text: 'Da 100 gemme (Brock) a 5000 (easter egg). Totale Lega completa: 22.500 gemme (~22 multi-pull). Solo alla PRIMA vittoria.',
+        },
+        {
+          title: 'Modalità',
+          text: 'Battaglie senza timer drastico, AI bilanciata per posizionamento e selezione mosse, sprite trainer originali, end-game screen dedicata.',
         },
       ],
-      cta: null,
+      cta: { label: '👑 Sfida gli Allenatori', href: 'trainers.html' },
     },
   },
   {
-    id: 'mechanics',
-    icon: '⚔',
+    id: 'audio',
+    icon: '🎵',
     type: 'info',
-    badge: 'Guida gameplay',
-    title: 'Come funziona il combattimento',
-    preview: 'Team da 6 · Mosse Base e Finale · Sistema PP · Oggetti equipaggiabili',
+    badge: 'Aggiornamento',
+    title: 'Colonna sonora 8-bit + audio continuo',
+    preview: 'Tracce dedicate per menu / capipalestra / Elite Four / Champion · Zero gap tra pagine',
     modal: {
-      subtitle: 'Meccaniche di gioco — versione v0.1',
+      subtitle: 'Sistema audio rifatto da zero',
       sections: [
         {
-          title: 'Costruzione del team',
-          text: 'Scegli fino a 6 Pokémon dalla tua collezione. Puoi salvare fino a 4 preset (A, B, C, D) nella home per switchare rapidamente.',
+          title: 'Tracce dedicate',
+          text: 'Musica diversa per: menu, battaglie vs capipalestra, vs Boss Rocket/Rivale, vs Elite Four & Champion, battaglia segreta Prof. Oak.',
         },
         {
-          title: 'Mosse',
-          text: 'Ogni Pokémon ha 2 mosse: una Mossa Base (sempre disponibile, gratuita) e una Mossa Finale (più potente, costa 3 PP).',
+          title: 'Audio continuo',
+          text: 'Architettura iframe shell: l\'audio non si interrompe mai quando navighi tra le pagine del menu. Esperienza fluida senza salti.',
         },
         {
-          title: 'PP — Punti Potere',
-          text: 'I PP aumentano ogni turno. Quando raggiungi 3 PP puoi usare la Mossa Finale. Usarla consuma tutti i PP accumulati.',
+          title: 'Effetti sonori',
+          text: '22 SFX procedurali via Web Audio API: hit, super effective, KO, finisher charge, level-up, gemme, e molto altro — zero file binari.',
         },
         {
-          title: 'Oggetti',
-          text: 'Ogni Pokémon può equipaggiare 1 oggetto che conferisce bonus passivi (es. aumento ATK, rigenerazione HP, ecc.).',
-        },
-        {
-          title: 'Danni e tipi',
-          text: 'Il sistema usa la divisione fisica/speciale di Gen 4. I tipi influenzano l\'efficacia (super efficace, non molto efficace, immune).',
+          title: 'Controlli',
+          text: 'In Impostazioni regoli Volume Generale, Effetti, Musica separatamente. Persistono tra le sessioni.',
         },
       ],
-      cta: { label: '⚔ Inizia a giocare', href: '#gioca' },
+      cta: { label: '⚙ Vai a Impostazioni', href: 'settings.html' },
     },
   },
 ];
@@ -427,6 +427,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModa
 
     // Welcome overlay (prima apertura del gioco)
     initWelcomeOverlay(gs);
+
+    // Force tutorial via ?tutorial=1 (es. dal bottone "Avvia tutorial" in Settings).
+    // Parte indipendentemente dal flag isTutorialDone.
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get('tutorial') === '1') {
+      // Aspetta che la home sia interamente renderizzata (le spotlight
+      // hanno bisogno che #btnSummon, #btnCollection, ecc. esistano nel DOM)
+      setTimeout(() => initTutorial({ force: true }), 500);
+      // Pulisci il param così non si riavvia al prossimo reload
+      history.replaceState(null, '', location.pathname);
+    }
 
     // Tutorial onboarding: parte SOLO se welcome è già stato fatto
     // e il tutorial non è mai stato visto. Se siamo nel welcome, il

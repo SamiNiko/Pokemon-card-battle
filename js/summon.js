@@ -85,11 +85,17 @@ function weightedPull() {
 
 function doPulls(n) {
   const results = Array.from({ length: n }, weightedPull);
-  // Garanzia ×10: almeno 1 ★★+ se non c'è nulla sopra comune
-  if (n === 10 && results.every(r => r.rarity === 'common')) {
-    const pool = BANNER_POOL.filter(p => p.rarity === 'uncommon');
-    if (pool.length > 0) {
-      results[Math.floor(Math.random() * 10)] = pool[Math.floor(Math.random() * pool.length)];
+  // Garanzia ×10: almeno 1 ★★★ (raro o superiore). Se nel pull non c'è
+  // niente di rare/epic/pseudo, sostituisco UNO degli esiti con un raro.
+  if (n === 10) {
+    const hasRarePlus = results.some(r =>
+      r.rarity === 'rare' || r.rarity === 'epic' || r.rarity === 'pseudo'
+    );
+    if (!hasRarePlus) {
+      const pool = BANNER_POOL.filter(p => p.rarity === 'rare');
+      if (pool.length > 0) {
+        results[Math.floor(Math.random() * 10)] = pool[Math.floor(Math.random() * pool.length)];
+      }
     }
   }
   // Cloniamo le entry così possiamo arricchirle con la fakeout chain

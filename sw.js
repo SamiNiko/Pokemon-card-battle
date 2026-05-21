@@ -12,7 +12,7 @@
    Versioning: bumpa CACHE_VERSION quando vuoi forzare un refresh
    completo della cache (es. dopo cambi major).
    ============================================================ */
-const CACHE_VERSION = 'v28';
+const CACHE_VERSION = 'v29';
 const STATIC_CACHE  = `shc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `shc-runtime-${CACHE_VERSION}`;
 
@@ -28,6 +28,9 @@ const PRECACHE_URLS = [
   './assets/icons/apple-touch-icon.png',
   './assets/audio/menu.mp3',
   './assets/audio/oak-battle.mp3',
+  './assets/audio/gym-battle.mp3',
+  './assets/audio/trainer-battle.mp3',
+  './assets/audio/champion-battle.mp3',
 ];
 
 /* Audio files: cache-first (raramente cambiano, pesanti da scaricare) */

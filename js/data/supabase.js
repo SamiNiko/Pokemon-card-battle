@@ -36,15 +36,42 @@ export async function getUser() {
   return session?.user ?? null;
 }
 
-/** Avvia login con Google (apre popup OAuth) */
+/** Avvia login con Google.
+ *  IMPORTANTE: l'OAuth deve girare a livello TOP-LEVEL window, non
+ *  dentro l'iframe shell di play.html. La pagina di login di Google
+ *  ha X-Frame-Options: DENY → dentro l'iframe restituirebbe
+ *  "Spiacenti. Non disponi dell'autorizzazione necessaria…".
+ *  Usiamo `skipBrowserRedirect: true` per ricevere l'URL e navigare
+ *  manualmente `window.top.location`. */
 export async function signInWithGoogle() {
+  // Calcola il redirect target al top-level — atterriamo direttamente
+  // su play.html così l'hash con i token (#access_token=...) viene
+  // inoltrato all'iframe dal bootstrap dello shell.
+  let topOrigin, topPathname;
+  try {
+    topOrigin   = window.top.location.origin;
+    topPathname = window.top.location.pathname;
+  } catch (e) {
+    topOrigin   = window.location.origin;
+    topPathname = window.location.pathname;
+  }
+  const basePath   = topPathname.replace(/[^/]+$/, '');
+  const redirectTo = topOrigin + basePath + 'play.html';
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin + window.location.pathname,
+      redirectTo,
+      skipBrowserRedirect: true,
     },
   });
   if (error) throw error;
+
+  // Naviga il TOP window (non l'iframe) verso la pagina Google
+  if (data?.url) {
+    try { window.top.location.href = data.url; }
+    catch (e) { window.location.href = data.url; }
+  }
   return data;
 }
 

@@ -22,6 +22,14 @@ const $ = id => document.getElementById(id);
 /* Sleep cancellabile: se l'utente preme Skip, tutti gli sleep risolvono
    immediatamente così le animazioni "saltano" al punto successivo. */
 let pullSkipRequested = false;
+
+/* Lockout su 'Avanti →': il bottone diventa cliccabile SOLO dopo che il
+   pokemon è rimasto a schermo abbastanza tempo. Risolve i 'tap fantasma'
+   da touchend → click sintetizzato (es. l'utente teneva premuto sul gate
+   e rilascia mentre la card sta apparendo → il browser sintetizza un
+   click che cade su revealNext → multi salta cards a 250ms l'una). */
+let revealReady = false;
+const REVEAL_MIN_DISPLAY_MS = 850;
 const sleep = ms => new Promise(resolve => {
   if (pullSkipRequested) { resolve(); return; }
   const t = setTimeout(resolve, ms);
@@ -897,6 +905,12 @@ async function showReveal(entry) {
   // Costruisce pannello dettagli
   right.innerHTML = buildDetailHTML(entry, pkmn);
 
+  // LOCKOUT: ignora i click su 'Avanti →' fino a quando il pokemon
+  // non è rimasto a schermo abbastanza a lungo. Vedi commento su
+  // revealReady in cima al file.
+  revealReady = false;
+  setTimeout(() => { revealReady = true; }, REVEAL_MIN_DISPLAY_MS);
+
   // Mostra la schermata
   screen.classList.remove('hidden');
 
@@ -1159,13 +1173,18 @@ function buildDetailHTML(entry, pkmn) {
 /* ---- Detail mode dal rewind: il bottone "Avanti →" diventa "✕ Chiudi" ---- */
 let isShowingDetailFromSummary = false;
 
-$('revealNext').addEventListener('click', () => { SFX.cardPick?.();
+$('revealNext').addEventListener('click', () => {
+  // Lockout: ignora i click prematuri (synthesized da touchend, doppi tap, ecc.)
+  // Eccezione: in modalità detail-from-summary il click ci serve subito per chiudere.
+  if (!revealReady && !isShowingDetailFromSummary) return;
+  SFX.cardPick?.();
   if (isShowingDetailFromSummary) {
     isShowingDetailFromSummary = false;
     $('revealNext').textContent = 'Avanti →';
     $('revealScreen').classList.add('hidden');
     $('summaryScreen').classList.remove('hidden');
   } else {
+    revealReady = false;   // azzera per la prossima card
     showNextResult();
   }
 });

@@ -211,3 +211,37 @@ setTimeout(hideLoader, 3000);   // safety net
 document.getElementById('app')?.addEventListener('load', () => {
   applyVolume();
 });
+
+/* ============================================================
+   AUTO-PAUSE quando l'app va in background (mobile)
+   ============================================================
+   Quando l'utente socchiude il browser o passa a un'altra app sul
+   telefono, document.hidden diventa true e firea visibilitychange.
+   Pausiamo l'audio shell per non sprecare batteria/dati. Resume al
+   ritorno in foreground se eravamo in riproduzione.
+
+   pagehide è una rete di sicurezza per casi dove visibilitychange
+   non scatta (es. PWA standalone iOS in alcuni scenari). */
+let wasPlayingBeforeHide = false;
+function pauseForBackground() {
+  if (audio && !audio.paused) {
+    wasPlayingBeforeHide = true;
+    audio.pause();
+  }
+}
+function resumeFromBackground() {
+  if (wasPlayingBeforeHide && audio && audio.paused) {
+    wasPlayingBeforeHide = false;
+    applyVolume();
+    audio.play().catch(() => {});
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) pauseForBackground();
+  else                 resumeFromBackground();
+});
+// pagehide/pageshow servono su iOS Safari (PWA mode) dove visibilitychange
+// non sempre scatta. Su desktop non causano falsi positivi perché firano
+// solo quando la pagina è davvero unloaded (non solo blur di finestra).
+window.addEventListener('pagehide',   pauseForBackground);
+window.addEventListener('pageshow',   resumeFromBackground);

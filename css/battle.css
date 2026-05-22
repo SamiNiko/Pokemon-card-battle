@@ -1178,6 +1178,122 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
 }
 
 /* ============================================================
+   BATTLE INTRO — overlay scenico inizio battaglia (zoom dall'alto)
+   ============================================================ */
+.battle-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9700;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(ellipse at center,
+    rgba(20, 30, 60, 0.95) 0%,
+    rgba(8, 10, 18, 1) 80%);
+  animation: battle-intro-out 0.7s 2.2s ease-in forwards;
+  pointer-events: none;   /* niente blocco interazione: sopra l'animazione svanisce */
+}
+.battle-intro.is-skipped {
+  animation: none;
+  opacity: 0;
+  visibility: hidden;
+}
+@keyframes battle-intro-out {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.15); visibility: hidden; }
+}
+
+/* Cielo: sfondo che simula uno zoom dall'alto */
+.battle-intro__sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(120, 180, 255, 0.30), transparent 50%),
+    radial-gradient(circle at 50% 110%, rgba(255, 140, 80, 0.20), transparent 60%);
+  animation: intro-sky 2.2s ease-out forwards;
+}
+@keyframes intro-sky {
+  0%   { transform: scale(2.2) translateY(-20%); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+
+/* Raggi di luce gialli che esplodono al centro */
+.battle-intro__rays {
+  position: absolute;
+  width: 800px; height: 800px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg, rgba(255, 215, 0, 0.20) 8deg, transparent 16deg,
+    transparent 36deg, rgba(255, 215, 0, 0.20) 44deg, transparent 52deg,
+    transparent 72deg, rgba(255, 215, 0, 0.20) 80deg, transparent 88deg,
+    transparent 108deg, rgba(255, 215, 0, 0.20) 116deg, transparent 124deg,
+    transparent 144deg, rgba(255, 215, 0, 0.20) 152deg, transparent 160deg,
+    transparent 180deg, rgba(255, 215, 0, 0.20) 188deg, transparent 196deg,
+    transparent 216deg, rgba(255, 215, 0, 0.20) 224deg, transparent 232deg,
+    transparent 252deg, rgba(255, 215, 0, 0.20) 260deg, transparent 268deg,
+    transparent 288deg, rgba(255, 215, 0, 0.20) 296deg, transparent 304deg,
+    transparent 324deg, rgba(255, 215, 0, 0.20) 332deg, transparent 340deg
+  );
+  opacity: 0;
+  animation: intro-rays 2.5s ease-out forwards;
+}
+@keyframes intro-rays {
+  0%   { opacity: 0; transform: scale(0.4) rotate(0deg); }
+  40%  { opacity: 0.7; }
+  100% { opacity: 0.3; transform: scale(1.4) rotate(60deg); }
+}
+
+/* Testo VS + nome avversario al centro */
+.battle-intro__content {
+  position: relative;
+  text-align: center;
+  z-index: 2;
+}
+.battle-intro__vs {
+  font-family: var(--font-display, sans-serif);
+  font-size: 8rem;
+  font-weight: 900;
+  color: #ffd700;
+  text-shadow:
+    0 0 24px rgba(255, 215, 0, 0.8),
+    0 0 40px rgba(255, 100, 50, 0.6),
+    0 4px 0 rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.05em;
+  opacity: 0;
+  transform: scale(0.4) rotate(-10deg);
+  animation: intro-vs 1.4s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes intro-vs {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-10deg); }
+  40%  { opacity: 1; transform: scale(1.15) rotate(2deg); }
+  70%  { transform: scale(0.95) rotate(-1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.battle-intro__opponent {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.4), 0 2px 0 rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  margin-top: 1.5rem;
+  animation: intro-opponent 0.8s 1.2s ease-out forwards;
+}
+@keyframes intro-opponent {
+  0%   { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 540px) {
+  .battle-intro__vs { font-size: 5rem; }
+  .battle-intro__opponent { font-size: 1.2rem; }
+  .battle-intro__rays { width: 500px; height: 500px; }
+}
+
+/* ============================================================
    END-GAME OVERLAY — fine partita (trainer/AI/PvP)
    ============================================================ */
 .endgame-overlay {

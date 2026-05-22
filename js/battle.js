@@ -18,7 +18,7 @@ import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js?v=9';
 import { SFX }                                 from './data/sfx.js';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
-import { playBGM }                             from './data/bgm.js?v=7';
+import { playBGM }                             from './data/bgm.js?v=8';
 import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-battle.js?v=1';
 
 /* ---- Modalità: 'ai' | 'pvp' | 'trainer' | 'tutorial' ----
@@ -140,6 +140,14 @@ async function init() {
   buildGrid('#playerGrid', 'self');
   buildGrid('#enemyGrid',  'enemy');
 
+  // Intro scenico: skip on click. L'animazione CSS si auto-rimuove
+  // dopo ~2.9s (animation-delay 2.2s + 0.7s out).
+  const intro = $('#battleIntro');
+  if (intro) {
+    intro.addEventListener('click', () => intro.classList.add('is-skipped'), { once: true });
+    setTimeout(() => intro.remove(), 3200);
+  }
+
   try {
     const msgEl = $('#loadingMsg');
     await loadAllPokemon((done, total) => {
@@ -244,6 +252,11 @@ async function init() {
     bs.playerTeamIds = playerTeam.length > 0 ? playerTeam : [25, 6, 9, 3, 94, 65];
     bs.enemyTeamIds  = pickRandomEnemyTeam(6);
   }
+
+  // Aggiorna nome avversario nell'intro scenico (se ancora visibile)
+  const introOpp = $('#battleIntroOpponent');
+  const enemyNameNow = $('#enemyName')?.textContent;
+  if (introOpp && enemyNameNow) introOpp.textContent = enemyNameNow;
 
   // Helper: pick random enemy team (no leggendari per equilibrio)
   function pickRandomEnemyTeam(n) {
@@ -1717,6 +1730,13 @@ async function endGame(result) {
 async function showEndGameScreen(result, gemReward, coinReward = 0) {
   const overlay = $('#endgameOverlay');
   if (!overlay) return;
+
+  // Musica vittoria (one-shot): solo se hai vinto.
+  // In caso di pareggio/sconfitta lasciamo la battle BGM finire o l'utente
+  // può semplicemente uscire — niente jingle per non sembrare beffardo.
+  if (result === 'win') {
+    try { playBGM('victory'); } catch (e) { console.warn('[bgm] victory failed:', e); }
+  }
 
   // ---- Determina trainer info (solo se mode=trainer) ----
   let trainer = null;

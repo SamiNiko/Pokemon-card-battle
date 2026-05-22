@@ -17,25 +17,26 @@
    Le tracce procedurali (battle/boss generici) restano dentro l'iframe
    tramite il vecchio sistema Web Audio. Non navighi durante una battaglia
    in corso quindi non si nota la differenza. */
+/* Forma: { url, vol, loop }. Tieni allineato con js/data/bgm.js. */
 const FILE_TRACKS = {
-  menu:              'assets/audio/menu.mp3',
-  home:              'assets/audio/menu.mp3',
-  collection:        'assets/audio/menu.mp3',
-  summon:            'assets/audio/menu.mp3',
-  trainers:          'assets/audio/menu.mp3',
-  shop:              'assets/audio/menu.mp3',
-  settings:          'assets/audio/menu.mp3',
-  credits:           'assets/audio/menu.mp3',
-  stats:             'assets/audio/menu.mp3',
-  'battle-gym':      'assets/audio/gym-battle.mp3',
-  'battle-trainer':  'assets/audio/trainer-battle.mp3',
-  'battle-champion': 'assets/audio/champion-battle.mp3',
-  'boss-oak':        'assets/audio/oak-battle.mp3',
+  menu:              { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  home:              { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  collection:        { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  summon:            { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  trainers:          { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  shop:              { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  settings:          { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  credits:           { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  stats:             { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  'battle-gym':      { url: 'assets/audio/gym-battle.mp3',      vol: 0.45 },
+  'battle-trainer':  { url: 'assets/audio/trainer-battle.mp3',  vol: 0.45 },
+  'battle-champion': { url: 'assets/audio/champion-battle.mp3', vol: 0.42 },
+  'boss-oak':        { url: 'assets/audio/oak-battle.mp3',      vol: 0.45 },
+  victory:           { url: 'assets/audio/victory.mp3',         vol: 0.60, loop: false },
 };
 
-/* Volume target (combinato con master+bgm sliders dell'utente).
-   0.55 è un buon livello "ambient" rispetto agli SFX. */
-const BASE_VOL = 0.55;
+/* Volume corrente del brano (per applicare master/bgm dei slider) */
+let BASE_VOL = 0.55;
 
 const KEY_MASTER  = 'pkmn_audio_master';
 const KEY_BGM     = 'pkmn_audio_bgm';
@@ -58,8 +59,11 @@ function ensureAudio() {
   audio.loop = true;
   audio.preload = 'auto';
   audio.crossOrigin = 'anonymous';
-  // Loop perfetto: quando l'audio finisce, ripartilo (in caso loop nativo fallisca)
+  // Loop perfetto: quando l'audio finisce in modalità loop, ripartilo
+  // (per le tracce one-shot come 'victory', audio.loop sarà false e
+  // ended scatta una sola volta → non riavviamo).
   audio.addEventListener('ended', () => {
+    if (audio.loop === false) return;   // jingle one-shot: fine = stop
     try { audio.currentTime = 0; audio.play(); } catch {}
   });
   return audio;
@@ -76,32 +80,31 @@ function applyVolume() {
 /** Avvia o cambia traccia. Se è già la stessa traccia in riproduzione,
  *  non fa nulla → audio NON si resetta tra pagine che usano lo stesso file. */
 function playTrack(name) {
-  const url = FILE_TRACKS[name];
-  if (!url) {
-    // Traccia non file-based → ferma l'audio dello shell, lascia che l'iframe
-    // gestisca la sua versione procedurale (es. battle/boss generici).
+  const entry = FILE_TRACKS[name];
+  if (!entry) {
     stopTrack();
     return;
   }
+  const url   = entry.url;
+  BASE_VOL    = entry.vol ?? 0.55;
+  const shouldLoop = entry.loop !== false;
+
   ensureAudio();
+  audio.loop = shouldLoop;
   applyVolume();
 
-  // Se stiamo già suonando lo stesso file, non fare nulla (zero gap)
+  // Stesso file già in riproduzione → no-op (zero gap tra pagine)
   if (currentUrl === url && !audio.paused) {
     currentName = name;
     return;
   }
 
-  // Cambio di file (es. menu → boss-oak) → crossfade rapido
   if (currentUrl && currentUrl !== url) {
     fadeAndSwap(url, name);
   } else {
     audio.src = url;
     audio.currentTime = 0;
-    audio.play().catch(err => {
-      // Bloccato finché l'utente non interagisce. Riproveremo al primo gesto.
-      // (l'iframe stesso può inoltrare un evento click via postMessage)
-    });
+    audio.play().catch(() => {});
     currentName = name;
     currentUrl  = url;
   }

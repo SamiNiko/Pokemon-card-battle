@@ -16,12 +16,25 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Combattimento</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
-  <link rel="stylesheet" href="css/battle.css?v=17" />
+  <link rel="stylesheet" href="css/battle.css?v=18" />
   <link rel="stylesheet" href="css/tutorial-battle.css?v=1" />
   <link rel="stylesheet" href="css/card-modal.css?v=8" />
   <script src="js/register-sw.js?v=1" defer></script>
 </head>
 <body class="battle-page">
+
+  <!-- ============================================================
+       BATTLE INTRO — zoom dall'alto sul campo
+       ============================================================ -->
+  <div class="battle-intro" id="battleIntro">
+    <div class="battle-intro__sky" aria-hidden="true"></div>
+    <div class="battle-intro__rays" aria-hidden="true"></div>
+    <div class="battle-intro__content">
+      <div class="battle-intro__vs">VS</div>
+      <div class="battle-intro__opponent" id="battleIntroOpponent">Avversario</div>
+    </div>
+  </div>
+
   <main class="battle">
 
     <!-- AVVERSARIO -->
@@ -172,6 +185,6 @@
     <p id="loadingMsg">Caricamento Pokémon…</p>
   </div>
 
-  <script type="module" src="js/battle.js?v=26"></script>
+  <script type="module" src="js/battle.js?v=27"></script>
 </body>
 </html>

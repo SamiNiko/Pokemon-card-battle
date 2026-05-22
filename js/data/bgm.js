@@ -61,33 +61,33 @@ if (IS_IN_SHELL && typeof window !== 'undefined') {
 /* ============================================================
    FILE TRACKS — priorità sui loop procedurali
    ------------------------------------------------------------
-   Se la chiave è qui, viene caricato il file MP3/OGG come
-   HTMLAudioElement (loop nativo). Se manca, fallback al loop
-   procedurale definito in TRACKS più sotto.
+   Ogni voce è { url, vol, loop } — vol è il moltiplicatore di volume
+   per-traccia (0..1) per normalizzare percettivamente file MP3 con
+   loudness diversa. Default 0.55, ritocca caso per caso.
+   loop è true di default; metti false per jingle one-shot (victory).
    ============================================================ */
 const FILE_TRACKS = {
-  // Music di menu generica per tutte le pagine non-battaglia + settings/credits
-  menu:       'assets/audio/menu.mp3',
-  home:       'assets/audio/menu.mp3',
-  collection: 'assets/audio/menu.mp3',
-  summon:     'assets/audio/menu.mp3',
-  trainers:   'assets/audio/menu.mp3',
-  shop:       'assets/audio/menu.mp3',
-  settings:   'assets/audio/menu.mp3',
-  credits:    'assets/audio/menu.mp3',
-  stats:      'assets/audio/menu.mp3',
+  // Music di menu generica per tutte le pagine non-battaglia
+  menu:       { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  home:       { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  collection: { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  summon:     { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  trainers:   { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  shop:       { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  settings:   { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  credits:    { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  stats:      { url: 'assets/audio/menu.mp3',            vol: 0.55 },
 
-  // Battaglie differenziate per tipo trainer
-  //   'battle-gym'      → capipalestra (Brock, Misty, ..., Giovanni)
-  //   'battle-trainer'  → Boss Rocket + Rivale (battaglie intermedie)
-  //   'battle-champion' → Elite Four + Blue Champion
-  //   'boss-oak'        → Prof. Oak (easter egg)
-  // Se uno dei file manca, il sistema fa fallback al loop procedurale
-  // 'boss' o 'battle' definito sotto in TRACKS.
-  'battle-gym':      'assets/audio/gym-battle.mp3',
-  'battle-trainer':  'assets/audio/trainer-battle.mp3',
-  'battle-champion': 'assets/audio/champion-battle.mp3',
-  'boss-oak':        'assets/audio/oak-battle.mp3',
+  // Battaglie — vol abbassati perché tendenzialmente più "pieni"
+  // di percussioni rispetto alla menu calma
+  'battle-gym':      { url: 'assets/audio/gym-battle.mp3',      vol: 0.45 },
+  'battle-trainer':  { url: 'assets/audio/trainer-battle.mp3',  vol: 0.45 },
+  'battle-champion': { url: 'assets/audio/champion-battle.mp3', vol: 0.42 },
+  'boss-oak':        { url: 'assets/audio/oak-battle.mp3',      vol: 0.45 },
+
+  // Jingle vittoria — one-shot (no loop), volume un po' più alto
+  // perché è un momento "stinger" che deve essere percepito
+  victory:           { url: 'assets/audio/victory.mp3',         vol: 0.60, loop: false },
 };
 
 /* ============================================================
@@ -469,6 +469,12 @@ export function playBGM(name) {
   }
 }
 
+/** Helper esterno per ricavare URL da name (cluclo di resume tra pagine). */
+function fileTrackUrl(name) {
+  const t = FILE_TRACKS[name];
+  return t && typeof t === 'object' ? t.url : t;
+}
+
 /* Resume state: salviamo la posizione del player in localStorage prima di
    navigare via, così la nuova pagina può riprendere DALLO STESSO punto.
    Il gap percepito è ~200-400ms (page reload + audio decode).
@@ -494,7 +500,7 @@ function readResumeState(url) {
 function saveResumeState() {
   try {
     if (currentFilePlayer?.audio && currentName) {
-      const url = FILE_TRACKS[currentName];
+      const url = fileTrackUrl(currentName);
       if (!url) return;
       const s = {
         url,
@@ -535,13 +541,19 @@ if (typeof window !== 'undefined') {
 }
 
 /** Avvia un file audio (MP3/OGG) come BGM con loop nativo + crossfade.
- *  Se è la stessa traccia di un saveResumeState recente (cambio pagina),
- *  riprende esattamente da quella posizione → continuità tra pagine. */
-function playFileTrack(url, trackName) {
+ *  `trackEntry` può essere un oggetto { url, vol, loop } oppure una stringa
+ *  (vecchio formato). `trackName` è la chiave in FILE_TRACKS. */
+function playFileTrack(trackEntry, trackName) {
+  // Backward compat: stringa = url, default vol/loop
+  const url      = typeof trackEntry === 'string' ? trackEntry : trackEntry.url;
+  const trackVol = (typeof trackEntry === 'object' && typeof trackEntry.vol === 'number')
+                   ? trackEntry.vol : FILE_TARGET_VOL;
+  const shouldLoop = !(typeof trackEntry === 'object' && trackEntry.loop === false);
+
   const ctx = getAudioContext();
   const audio = new Audio(url);
-  audio.loop = true;
-  audio.preload = 'auto';   // carica il file completo, no solo metadata
+  audio.loop = shouldLoop;
+  audio.preload = 'auto';
   audio.crossOrigin = 'anonymous';
 
   // RESUME: se lo STESSO FILE era in riproduzione su pagina precedente,
@@ -574,7 +586,7 @@ function playFileTrack(url, trackName) {
     // Alcuni browser non permettono di creare due source dallo stesso audio.
     // Fallback: regola direttamente audio.volume (perderemo il crossfade gain).
     console.warn('[bgm] createMediaElementSource fallito, fallback HTMLAudio:', e);
-    audio.volume = FILE_TARGET_VOL;
+    audio.volume = trackVol;
     audio.play().catch(err => console.warn('[bgm] play fallito:', err));
     currentFilePlayer = { audio, srcNode: null, gainNode: null };
     return;
@@ -582,14 +594,12 @@ function playFileTrack(url, trackName) {
 
   const gainNode = ctx.createGain();
   if (resumed) {
-    // GAP-FREE: per il resume settiamo il volume target direttamente,
-    // senza alcun ramp. Combinato col SW pre-cache, il cambio di pagina
-    // è quasi impercettibile.
-    gainNode.gain.value = FILE_TARGET_VOL;
+    // GAP-FREE: per il resume settiamo il volume target direttamente
+    gainNode.gain.value = trackVol;
   } else {
     // Prima volta che parte questa traccia → crossfade normale
     gainNode.gain.value = 0;
-    gainNode.gain.linearRampToValueAtTime(FILE_TARGET_VOL, ctx.currentTime + CROSSFADE_S);
+    gainNode.gain.linearRampToValueAtTime(trackVol, ctx.currentTime + CROSSFADE_S);
   }
   srcNode.connect(gainNode).connect(getBgmGain());
 

@@ -225,6 +225,74 @@ export const SFX = {
     sweep({ from: 200, to: 2400, duration: 0.8, type: 'sawtooth', vol: 0.20 });
     setTimeout(() => arpeggio([523, 659, 784, 1047, 1319, 1568, 2093], { stepDur: 0.09, type: 'square', vol: 0.24 }), 400);
   },
+  // Charge loop: tono continuo che sale di frequenza durante il hold-to-charge.
+  // Ritorna { stop, setProgress(0..1) } per controllarlo dall'esterno.
+  chargeStart: () => {
+    const c = ensureCtx();
+    if (!c) return { stop: () => {}, setProgress: () => {} };
+    const t0 = c.currentTime;
+    const osc = c.createOscillator();
+    const lfo = c.createOscillator();      // vibrato leggero per "tensione"
+    const lfoGain = c.createGain();
+    const g   = c.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, t0);
+    lfo.frequency.value = 6;
+    lfoGain.gain.value = 8;
+    lfo.connect(lfoGain).connect(osc.frequency);
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(0.14, t0 + 0.05);
+    osc.connect(g).connect(sfxGain);
+    osc.start(t0);
+    lfo.start(t0);
+    return {
+      setProgress(p) {
+        // freq da 180 Hz (p=0) a 1400 Hz (p=1) con curve esponenziale
+        const freq = 180 * Math.pow(1400 / 180, Math.max(0, Math.min(1, p)));
+        try { osc.frequency.setTargetAtTime(freq, c.currentTime, 0.05); } catch {}
+      },
+      stop() {
+        const t = c.currentTime;
+        try { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18); } catch {}
+        try { osc.stop(t + 0.20); lfo.stop(t + 0.20); } catch {}
+      },
+    };
+  },
+  // Ping breve a frequenza variabile per ogni stella che appare.
+  // Crescendo via tonalità crescente, suono "magia" puro (sine + sub octave).
+  starPing: (freq = 880) => {
+    tone({ freq,     duration: 0.18, type: 'sine',   vol: 0.18, attack: 0.002 });
+    tone({ freq: freq * 2, duration: 0.10, type: 'triangle', vol: 0.08, attack: 0.002 });
+  },
+  // Swoosh / whoosh — usato all'apparizione della carta Pokemon nel reveal.
+  // Rumore filtrato che spazza dall'alto verso il medio + sweep di accompagno.
+  swoosh: () => {
+    const c = ensureCtx();
+    if (!c) return;
+    const t0 = c.currentTime;
+    const DUR = 0.35;
+    // Noise burst con filtro che apre-chiude (effetto vento)
+    const sr = c.sampleRate;
+    const buf = c.createBuffer(1, sr * DUR, sr);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.6;
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const filter = c.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(3000, t0);
+    filter.frequency.exponentialRampToValueAtTime(400, t0 + DUR);
+    filter.Q.value = 4;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(0.22, t0 + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + DUR);
+    src.connect(filter).connect(g).connect(sfxGain);
+    src.start(t0);
+    src.stop(t0 + DUR + 0.05);
+    // Sweep tonale di accompagno (più "musicale")
+    sweep({ from: 1600, to: 220, duration: DUR, type: 'sine', vol: 0.12 });
+  },
 
   /* Shop */
   purchase:   () => arpeggio([659, 880, 1108], { stepDur: 0.08, type: 'square', vol: 0.20 }),

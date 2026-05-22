@@ -291,6 +291,7 @@ async function pullGate() {
     let lastTs    = 0;
     let raf       = null;
     let completed = false;
+    let chargeSfx = null;          // handle SFX charge loop (null se non attivo)
 
     function update(ts) {
       if (completed || pullSkipRequested) { cleanup(); return; }
@@ -305,9 +306,13 @@ async function pullGate() {
       }
 
       fill.style.strokeDashoffset = CIRC * (1 - progress);
+      // Aggiorna la frequenza del charge loop in tempo reale
+      if (chargeSfx) chargeSfx.setProgress(progress);
 
       if (progress >= 1) {
         completed = true;
+        // Sweep finale "pieno carica" + reveal sound
+        SFX.rare?.();
         cleanup();
         return;
       }
@@ -319,17 +324,22 @@ async function pullGate() {
       if (!holding) {
         holding = true;
         gate.classList.add('is-holding');
+        // Avvia il loop sonoro di caricamento
+        if (!chargeSfx) chargeSfx = SFX.chargeStart?.();
       }
     }
     function endHold() {
       if (holding) {
         holding = false;
         gate.classList.remove('is-holding');
+        // Ferma il loop (anche se l'utente potrà ripremere — riparte da capo)
+        if (chargeSfx) { chargeSfx.stop(); chargeSfx = null; }
       }
     }
 
     function cleanup() {
       cancelAnimationFrame(raf);
+      if (chargeSfx) { chargeSfx.stop(); chargeSfx = null; }
       gate.removeEventListener('mousedown',  startHold);
       gate.removeEventListener('touchstart', startHold);
       window.removeEventListener('mouseup',   endHold);
@@ -636,6 +646,12 @@ async function playStarsStage(rarity) {
   const firstDelay = { pseudo: 900,  epic: 700, rare: 480, uncommon: 280 }[rarity] ?? 250;
   const nextDelay  = { pseudo: 1000, epic: 800, rare: 540, uncommon: 300 }[rarity] ?? 270;
 
+  // Frequenze "magia" base scala maggiore di C (C5 D E F G A B C6 D6)
+  // — ogni stella sale di un grado della scala: senso di crescendo musicale
+  const SCALE = [523.25, 587.33, 659.25, 698.46, 783.99, 880.00, 987.77, 1046.50, 1174.66];
+  // Base più alta per rarità più alte → suono più "magico" da subito
+  const baseOffset = { uncommon: 0, rare: 2, epic: 3, pseudo: 4 }[rarity] ?? 0;
+
   for (let i = 0; i < starsCount; i++) {
     if (pullSkipRequested) return;
     await sleep(i === 0 ? firstDelay : nextDelay);
@@ -646,6 +662,10 @@ async function playStarsStage(rarity) {
     starsRow.appendChild(s);
     s.getBoundingClientRect();
     s.classList.add('is-shown');
+
+    // PING: ogni stella ha una frequenza più alta della precedente.
+    const freq = SCALE[Math.min(SCALE.length - 1, baseOffset + i)];
+    SFX.starPing?.(freq);
 
     if (rarity === 'rare' || rarity === 'epic' || rarity === 'pseudo') {
       spawnRing(s, rarity);
@@ -882,6 +902,8 @@ async function showReveal(entry) {
 
   // Piccolo delay poi anima artwork + sprite + glow
   await sleep(60);
+  // SWOOSH: rumore di "comparsa" della carta — sincronizzato con l'animazione
+  SFX.swoosh?.();
   artwork.classList.add('is-shown');
   sprite.classList.add('is-shown');
   glow.classList.add('is-shown');

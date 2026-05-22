@@ -6,7 +6,7 @@
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { TRAINERS, getTrainer, getUnlockedTrainers, getTrainerTotalStars, getTrainerDifficulty } from './data/trainers.js?v=8';
-import { getTrainersBeaten, isTrainerBeaten } from './data/state.js?v=6';
+import { getTrainersBeaten, isTrainerBeaten, onSave } from './data/state.js?v=6';
 import { getRarity, tierStars }               from './data/rarity.js';
 import { playBGM }                            from './data/bgm.js?v=9';
 
@@ -23,6 +23,14 @@ let unlocked = [];
   renderList();
   renderProgress();
   bindModalCloseHandlers();
+
+  // Reattivo: se cloud-sync pulla in ritardo (con trainer appena battuti),
+  // la lista si aggiorna senza richiedere ricarica manuale.
+  onSave(() => {
+    refreshUnlocked();
+    renderList();
+    renderProgress();
+  });
 })();
 
 function refreshUnlocked() {

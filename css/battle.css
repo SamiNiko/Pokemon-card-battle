@@ -559,6 +559,27 @@
     grid-template-rows: 1fr auto 1fr;
     padding: var(--sp-2);
     gap: var(--sp-2);
+    /* svh = small viewport height (sempre rispetta URL bar visibile) → non
+       sfora MAI lo schermo, niente scroll. dvh va bene su desktop, mobile
+       no perché URL bar che si nasconde/mostra cambia 100dvh in runtime. */
+    height: 100svh;
+    max-height: 100svh;
+    overflow: hidden;
+  }
+  /* Grid width-driven (no più altezza che forza la larghezza): la grid
+     prende la larghezza della sua colonna e calcola l'altezza dal ratio.
+     max-height: 100% impedisce che l'aspect-ratio la renda più alta della
+     riga disponibile → niente overflow verticale. */
+  .battle .grid {
+    width: 100%;
+    height: auto;
+    max-height: 100%;
+    max-width: 100%;
+  }
+  .player-block--enemy,
+  .player-block--self {
+    min-height: 0;
+    overflow: hidden;
   }
   /* Drop dello spacer: solo 2 colonne, bench da un lato e grid dall'altro */
   .player-block--enemy { grid-template-columns: 130px 1fr; }

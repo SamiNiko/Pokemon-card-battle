@@ -12,7 +12,7 @@
    Versioning: bumpa CACHE_VERSION quando vuoi forzare un refresh
    completo della cache (es. dopo cambi major).
    ============================================================ */
-const CACHE_VERSION = 'v45';
+const CACHE_VERSION = 'v46';
 const STATIC_CACHE  = `shc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `shc-runtime-${CACHE_VERSION}`;
 

@@ -1218,10 +1218,12 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
   100% { transform: scale(1)   translateY(0);    opacity: 1; }
 }
 
-/* Raggi di luce gialli che esplodono al centro */
+/* Raggi di luce gialli che esplodono al centro.
+   Diametro in vmax così debordano SEMPRE oltre lo schermo
+   (niente bordo circolare visibile sui monitor larghi). */
 .battle-intro__rays {
   position: absolute;
-  width: 800px; height: 800px;
+  width: 220vmax; height: 220vmax;
   background: conic-gradient(
     from 0deg,
     transparent 0deg, rgba(255, 215, 0, 0.20) 8deg, transparent 16deg,
@@ -1290,7 +1292,7 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
 @media (max-width: 540px) {
   .battle-intro__vs { font-size: 5rem; }
   .battle-intro__opponent { font-size: 1.2rem; }
-  .battle-intro__rays { width: 500px; height: 500px; }
+  /* width già in vmax → si auto-scala, niente override necessario */
 }
 
 /* ============================================================
@@ -1318,10 +1320,12 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
     rgba(13, 14, 22, 0.97) 80%);
   backdrop-filter: blur(8px);
 }
-/* Raggi gialli rotanti dietro lo sprite (stile vittoria anime) */
+/* Raggi gialli rotanti dietro lo sprite (stile vittoria anime).
+   Diametro in vmax: si estende oltre lo schermo su qualsiasi
+   risoluzione, niente bordo visibile della conic gradient. */
 .endgame-overlay__rays {
   position: absolute;
-  width: 700px; height: 700px;
+  width: 200vmax; height: 200vmax;
   pointer-events: none;
   background:
     conic-gradient(from 0deg,

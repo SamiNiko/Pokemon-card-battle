@@ -6,7 +6,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState, addPokemonOrLevelUp, getFreeSummonsLeft, consumeFreeSummon } from './data/state.js?v=6';
+import { getState, saveState, addPokemonOrLevelUp, getFreeSummonsLeft, consumeFreeSummon, onSave } from './data/state.js?v=6';
 import { playBGM, stopBGM }                              from './data/bgm.js?v=9';
 import { SFX }                                           from './data/sfx.js?v=3';
 
@@ -1345,8 +1345,13 @@ document.addEventListener('keydown', e => {
     await loadAllPokemon();
     gs = getState();
 
-    // (Debug rimosso: i nuovi account partono con 0 gemme e 6 summon
-    // gratuite — vedi state.freeSummonsLeft.)
+    // Quando cloud-sync pulla nuovi valori (o un altro modulo modifica lo
+    // state), aggiorna automaticamente il wallet visualizzato. Senza questo,
+    // l'utente vede valori stale all'apertura pagina finché non fa qualcosa.
+    onSave(newState => {
+      gs = newState;
+      updateWallet();
+    });
 
     updateWallet();
     buildBanner();

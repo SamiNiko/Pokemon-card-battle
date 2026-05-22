@@ -7,7 +7,7 @@
 import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped } from './data/state.js?v=6';
+import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped, onSave } from './data/state.js?v=6';
 import { findItem }                    from './data/items.js?v=3';
 import { openCardModal }                from './data/card-modal.js?v=9';
 import { initTutorial, isTutorialDone } from './data/tutorial.js?v=3';
@@ -461,6 +461,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModa
     buildTeam(gs);
     initTeamTabs(gs);
     buildBgSprites();
+
+    // Refresh reattivo: quando cloud-sync (o un altro modulo) modifica lo
+    // state, rebuilda wallet + team così l'utente vede sempre i valori freschi
+    // senza dover ricaricare la pagina.
+    onSave(newState => {
+      buildWallet(newState);
+      buildTeam(newState);
+    });
 
     // (Bottone debug "Refill gemme" rimosso per il rilascio)
 

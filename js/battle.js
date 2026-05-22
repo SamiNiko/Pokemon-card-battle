@@ -31,15 +31,47 @@ function flushCloudNow() {
 /** Versione async — attendi il completamento del push.
  *  Da usare PRIMA di navigare a un'altra pagina così le reward arrivano
  *  sul cloud prima che l'iframe si unloadi (altrimenti home pulla lo
- *  stato vecchio e sovrascrive le reward fresche). */
+ *  stato vecchio e sovrascrive le reward fresche).
+ *
+ *  Mostra anche un overlay 'Salvataggio in corso…' così l'utente sa che
+ *  sta succedendo qualcosa (e se il salvataggio fallisce vede l'errore). */
 async function flushCloudAndNavigate(url) {
+  const indicator = showSaveIndicator('💾 Salvataggio in corso…');
+  let okSaved = true;
   try {
     const cs = await import('./data/cloud-sync.js?v=3');
     await cs.flushSync?.();
   } catch (e) {
+    okSaved = false;
     console.warn('[battle] flush prima della navigazione fallito:', e);
   }
+  // Feedback visivo: mostra "Salvato" per ~250ms così l'utente lo vede
+  indicator.update(okSaved ? '✅ Salvato' : '⚠️ Salvataggio fallito (locale OK)');
+  await new Promise(r => setTimeout(r, 350));
   window.location.href = url;
+}
+
+/** Helper: mostra un toast in alto a destra che resta finché non viene
+ *  rimosso. Ritorna un handle con .update(text) e .remove(). */
+function showSaveIndicator(initialText) {
+  const existing = document.getElementById('saveIndicator');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'saveIndicator';
+  el.textContent = initialText;
+  el.style.cssText = `
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.92); color: #fff; padding: 10px 18px;
+    border-radius: 22px; font-size: 0.9rem; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.18); z-index: 99999;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5); pointer-events: none;
+    letter-spacing: 0.02em;
+  `;
+  document.body.appendChild(el);
+  return {
+    update(text) { el.textContent = text; },
+    remove() { el.remove(); },
+  };
 }
 
 /* ---- Modalità: 'ai' | 'pvp' | 'trainer' | 'tutorial' ----
@@ -381,6 +413,11 @@ async function init() {
         const title = exitModal.querySelector('.modal__title');
         if (bs.pvp && title) title.textContent = 'Abbandonare la partita?';
       }
+    } else if (bs.phase === 'ended') {
+      // Battaglia finita: intercetta per flushare cloud prima di navigare
+      // (altrimenti le reward appena ricevute non arrivano al server).
+      e.preventDefault();
+      flushCloudAndNavigate('index.html');
     }
   });
   $('#exitCancel')?.addEventListener('click', () => $('#exitModal')?.classList.add('hidden'));

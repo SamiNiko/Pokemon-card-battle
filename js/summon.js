@@ -7,7 +7,7 @@ import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non dispon
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState, addPokemonOrLevelUp, getFreeSummonsLeft, consumeFreeSummon } from './data/state.js?v=6';
-import { playBGM }                                       from './data/bgm.js?v=9';
+import { playBGM, stopBGM }                              from './data/bgm.js?v=9';
 import { SFX }                                           from './data/sfx.js?v=3';
 
 playBGM('summon');
@@ -469,6 +469,10 @@ async function handlePull(n) {
   const wasFree = n === 1 && consumeFreeSummon();
   const cost = wasFree ? 0 : (n === 1 ? COST_SINGLE : COST_MULTI);
   if (!wasFree && getGems() < cost) { alert('Gemme insufficienti!'); return; }
+
+  // Stop BGM così le SFX cinematiche del pull (charge, sweep, stars, swoosh,
+  // jingle rarity) sono protagoniste. Verrà ripresa alla chiusura del summary.
+  try { stopBGM(); } catch {}
 
   pullSkipRequested = false;
 
@@ -1258,9 +1262,10 @@ function showSummary() {
   });
 }
 
-// Chiudi overlay dopo il riepilogo
+// Chiudi overlay dopo il riepilogo + riprendi BGM
 $('pullClose').addEventListener('click', () => { SFX.confirm?.();
   $('pullOverlay').classList.add('hidden');
+  try { playBGM('summon'); } catch {}
 });
 
 /* ================================================================

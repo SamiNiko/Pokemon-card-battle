@@ -140,6 +140,25 @@ async function init() {
   buildGrid('#playerGrid', 'self');
   buildGrid('#enemyGrid',  'enemy');
 
+  // GATE EARLY: AI e Trainer richiedono che il giocatore abbia un team.
+  // Se vuoto, redirect immediato (senza caricare PokeAPI o mostrare l'intro).
+  // PvP usa sessionStorage e ha già un suo check, Tutorial usa team fissi.
+  if (MODE === 'ai' || MODE === 'trainer') {
+    const playerTeam = getActiveTeam();
+    if (playerTeam.length === 0) {
+      const gs = getState();
+      const ownedCount = (gs.owned ?? []).length;
+      if (ownedCount === 0) {
+        alert('Non hai ancora nessun Pokémon!\n\nVai al Summon per ottenere le tue prime carte (le prime 6 sono gratis).');
+        window.location.href = 'summon.html';
+      } else {
+        alert('Il tuo team è vuoto!\n\nVai in Collezione per assemblare i tuoi Pokémon prima di combattere.');
+        window.location.href = 'collection.html';
+      }
+      return;
+    }
+  }
+
   // Intro scenico: skip on click. L'animazione CSS si auto-rimuove
   // dopo ~2.9s (animation-delay 2.2s + 0.7s out).
   const intro = $('#battleIntro');
@@ -208,12 +227,10 @@ async function init() {
     if (playerAvatarEl) playerAvatarEl.textContent = (myName[0] ?? 'T').toUpperCase();
   } else if (MODE === 'trainer') {
     // ---- TRAINER mode ----
-    // Carica il team del trainer da js/data/trainers.js. Se l'id non
-    // esiste o il team è vuoto, fallback al team random.
+    // (team del giocatore già validato dall'early gate in cima a init)
     const { getTrainer } = await import('./data/trainers.js?v=8');
     const t = getTrainer(TRAINER_ID);
-    const playerTeam = getActiveTeam();
-    bs.playerTeamIds = playerTeam.length > 0 ? playerTeam : [25, 6, 9, 3, 94, 65];
+    bs.playerTeamIds = getActiveTeam();
     if (t && Array.isArray(t.team) && t.team.length > 0) {
       bs.enemyTeamIds = [...t.team];
       // Personalizza nome/avatar avversario col trainer
@@ -248,8 +265,8 @@ async function init() {
     if (enemyAvatarEl) enemyAvatarEl.textContent = '📘';
   } else {
     // ---- AI mode (default): team avversario casuale dal pool dei 151 ----
-    const playerTeam = getActiveTeam();
-    bs.playerTeamIds = playerTeam.length > 0 ? playerTeam : [25, 6, 9, 3, 94, 65];
+    // (team del giocatore già validato dall'early gate in cima a init)
+    bs.playerTeamIds = getActiveTeam();
     bs.enemyTeamIds  = pickRandomEnemyTeam(6);
   }
 

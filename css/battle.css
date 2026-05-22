@@ -581,14 +581,15 @@
     min-height: 0;
     overflow: hidden;
   }
-  /* Drop dello spacer: solo 2 colonne, bench da un lato e grid dall'altro */
+  /* Drop dello spacer + layout SPECCHIATO (bench dello stesso lato sopra
+     e sotto, così le due grid si allineano in colonna come riflesse
+     attraverso l'asse orizzontale del centro HUD). */
   .player-block--enemy { grid-template-columns: 130px 1fr; }
-  .player-block--self  { grid-template-columns: 1fr 130px; }
-  /* Riassegna grid-column per riflettere il nuovo layout 2-col */
+  .player-block--self  { grid-template-columns: 130px 1fr; }
   .player-block--enemy > .bench { grid-column: 1; }
   .player-block--enemy > .grid  { grid-column: 2; }
-  .player-block--self  > .grid  { grid-column: 1; }
-  .player-block--self  > .bench { grid-column: 2; }
+  .player-block--self  > .bench { grid-column: 1; }
+  .player-block--self  > .grid  { grid-column: 2; }
   .bench { width: 130px; padding: 2px; }
 
   /* Player-info più compatta */
@@ -617,7 +618,7 @@
 @media (max-width: 480px) {
   .battle { padding: var(--sp-1); gap: 6px; }
   .player-block--enemy { grid-template-columns: 100px 1fr; }
-  .player-block--self  { grid-template-columns: 1fr 100px; }
+  .player-block--self  { grid-template-columns: 100px 1fr; }
   .bench { width: 100px; gap: 4px; }
 
   .player-info { gap: var(--sp-1); }
@@ -650,7 +651,7 @@
 /* Phone portrait MOLTO stretto (< 380px) — ulteriore compattazione */
 @media (max-width: 380px) {
   .player-block--enemy { grid-template-columns: 88px 1fr; }
-  .player-block--self  { grid-template-columns: 1fr 88px; }
+  .player-block--self  { grid-template-columns: 88px 1fr; }
   .bench { width: 88px; }
   .player-info__avatar { width: 30px; height: 30px; }
   .player-info__name { font-size: 0.72rem; }

@@ -31,3 +31,12 @@ build/
 # File specifici del progetto
 *.ods.bak
 *.tmp
+
+# LibreOffice/OpenOffice lock files
+.~lock.*
+*.ods
+
+# Personal working spreadsheets (non-source)
+Pokemon_Mosse_Passive_*.xlsx
+Pokemon_Mosse_Passive_*.ods
+held_items.*

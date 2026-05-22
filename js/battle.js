@@ -28,6 +28,20 @@ function flushCloudNow() {
   import('./data/cloud-sync.js?v=3').then(cs => cs.flushSync?.()).catch(() => {});
 }
 
+/** Versione async — attendi il completamento del push.
+ *  Da usare PRIMA di navigare a un'altra pagina così le reward arrivano
+ *  sul cloud prima che l'iframe si unloadi (altrimenti home pulla lo
+ *  stato vecchio e sovrascrive le reward fresche). */
+async function flushCloudAndNavigate(url) {
+  try {
+    const cs = await import('./data/cloud-sync.js?v=3');
+    await cs.flushSync?.();
+  } catch (e) {
+    console.warn('[battle] flush prima della navigazione fallito:', e);
+  }
+  window.location.href = url;
+}
+
 /* ---- Modalità: 'ai' | 'pvp' | 'trainer' | 'tutorial' ----
    tutorial = battaglia guidata con popup spiegativi, team fissi, no timer */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -1753,7 +1767,7 @@ async function endGame(result) {
   // Rimuove il listener confirmTurn registrato in init() e lo sostituisce
   // con la navigazione alla home. Evita che doppio click triggeri entrambi.
   btn.removeEventListener('click', confirmTurn);
-  btn.addEventListener('click', () => { window.location.href = 'index.html'; }, { once: true });
+  btn.addEventListener('click', () => flushCloudAndNavigate('index.html'), { once: true });
 
   // End-game overlay: appare dopo ~0.8s per non sovrapporsi all'animazione KO
   setTimeout(() => showEndGameScreen(result, gemReward, coinReward), 850);
@@ -1846,22 +1860,22 @@ async function showEndGameScreen(result, gemReward, coinReward = 0) {
 
   if (MODE === 'trainer') {
     sNew.textContent = '← Allenatori';
-    sNew.addEventListener('click', () => { window.location.href = 'trainers.html'; });
+    sNew.addEventListener('click', () => flushCloudAndNavigate('trainers.html'));
     if (result === 'win') {
       pNew.textContent = 'Continua ▸';
-      pNew.addEventListener('click', () => { window.location.href = 'trainers.html'; });
+      pNew.addEventListener('click', () => flushCloudAndNavigate('trainers.html'));
     } else {
       pNew.textContent = '↻ Riprova';
       pNew.addEventListener('click', () => { window.location.reload(); });
     }
   } else if (MODE === 'pvp') {
     sNew.textContent = '← Home';
-    sNew.addEventListener('click', () => { window.location.href = 'index.html'; });
+    sNew.addEventListener('click', () => flushCloudAndNavigate('index.html'));
     pNew.textContent = '🌐 Cerca match';
-    pNew.addEventListener('click', () => { window.location.href = 'online.html'; });
+    pNew.addEventListener('click', () => flushCloudAndNavigate('online.html'));
   } else {
     sNew.textContent = '← Home';
-    sNew.addEventListener('click', () => { window.location.href = 'index.html'; });
+    sNew.addEventListener('click', () => flushCloudAndNavigate('index.html'));
     pNew.textContent = '↻ Rivincita';
     pNew.addEventListener('click', () => { window.location.reload(); });
   }

@@ -21,6 +21,13 @@ import { getScaledStats }                      from './data/stats-scaling.js?v=3
 import { playBGM }                             from './data/bgm.js?v=9';
 import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-battle.js?v=1';
 
+/** Flush immediato del cloud-sync (best-effort, fire-and-forget).
+ *  Da chiamare dopo eventi critici (reward, trainer beaten) per evitare
+ *  che il debounce di 1.5s perda la modifica se l'utente naviga via. */
+function flushCloudNow() {
+  import('./data/cloud-sync.js?v=3').then(cs => cs.flushSync?.()).catch(() => {});
+}
+
 /* ---- Modalità: 'ai' | 'pvp' | 'trainer' | 'tutorial' ----
    tutorial = battaglia guidata con popup spiegativi, team fissi, no timer */
 const URL_PARAMS = new URLSearchParams(location.search);
@@ -380,6 +387,8 @@ async function init() {
       try { bs.pvp.client.leaveMatch(); } catch {}
       try { bs.pvp.client.disconnect(); } catch {}
     }
+    // Best-effort: spinge eventuali modifiche pending al cloud prima dell'unload
+    flushCloudNow();
   });
 }
 
@@ -1647,6 +1656,7 @@ async function endGame(result) {
           gs.pokeuro = (gs.pokeuro ?? 0) + tutorialCoins;
           gs.tutorialBattleRewarded = true;
           saveState();
+          flushCloudNow();
           log(`🎓 Tutorial completato! +${tutorialGems} 💎 +${tutorialCoins} 🪙`, 'item');
           SFX.gemReward?.();
         }
@@ -1678,6 +1688,11 @@ async function endGame(result) {
     gs.gems    = (gs.gems    ?? 0) + gemReward;
     gs.pokeuro = (gs.pokeuro ?? 0) + coinReward;
     saveState();
+    // Flush immediato al cloud: senza questo, navigare a home prima del
+    // debounce di 1.5s perde le reward (la pagina si unloada e il push
+    // mai parte → cloud conserva i valori pre-battaglia → al pull successivo
+    // sovrascrive lo stato locale azzerando le reward appena ricevute).
+    flushCloudNow();
     log(`Hai ricevuto +${gemReward} 💎 e +${coinReward} 🪙${subBonus ? ' (bonus sub ✨)' : ''}!`, 'item');
     SFX.gemReward?.();
   } else if (MODE === 'trainer' && result === 'win' && TRAINER_ID) {
@@ -1697,6 +1712,8 @@ async function endGame(result) {
           gs.gems    = (gs.gems    ?? 0) + gemReward;
           gs.pokeuro = (gs.pokeuro ?? 0) + coinReward;
           saveState();
+          // Flush immediato al cloud (vedi commento PvP path sopra)
+          flushCloudNow();
           log(`🏆 PRIMA VITTORIA contro ${t.name}! +${gemReward} 💎 +${coinReward} 🪙${subBonus ? ' (bonus sub ✨)' : ''}`, 'item');
           SFX.gemReward?.();
           // Suono separato di "sblocco" se non era l'ultimo trainer

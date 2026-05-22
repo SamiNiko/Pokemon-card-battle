@@ -74,6 +74,14 @@ export async function signInWithTwitch() {
       // user:read:subscriptions → check sub. user:read:follows → check follow.
       scopes: 'user:read:subscriptions user:read:follows',
       skipBrowserRedirect: true,
+      // force_verify=true → mostra SEMPRE la pagina di autorizzazione Twitch
+      // anche se l'utente è già loggato lì. Senza questo, dopo signOut
+      // Supabase la sessione Twitch in cookie continua a fare auto-login
+      // sullo stesso account → impossibile cambiare account. Twitch mostra
+      // un link 'use a different account' in quella pagina.
+      queryParams: {
+        force_verify: 'true',
+      },
     },
   });
   if (error) throw error;

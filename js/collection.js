@@ -22,7 +22,7 @@ import {
 import { openCardModal }                       from './data/card-modal.js?v=9';
 import { findItem, ITEM_CATEGORIES, isItemAllowedForPokemon } from './data/items.js?v=3';
 import { typeLabel }                            from './data/types.js';
-import { playBGM }                              from './data/bgm.js?v=8';
+import { playBGM }                              from './data/bgm.js?v=9';
 
 playBGM('collection');
 import { levelLabel }                           from './data/stats-scaling.js?v=3';

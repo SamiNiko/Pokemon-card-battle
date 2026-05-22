@@ -258,6 +258,13 @@ export const SFX = {
       },
     };
   },
+  // Tick di level-up statistica: blip cortissimo a pitch crescente.
+  // Pensato per essere giocato in successione (una per stat che cresce).
+  statTick: (freq = 1200) => {
+    tone({ freq,     duration: 0.07, type: 'triangle', vol: 0.14, attack: 0.001 });
+    tone({ freq: freq * 1.5, duration: 0.05, type: 'sine', vol: 0.06, attack: 0.001 });
+  },
+
   // Ping breve a frequenza variabile per ogni stella che appare.
   // Crescendo via tonalità crescente, suono "magia" puro (sine + sub octave).
   starPing: (freq = 880) => {

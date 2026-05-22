@@ -7,8 +7,8 @@ import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non dispon
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState, addPokemonOrLevelUp, getFreeSummonsLeft, consumeFreeSummon } from './data/state.js?v=6';
-import { playBGM }                                       from './data/bgm.js?v=8';
-import { SFX }                                           from './data/sfx.js?v=2';
+import { playBGM }                                       from './data/bgm.js?v=9';
+import { SFX }                                           from './data/sfx.js?v=3';
 
 playBGM('summon');
 import { MOVESETS }                    from './data/movesets.js?v=3';
@@ -960,6 +960,11 @@ async function animateLevelUpStats(rightPanel /*, pkmn, newLevel */) {
   const STAGGER  = 70;           // ritardo tra una stat e l'altra
   const startTime = performance.now();
 
+  // Frequenze crescenti per i tick (un grado per stat che cresce, in ordine
+   // di apparizione). Solo le stat che effettivamente crescono fanno suono.
+  const TICK_SCALE = [880, 988, 1109, 1245, 1397, 1568, 1760];
+  let tickIdx = 0;
+
   rows.forEach((row, i) => {
     const bar   = row.querySelector('.detail-stat__bar');
     const valEl = row.querySelector('.detail-stat__val');
@@ -969,10 +974,13 @@ async function animateLevelUpStats(rightPanel /*, pkmn, newLevel */) {
     const nextV = parseInt(bar?.dataset.targetVal ?? bar?.dataset.val ?? '0', 10);
     const delay = i * STAGGER;
 
-    // Flash visivo della riga quando la stat cresce
+    // Flash visivo + tick sonoro quando la stat cresce
     if (nextV > prevV) {
       setTimeout(() => row.classList.add('is-pumping'),    delay);
       setTimeout(() => row.classList.remove('is-pumping'), delay + DURATION + 200);
+      // SFX: pitch crescente per ogni stat che sale → effetto "salita scale"
+      const freq = TICK_SCALE[Math.min(TICK_SCALE.length - 1, tickIdx++)];
+      setTimeout(() => SFX.statTick?.(freq), delay);
     }
 
     // "+delta" effimero accanto al valore

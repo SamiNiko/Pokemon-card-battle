@@ -67,16 +67,18 @@ if (IS_IN_SHELL && typeof window !== 'undefined') {
    loop è true di default; metti false per jingle one-shot (victory).
    ============================================================ */
 const FILE_TRACKS = {
-  // Music di menu generica per tutte le pagine non-battaglia
-  menu:       { url: 'assets/audio/menu.mp3',            vol: 0.55 },
-  home:       { url: 'assets/audio/menu.mp3',            vol: 0.55 },
-  collection: { url: 'assets/audio/menu.mp3',            vol: 0.55 },
-  summon:     { url: 'assets/audio/menu.mp3',            vol: 0.55 },
-  trainers:   { url: 'assets/audio/menu.mp3',            vol: 0.55 },
-  shop:       { url: 'assets/audio/menu.mp3',            vol: 0.55 },
-  settings:   { url: 'assets/audio/menu.mp3',            vol: 0.55 },
-  credits:    { url: 'assets/audio/menu.mp3',            vol: 0.55 },
-  stats:      { url: 'assets/audio/menu.mp3',            vol: 0.55 },
+  // Music di menu generica per tutte le pagine non-battaglia.
+  // Abbassata da 0.55 → 0.42 per allinearla al loudness percepito
+  // delle battle tracks (che sono naturalmente più dense di percussioni).
+  menu:       { url: 'assets/audio/menu.mp3',            vol: 0.42 },
+  home:       { url: 'assets/audio/menu.mp3',            vol: 0.42 },
+  collection: { url: 'assets/audio/menu.mp3',            vol: 0.42 },
+  summon:     { url: 'assets/audio/menu.mp3',            vol: 0.42 },
+  trainers:   { url: 'assets/audio/menu.mp3',            vol: 0.42 },
+  shop:       { url: 'assets/audio/menu.mp3',            vol: 0.42 },
+  settings:   { url: 'assets/audio/menu.mp3',            vol: 0.42 },
+  credits:    { url: 'assets/audio/menu.mp3',            vol: 0.42 },
+  stats:      { url: 'assets/audio/menu.mp3',            vol: 0.42 },
 
   // Battaglie — vol abbassati perché tendenzialmente più "pieni"
   // di percussioni rispetto alla menu calma

@@ -684,6 +684,18 @@ function showLockedOverlay(access) {
     const tw = await import('./data/twitch-access.js');
     tw.clearAccessCache();
     const fresh = await tw.checkAccess({ force: true });
+
+    // Supabase ha droppato il provider_token al refresh sessione → serve
+    // un fresh OAuth login per ottenere un token nuovo e poter chiamare
+    // le API Twitch. Riavvio il flusso di login (l'utente vedrà di nuovo
+    // Twitch ma senza dover digitare credenziali, è già autenticato lì).
+    if (fresh.error === 'session_no_token' && supabaseModule) {
+      btn.querySelector('.welcome-btn__title').textContent = 'Riautentico su Twitch…';
+      try { await supabaseModule.signInWithTwitch(); }
+      catch (e) { alert('Errore riautenticazione: ' + e.message); btn.disabled = false; }
+      return;
+    }
+
     if (tw.canPlay(fresh)) {
       overlay.classList.add('hidden');
       document.body.style.overflow = '';

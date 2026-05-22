@@ -18,7 +18,10 @@
 import { supabase, getSession, TWITCH_CLIENT_ID, TWITCH_BROADCASTER_ID } from './supabase.js';
 
 const ACCESS_CACHE_KEY = 'pkmn_twitch_access_v1';
-const ACCESS_TTL_MS    = 5 * 60 * 1000;   // 5 minuti
+const ACCESS_TTL_MS    = 24 * 60 * 60 * 1000;   // 24h "fresh window"
+// Oltre il TTL fresco continuiamo a usare il valore in cache COME FALLBACK
+// se il provider_token Twitch è scaduto (Supabase lo droppa al refresh
+// sessione), così l'utente non viene espulso al riapri-dopo-X-ore.
 
 /** Risultato di default (utente non loggato o errore) */
 const EMPTY = Object.freeze({
@@ -31,17 +34,23 @@ const EMPTY = Object.freeze({
   error:        null,
 });
 
-/** Cache hit (sync, non fa rete). Ritorna null se scaduta o assente. */
-export function getCachedAccess() {
+/** Legge il cache RAW (anche scaduto). Helper interno. */
+function readCacheRaw() {
   try {
     const raw = localStorage.getItem(ACCESS_CACHE_KEY);
     if (!raw) return null;
-    const cached = JSON.parse(raw);
-    if (Date.now() - cached.checkedAt > ACCESS_TTL_MS) return null;
-    return cached;
+    return JSON.parse(raw);
   } catch {
     return null;
   }
+}
+
+/** Cache hit (sync, non fa rete). Ritorna null se scaduta o assente. */
+export function getCachedAccess() {
+  const cached = readCacheRaw();
+  if (!cached) return null;
+  if (Date.now() - cached.checkedAt > ACCESS_TTL_MS) return null;
+  return cached;
 }
 
 /** Cancella cache (chiamare al logout) */
@@ -73,6 +82,25 @@ export async function checkAccess(opts = {}) {
                    ?? session.user?.user_metadata?.sub
                    ?? null;
   const providerToken = session.provider_token ?? null;
+
+  // CRITICO: Supabase distrugge il provider_token dopo il refresh sessione.
+  // Senza token non possiamo chiamare le API Twitch. Fallback al cache più
+  // recente (anche scaduto) → l'utente non viene espulso al riapri-app.
+  if (!providerToken) {
+    const stale = readCacheRaw();
+    if (stale && stale.loggedIn) {
+      console.info('[twitch-access] provider_token mancante, uso cache stantia');
+      return stale;
+    }
+    // Nessun cache + nessun token → serve un fresh login per concedere scope
+    return {
+      ...EMPTY,
+      loggedIn: true,
+      twitchLogin,
+      twitchId,
+      error: 'session_no_token',
+    };
+  }
 
   // 1. Follower check client-side via /helix/channels/followed
   //    (l'endpoint /channels/followers richiede scope moderator: NON è il

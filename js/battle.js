@@ -16,7 +16,7 @@ import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
 import { openCardModal }                       from './data/card-modal.js?v=9';
-import { SFX }                                 from './data/sfx.js';
+import { SFX }                                 from './data/sfx.js?v=2';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
 import { playBGM }                             from './data/bgm.js?v=8';
 import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-battle.js?v=1';

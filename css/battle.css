@@ -1219,11 +1219,25 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
 }
 
 /* Raggi di luce gialli che esplodono al centro.
-   Diametro in vmax così debordano SEMPRE oltre lo schermo
-   (niente bordo circolare visibile sui monitor larghi). */
+   Diametro in vmax così debordano SEMPRE oltre lo schermo (niente
+   bordo circolare visibile sui monitor larghi), e mask radiale che
+   sfuma le punte verso il fuori così non si vede mai un taglio
+   netto contro lo sfondo. */
 .battle-intro__rays {
   position: absolute;
   width: 220vmax; height: 220vmax;
+  -webkit-mask-image: radial-gradient(circle at center,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 18%,
+    rgba(0,0,0,0.85) 30%,
+    rgba(0,0,0,0.4) 55%,
+    rgba(0,0,0,0)  80%);
+          mask-image: radial-gradient(circle at center,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 18%,
+    rgba(0,0,0,0.85) 30%,
+    rgba(0,0,0,0.4) 55%,
+    rgba(0,0,0,0)  80%);
   background: conic-gradient(
     from 0deg,
     transparent 0deg, rgba(255, 215, 0, 0.20) 8deg, transparent 16deg,
@@ -1321,12 +1335,24 @@ body.speed-up .battle-page.is-super-flash::after { animation-duration: 0.27s; }
   backdrop-filter: blur(8px);
 }
 /* Raggi gialli rotanti dietro lo sprite (stile vittoria anime).
-   Diametro in vmax: si estende oltre lo schermo su qualsiasi
-   risoluzione, niente bordo visibile della conic gradient. */
+   Diametro in vmax + mask radiale che sfuma le punte verso fuori
+   → niente bordo visibile della conic gradient su nessuna risoluzione. */
 .endgame-overlay__rays {
   position: absolute;
   width: 200vmax; height: 200vmax;
   pointer-events: none;
+  -webkit-mask-image: radial-gradient(circle at center,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 15%,
+    rgba(0,0,0,0.85) 30%,
+    rgba(0,0,0,0.4) 55%,
+    rgba(0,0,0,0)  80%);
+          mask-image: radial-gradient(circle at center,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 15%,
+    rgba(0,0,0,0.85) 30%,
+    rgba(0,0,0,0.4) 55%,
+    rgba(0,0,0,0)  80%);
   background:
     conic-gradient(from 0deg,
       rgba(255, 203, 5, 0)   0deg,

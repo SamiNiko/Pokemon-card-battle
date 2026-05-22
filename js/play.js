@@ -241,7 +241,12 @@ document.addEventListener('visibilitychange', () => {
   else                 resumeFromBackground();
 });
 // pagehide/pageshow servono su iOS Safari (PWA mode) dove visibilitychange
-// non sempre scatta. Su desktop non causano falsi positivi perché firano
-// solo quando la pagina è davvero unloaded (non solo blur di finestra).
+// non sempre scatta.
 window.addEventListener('pagehide',   pauseForBackground);
 window.addEventListener('pageshow',   resumeFromBackground);
+// blur/focus catturano scenari dove visibility non cambia ma l'utente
+// non è più attivo sulla finestra: cambio finestra desktop, split-screen
+// mobile, address-bar interactions, ecc. Filosofia: se non stai
+// guardando il gioco, niente musica.
+window.addEventListener('blur',  pauseForBackground);
+window.addEventListener('focus', resumeFromBackground);

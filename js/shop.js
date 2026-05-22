@@ -3,7 +3,7 @@
    ============================================================ */
 
 // Cloud sync dinamico
-import('./data/cloud-sync.js?v=4').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=5').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { getState, saveState, ownsItem, addItem } from './data/state.js?v=6';
 import { ITEMS, ITEM_CATEGORIES, findItem } from './data/items.js?v=3';

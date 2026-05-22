@@ -125,7 +125,6 @@ async function syncOnLogin(user) {
   const localState  = getState();
 
   // Backup del guest state (se ne vale la pena) PRIMA di sovrascrivere.
-  // Si ripristinerà al logout per dare l'illusione di "tornare allo state precedente".
   if (localState.accountType === 'guest' && _hasMeaningfulProgress(localState)) {
     try {
       localStorage.setItem(GUEST_BACKUP_KEY, JSON.stringify(localState));
@@ -134,10 +133,27 @@ async function syncOnLogin(user) {
     }
   }
 
-  const remoteState = await pullFromCloud(user.id);
+  const { state: remoteState, error: pullError } = await pullFromCloud(user.id);
 
+  // CASO 1: errore di rete/RLS → NON resettare niente, NON fare anti-dupe.
+  // Il vecchio codice ritornava null e cadeva nel branch anti-dupe che
+  // resettava lo state e ricaricava la pagina → BATTAGLIA INTERROTTA.
+  // Ora invece: mantieni lo state locale, marca come supabase se necessario,
+  // e lascia che il push debounced normale spinga le modifiche al prossimo
+  // tentativo. La rete tornerà OK presto.
+  if (pullError) {
+    console.warn('[cloud] Pull errato, MANTENGO state locale:', pullError);
+    if (localState.accountType !== 'supabase' || localState.userId !== user.id) {
+      localState.userId      = user.id;
+      localState.userName    = user.user_metadata?.full_name ?? localState.userName;
+      localState.accountType = 'supabase';
+      saveState();
+    }
+    return;
+  }
+
+  // CASO 2: cloud ha già una riga per questo utente → fonte di verità
   if (remoteState) {
-    // Cloud esiste per questo utente → adottalo come fonte di verità
     Object.assign(localState, remoteState, {
       userId:      user.id,
       userName:    remoteState.userName ?? user.user_metadata?.full_name ?? localState.userName,
@@ -149,13 +165,14 @@ async function syncOnLogin(user) {
     return;
   }
 
-  // ---- Cloud vuoto: questo utente non ha mai giocato. Decidi cosa fare. ----
+  // CASO 3: cloud LEGITTIMAMENTE vuoto (no row found, no error)
   const hasCloudBefore = localStorage.getItem(CLOUD_USED_FLAG) === '1';
+  const localHasProgress = _hasMeaningfulProgress(localState);
 
-  if (hasCloudBefore) {
-    // ANTI-DUPE: dispositivo ha già visto almeno un account cloud.
-    // Non lasciamo che lo state locale (ereditato dal precedente) finisca
-    // nel cloud nuovo → avvia fresh.
+  if (hasCloudBefore && !localHasProgress) {
+    // Anti-dupe vero: device ha visto cloud, local senza progresso → fresh.
+    // NON faccio piu' location.reload() (era troppo invasivo: poteva
+    // killare una battaglia in corso). Lo state viene aggiornato in place.
     resetState();
     const fresh = getState();
     fresh.userId      = user.id;
@@ -163,35 +180,37 @@ async function syncOnLogin(user) {
     fresh.accountType = 'supabase';
     saveState();
     await pushToCloud(fresh);
-    console.log('[cloud] Nuovo account su device già usato → fresh save (no guest migration)');
-    location.reload();
+    console.log('[cloud] Nuovo account su device già usato → fresh save');
     return;
   }
 
-  // Prima volta in assoluto su questo dispositivo: migra il guest state al cloud
-  // (chi gioca come ospite e poi si registra non perde nulla).
+  // Tutti gli altri casi (primo login OR local con progresso): mantieni
+  // lo state locale, marca come supabase e pushalo al cloud.
   localState.userId      = user.id;
   localState.userName    = user.user_metadata?.full_name ?? localState.userName;
   localState.accountType = 'supabase';
   saveState();
   await pushToCloud(localState);
   localStorage.setItem(CLOUD_USED_FLAG, '1');
-  // Il backup salvato sopra è ridondante (il guest è stato migrato al cloud)
-  // ma lasciamolo lì: se l'utente fa logout subito, ritrova lo stesso state.
-  console.log('[cloud] Primo login dispositivo: guest migrato a cloud');
+  console.log('[cloud] State locale migrato/sincronizzato al cloud');
 }
 
 async function pullFromCloud(userId) {
-  const { data, error } = await supabase
-    .from('saves')
-    .select('state')
-    .eq('user_id', userId)
-    .maybeSingle();
-  if (error) {
-    console.warn('[cloud] Pull failed:', error);
-    return null;
+  try {
+    const { data, error } = await supabase
+      .from('saves')
+      .select('state')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (error) {
+      console.warn('[cloud] Pull error:', error);
+      return { state: null, error };
+    }
+    return { state: data?.state ?? null, error: null };
+  } catch (e) {
+    console.warn('[cloud] Pull exception:', e);
+    return { state: null, error: e };
   }
-  return data?.state ?? null;
 }
 
 async function pushToCloud(state) {

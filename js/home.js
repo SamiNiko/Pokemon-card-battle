@@ -507,8 +507,22 @@ async function openAccountModal(gs) {
   const session = await supabaseModule.getSession();
   if (session) {
     userPane.classList.remove('hidden');
-    $id('accountModalName').textContent  = fresh.userName ?? 'Allenatore';
+    // Twitch display name preferito (preferred_username/nickname dal metadata)
+    const meta = session.user?.user_metadata ?? {};
+    const handle = meta.preferred_username ?? meta.nickname ?? meta.name ?? fresh.userName ?? 'Allenatore';
+    $id('accountModalName').textContent  = handle;
     $id('accountModalEmail').textContent = session.user?.email ?? '—';
+    // Mostra badge sub se applicabile
+    try {
+      const tw = await import('./data/twitch-access.js');
+      const access = tw.getCachedAccess() ?? await tw.checkAccess();
+      const badgeEl = document.querySelector('.account-modal__badge');
+      if (badgeEl) {
+        if (access.isSubscriber)      badgeEl.textContent = '✨ Abbonato Twitch · Bonus attivi';
+        else if (access.isFollower)   badgeEl.textContent = '🟣 Follower Twitch';
+        else                          badgeEl.textContent = '🟣 Account Twitch';
+      }
+    } catch {}
   } else {
     guestPane.classList.remove('hidden');
   }
@@ -518,16 +532,16 @@ async function openAccountModal(gs) {
   // Bottoni interni (associati ogni volta che apriamo il modal)
   $id('btnAccountLogin').onclick = async () => {
     try {
-      await supabaseModule.signInWithGoogle();
+      await supabaseModule.signInWithTwitch();
     } catch (e) {
-      alert('Errore login: ' + e.message);
+      alert('Errore login Twitch: ' + e.message);
     }
   };
   $id('btnAccountLogout').onclick = async () => {
     const ok = confirm(
       'Sicuro di voler uscire?\n\n' +
       '✓ I tuoi progressi restano salvati sul cloud — al prossimo login li ritroverai tutti.\n\n' +
-      '⚠ Su questo dispositivo verrà avviato un nuovo profilo Ospite vuoto.'
+      '⚠ Per rientrare dovrai fare di nuovo login con Twitch.'
     );
     if (!ok) return;
 
@@ -537,7 +551,11 @@ async function openAccountModal(gs) {
         const cs = await import('./data/cloud-sync.js?v=3');
         await cs.flushSync();
       } catch {}
-      // signOut → triggera SIGNED_OUT in cloud-sync che fa resetState + reload
+      // Pulisci cache access
+      try {
+        const tw = await import('./data/twitch-access.js');
+        tw.clearAccessCache();
+      } catch {}
       await supabaseModule.signOut();
       closeAccountModal();
     } catch (e) {
@@ -551,91 +569,128 @@ function closeAccountModal() {
 }
 
 function maybeShowGuestBanner(gs) {
+  // Banner non più necessario col gate Twitch (chi entra è sempre loggato).
+  // Lo lascio nascosto sempre.
   const banner = $id('accountBanner');
-  if (!banner) return;
-  // Se loggato: niente banner
-  if (gs.accountType === 'supabase') {
-    banner.classList.add('hidden');
-    return;
-  }
-  // Se l'utente l'ha già dismisso: niente banner
-  if (localStorage.getItem('pkmn_account_banner_dismissed') === '1') {
-    banner.classList.add('hidden');
-    return;
-  }
-  // Soglia: ha già un po' di progressi (5+ Pokémon o gemme spese)
-  const owned = (gs.owned ?? []).length;
-  const hasProgress = owned >= 5 || (gs.lifetimeStats?.totalMatches ?? 0) >= 3;
-  banner.classList.toggle('hidden', !hasProgress);
+  if (banner) banner.classList.add('hidden');
 }
 
 /* ================================================================
-   WELCOME OVERLAY — prima apertura del gioco
+   TWITCH GATE — solo follower/sub possono giocare
    ================================================================
-   Mostrato solo se:
-   - localStorage 'pkmn_onboarding_done' non è '1'
-   - E non c'è una sessione Supabase già attiva (es. ritorno da OAuth)
-   Dopo la scelta (Login o Ospite), set del flag → la prossima volta
-   l'utente va diretto in home.
+   Flusso:
+     1. No sessione → mostra welcomeOverlay (login Twitch)
+     2. Sessione + follower OR sub → entra normale
+     3. Sessione ma né follower né sub → lockedOverlay
 */
-const ONBOARDING_FLAG = 'pkmn_onboarding_done';
 
 async function initWelcomeOverlay(gs) {
-  const overlay = $id('welcomeOverlay');
-  if (!overlay) return;
-
-  // Già onboardato → niente welcome
-  if (localStorage.getItem(ONBOARDING_FLAG) === '1') return;
-
-  // Se c'è già una sessione Supabase attiva, l'utente è loggato → marca
-  // onboarding fatto e non mostrare nulla
-  if (supabaseModule) {
-    try {
-      const session = await supabaseModule.getSession();
-      if (session) {
-        localStorage.setItem(ONBOARDING_FLAG, '1');
-        return;
-      }
-    } catch {}
+  // Aspetta che supabaseModule sia caricato (da initAccountUI)
+  // Poll breve, max ~1s
+  for (let i = 0; i < 20 && !supabaseModule; i++) {
+    await new Promise(r => setTimeout(r, 50));
   }
 
-  // Mostra il welcome
+  const session = supabaseModule ? await supabaseModule.getSession() : null;
+
+  // Branch 1: nessuna sessione → welcome
+  if (!session) {
+    showWelcomeOverlay();
+    return;
+  }
+
+  // Branch 2-3: c'è una sessione → verifica gate
+  const tw = await import('./data/twitch-access.js');
+  // Ricontrolla sempre il follower al primo load: il check è veloce
+  let access;
+  try {
+    access = await tw.checkAccess();
+  } catch (e) {
+    console.warn('[gate] check failed:', e);
+    access = { loggedIn: true, isFollower: false, isSubscriber: false };
+  }
+
+  if (!tw.canPlay(access)) {
+    showLockedOverlay(access);
+    return;
+  }
+
+  // Accesso OK — applica UI sub (badge, frame)
+  applySubscriberUI(access);
+
+  // Tutorial onboarding al primo accesso
+  if (!isTutorialDone()) {
+    setTimeout(() => initTutorial(), 350);
+  }
+}
+
+function showWelcomeOverlay() {
+  const overlay = $id('welcomeOverlay');
+  if (!overlay) return;
   overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 
-  // Bottone "Accedi con Google"
   $id('btnWelcomeLogin').onclick = async () => {
-    // Marca onboarding subito così se il redirect torna qui non rivede l'overlay
-    localStorage.setItem(ONBOARDING_FLAG, '1');
     if (!supabaseModule) {
-      alert('Login non disponibile (controlla l\'ad-blocker)');
-      // Comunque proceed come ospite
-      hideWelcome();
+      alert('Cloud non disponibile (forse un ad-blocker). Disabilitalo e ricarica.');
       return;
     }
     try {
-      await supabaseModule.signInWithGoogle();
-      // Il redirect porta su Google → torno qui dopo
+      await supabaseModule.signInWithTwitch();
+      // Il redirect porta su Twitch → torno qui dopo
     } catch (e) {
-      alert('Errore login: ' + e.message);
-      hideWelcome();   // proseguo come ospite se login fallisce
+      alert('Errore login Twitch: ' + e.message);
     }
-  };
-
-  // Bottone "Gioca come Ospite"
-  $id('btnWelcomeGuest').onclick = () => {
-    localStorage.setItem(ONBOARDING_FLAG, '1');
-    hideWelcome();
   };
 }
 
-function hideWelcome() {
-  const overlay = $id('welcomeOverlay');
+function showLockedOverlay(access) {
+  const overlay = $id('lockedOverlay');
   if (!overlay) return;
-  overlay.classList.add('hidden');
-  document.body.style.overflow = '';
-  // Subito dopo il welcome, lancia il tutorial onboarding (se mai visto)
-  if (!isTutorialDone()) {
-    setTimeout(() => initTutorial(), 300);
+  $id('lockedUserName').textContent = access?.twitchLogin ?? 'allenatore';
+  overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+
+  // Recheck: forza un refresh del check (utile dopo che l'utente segue)
+  $id('btnLockedRecheck').onclick = async () => {
+    const btn = $id('btnLockedRecheck');
+    btn.disabled = true;
+    btn.querySelector('.welcome-btn__title').textContent = 'Controllo in corso…';
+    const tw = await import('./data/twitch-access.js');
+    tw.clearAccessCache();
+    const fresh = await tw.checkAccess({ force: true });
+    if (tw.canPlay(fresh)) {
+      overlay.classList.add('hidden');
+      document.body.style.overflow = '';
+      location.reload();
+    } else {
+      btn.disabled = false;
+      btn.querySelector('.welcome-btn__title').textContent = 'Ancora non risulti follower — riprova';
+    }
+  };
+
+  $id('btnLockedLogout').onclick = async () => {
+    try {
+      const tw = await import('./data/twitch-access.js');
+      tw.clearAccessCache();
+      if (supabaseModule) await supabaseModule.signOut();
+      location.reload();
+    } catch (e) {
+      alert('Errore logout: ' + e.message);
+    }
+  };
+}
+
+function applySubscriberUI(access) {
+  if (!access?.isSubscriber) return;
+  // Badge sub vicino all'avatar header
+  const avatar = $id('accountAvatar');
+  if (avatar && !avatar.dataset.subApplied) {
+    avatar.dataset.subApplied = '1';
+    const star = document.createElement('span');
+    star.className = 'sub-badge';
+    star.textContent = '✨';
+    star.title = 'Abbonato Twitch';
+    avatar.parentElement?.appendChild(star);
   }
 }

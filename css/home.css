@@ -1364,6 +1364,44 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 28px rgba(255, 203, 5, 0.4);
 }
 
+/* Variante Twitch (viola) */
+.welcome-btn--twitch {
+  border-color: #9147ff;
+  background: linear-gradient(135deg, rgba(145, 71, 255, 0.22) 0%, rgba(19, 28, 48, 0.85) 60%);
+  box-shadow: 0 0 18px rgba(145, 71, 255, 0.2);
+}
+.welcome-btn--twitch:hover {
+  border-color: #a970ff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 28px rgba(145, 71, 255, 0.45);
+}
+
+/* Variante ghost (logout secondario) */
+.welcome-btn--ghost {
+  background: rgba(19, 28, 48, 0.6);
+  border-color: rgba(255, 255, 255, 0.12);
+  opacity: 0.7;
+}
+.welcome-btn--ghost:hover {
+  opacity: 1;
+  border-color: rgba(255, 100, 100, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Badge sub: stellina che lampeggia accanto all'avatar header */
+.sub-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  font-size: 0.85rem;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.9));
+  animation: sub-badge-pulse 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes sub-badge-pulse {
+  0%, 100% { transform: scale(1)   rotate(0deg); }
+  50%      { transform: scale(1.15) rotate(8deg); }
+}
+
 .welcome-btn__icon {
   font-size: 2.4rem;
   line-height: 1;

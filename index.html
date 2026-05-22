@@ -16,7 +16,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Home</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
-  <link rel="stylesheet" href="css/home.css?v=11" />
+  <link rel="stylesheet" href="css/home.css?v=12" />
   <link rel="stylesheet" href="css/card-modal.css?v=8" />
   <link rel="stylesheet" href="css/tutorial.css?v=3" />
   <link rel="preload" as="audio" href="assets/audio/menu.mp3" />
@@ -42,33 +42,72 @@
       <div class="welcome-overlay__intro">
         <h2 class="welcome-overlay__greeting">Benvenuto, allenatore!</h2>
         <p class="welcome-overlay__lead">
-          Pronto a costruire il tuo team e dominare il Colosseo?
-          Scegli come vuoi giocare.
+          Accedi con Twitch per giocare. Il gioco è riservato ai miei
+          <strong>follower</strong> — gli <strong>abbonati</strong> ricevono bonus speciali.
         </p>
       </div>
 
       <div class="welcome-overlay__actions">
-        <button class="welcome-btn welcome-btn--primary" id="btnWelcomeLogin" type="button">
-          <span class="welcome-btn__icon">🔑</span>
+        <button class="welcome-btn welcome-btn--twitch" id="btnWelcomeLogin" type="button">
+          <span class="welcome-btn__icon">🟣</span>
           <span class="welcome-btn__body">
-            <span class="welcome-btn__title">Accedi con Google</span>
-            <span class="welcome-btn__hint">Sincronizza su tutti i dispositivi · Niente progressi persi</span>
-          </span>
-          <span class="welcome-btn__badge">Consigliato</span>
-        </button>
-
-        <button class="welcome-btn" id="btnWelcomeGuest" type="button">
-          <span class="welcome-btn__icon">▶️</span>
-          <span class="welcome-btn__body">
-            <span class="welcome-btn__title">Gioca come Ospite</span>
-            <span class="welcome-btn__hint">Solo su questo dispositivo · Puoi creare un account quando vuoi</span>
+            <span class="welcome-btn__title">Accedi con Twitch</span>
+            <span class="welcome-btn__hint">Sincronizza su tutti i dispositivi · Bonus abbonati</span>
           </span>
         </button>
       </div>
 
       <p class="welcome-overlay__footer">
-        Puoi cambiare modalità in ogni momento dall'icona del profilo in alto a destra.
+        Non sei ancora un mio follower? <a href="https://twitch.tv/" target="_blank" rel="noopener" id="welcomeFollowLink">Vieni a seguirmi su Twitch</a> e poi torna qui!
       </p>
+    </div>
+  </div>
+
+  <!-- ================================================================
+       LOCKED OVERLAY — utente loggato ma non follower del broadcaster
+       ================================================================ -->
+  <div class="welcome-overlay hidden" id="lockedOverlay" aria-modal="true" role="dialog">
+    <div class="welcome-overlay__bg"></div>
+    <div class="welcome-overlay__orb welcome-overlay__orb--1"></div>
+    <div class="welcome-overlay__orb welcome-overlay__orb--2"></div>
+
+    <div class="welcome-overlay__content">
+      <div class="welcome-overlay__logo">
+        <span class="welcome-overlay__ball" aria-hidden="true"></span>
+      </div>
+
+      <h1 class="welcome-overlay__title">Accesso riservato</h1>
+
+      <div class="welcome-overlay__intro">
+        <h2 class="welcome-overlay__greeting">Ciao <span id="lockedUserName">allenatore</span>!</h2>
+        <p class="welcome-overlay__lead">
+          Il gioco è riservato ai miei <strong>follower</strong> e <strong>abbonati</strong> su Twitch.
+          Vieni a seguirmi e poi ricarica la pagina!
+        </p>
+      </div>
+
+      <div class="welcome-overlay__actions">
+        <a class="welcome-btn welcome-btn--twitch" id="btnLockedFollow" href="https://twitch.tv/" target="_blank" rel="noopener">
+          <span class="welcome-btn__icon">🟣</span>
+          <span class="welcome-btn__body">
+            <span class="welcome-btn__title">Seguimi su Twitch</span>
+            <span class="welcome-btn__hint">Apre il mio canale in una nuova scheda</span>
+          </span>
+        </a>
+        <button class="welcome-btn" id="btnLockedRecheck" type="button">
+          <span class="welcome-btn__icon">🔄</span>
+          <span class="welcome-btn__body">
+            <span class="welcome-btn__title">Ho appena seguito — ricontrolla</span>
+            <span class="welcome-btn__hint">Ricarica il check follower (cache 5 minuti)</span>
+          </span>
+        </button>
+        <button class="welcome-btn welcome-btn--ghost" id="btnLockedLogout" type="button">
+          <span class="welcome-btn__icon">🚪</span>
+          <span class="welcome-btn__body">
+            <span class="welcome-btn__title">Esci e cambia account</span>
+          </span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -324,6 +363,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/home.js?v=16"></script>
+  <script type="module" src="js/home.js?v=17"></script>
 </body>
 </html>

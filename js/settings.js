@@ -185,12 +185,12 @@ async function handleAuthClick() {
       toast('Errore durante il logout: ' + e.message, 'error');
     }
   } else {
-    // Login con Google → redirect
+    // Login con Twitch → redirect
     try {
-      toast('Reindirizzamento verso Google…', 'success');
-      await supabaseModule.signInWithGoogle();
+      toast('Reindirizzamento verso Twitch…', 'success');
+      await supabaseModule.signInWithTwitch();
     } catch (e) {
-      toast('Errore login: ' + e.message, 'error');
+      toast('Errore login Twitch: ' + e.message, 'error');
     }
   }
 }
@@ -203,7 +203,7 @@ async function refreshAccountUI() {
   // Se la SDK Supabase non è caricata, mostra hint chiaro e disabilita il bottone
   if (!supabaseModule) {
     $('btnAuthLabel').textContent = '🔒 Non disponibile';
-    $('authLabel').textContent    = 'Login con Google';
+    $('authLabel').textContent    = 'Login con Twitch';
     $('authHint').textContent     = 'Disabilita l\'ad-blocker per usare il login cloud';
     $('btnAuth').disabled = true;
     return;
@@ -212,15 +212,17 @@ async function refreshAccountUI() {
 
   const session = await supabaseModule.getSession();
   if (session) {
+    const meta = session.user?.user_metadata ?? {};
+    const handle = meta.preferred_username ?? meta.nickname ?? meta.name ?? session.user.email ?? '—';
     $('btnAuthLabel').textContent = '🚪 Logout';
-    $('authLabel').textContent    = `Connesso come ${session.user.email ?? '—'}`;
-    $('authHint').textContent     = 'I tuoi progressi sono sincronizzati sul cloud';
+    $('authLabel').textContent    = `Connesso come ${handle}`;
+    $('authHint').textContent     = 'Account Twitch · progressi sincronizzati sul cloud';
     $('btnAuth').classList.remove('settings-btn--primary');
     $('btnAuth').classList.add('settings-btn--danger');
   } else {
-    $('btnAuthLabel').textContent = '🔑 Accedi con Google';
-    $('authLabel').textContent    = 'Login con Google';
-    $('authHint').textContent     = 'Sincronizza il salvataggio su tutti i tuoi dispositivi';
+    $('btnAuthLabel').textContent = '🟣 Accedi con Twitch';
+    $('authLabel').textContent    = 'Login con Twitch';
+    $('authHint').textContent     = 'Riservato ai follower · bonus per gli abbonati';
     $('btnAuth').classList.add('settings-btn--primary');
     $('btnAuth').classList.remove('settings-btn--danger');
   }
@@ -232,10 +234,10 @@ async function refreshAccountUI() {
 
 function labelForAccountType(type) {
   switch (type) {
-    case 'supabase': return 'Cloud';
-    case 'google':   return 'Google';
+    case 'supabase': return 'Twitch · Cloud';
+    case 'twitch':   return 'Twitch';
     case 'guest':
-    default:         return 'Ospite';
+    default:         return 'Non loggato';
   }
 }
 

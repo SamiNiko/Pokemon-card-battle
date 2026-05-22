@@ -1627,20 +1627,28 @@ async function endGame(result) {
   }
 
   // ---- Reward in gemme + pokeuro ----------------------------------
-  // PvP: win 50💎/30🪙, draw 25/15, lose 10/5
-  // Trainer (prima vittoria): reward gemme + pokeuro = metà gemme
-  // AI random: nessuna reward (allenamento puro).
+  // PvP: win 50💎/120🪙, draw 25/60, lose 10/30
+  // Trainer (prima vittoria): gemme + pokeuro 1:1
+  // AI random: nessuna reward.
+  // Sub bonus: +10% pokeuro a fine partita (sopra qualsiasi reward).
   let gemReward = 0;
   let coinReward = 0;
+  let subBonus = false;
+  try {
+    const tw = await import('./data/twitch-access.js');
+    const access = tw.getCachedAccess();
+    subBonus = !!access?.isSubscriber;
+  } catch {}
   if (MODE === 'pvp') {
     if (result === 'win')      { gemReward = ONLINE_REWARD_WIN;  coinReward = 120; }
     else if (result === 'lose') { gemReward = ONLINE_REWARD_LOSS; coinReward = 30;  }
     else                        { gemReward = ONLINE_REWARD_DRAW; coinReward = 60;  }
+    if (subBonus) coinReward = Math.round(coinReward * 1.1);
     const gs = getState();
     gs.gems    = (gs.gems    ?? 0) + gemReward;
     gs.pokeuro = (gs.pokeuro ?? 0) + coinReward;
     saveState();
-    log(`Hai ricevuto +${gemReward} 💎 e +${coinReward} 🪙!`, 'item');
+    log(`Hai ricevuto +${gemReward} 💎 e +${coinReward} 🪙${subBonus ? ' (bonus sub ✨)' : ''}!`, 'item');
     SFX.gemReward?.();
   } else if (MODE === 'trainer' && result === 'win' && TRAINER_ID) {
     // Marca battuto + assegna reward UNA SOLA volta
@@ -1654,11 +1662,12 @@ async function endGame(result) {
         if (t && typeof t.reward === 'number' && t.reward > 0) {
           gemReward  = t.reward;
           coinReward = t.reward;                   // pokeuro = pari alle gemme (bilanciamento shop)
+          if (subBonus) coinReward = Math.round(coinReward * 1.1);
           const gs = getState();
           gs.gems    = (gs.gems    ?? 0) + gemReward;
           gs.pokeuro = (gs.pokeuro ?? 0) + coinReward;
           saveState();
-          log(`🏆 PRIMA VITTORIA contro ${t.name}! +${gemReward} 💎 +${coinReward} 🪙`, 'item');
+          log(`🏆 PRIMA VITTORIA contro ${t.name}! +${gemReward} 💎 +${coinReward} 🪙${subBonus ? ' (bonus sub ✨)' : ''}`, 'item');
           SFX.gemReward?.();
           // Suono separato di "sblocco" se non era l'ultimo trainer
           setTimeout(() => SFX.unlock?.(), 600);

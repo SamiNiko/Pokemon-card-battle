@@ -44,11 +44,25 @@ export async function startCloudSync() {
     await syncOnLogin(session.user);
   }
 
+  // Traccia l'ultimo user_id sincronizzato per evitare di rifare syncOnLogin
+  // ad ogni event SIGNED_IN (Supabase JS può rifirearlo a ogni token refresh,
+  // che farebbe pullFromCloud + Object.assign sovrascrivendo lo state locale
+  // → reward post-battaglia perse perché overwrite con dati cloud vecchi).
+  let _lastSyncedUserId = session?.user?.id ?? null;
+
   // 2. Registra listener per login/logout futuri
   onAuthChange(async (event, sess) => {
     if (event === 'SIGNED_IN' && sess?.user) {
+      // Skip se stesso utente già sincronizzato (è un token refresh, non
+      // un nuovo login). Lo state locale + cloud push lavorano normalmente.
+      if (_lastSyncedUserId === sess.user.id) {
+        console.log('[cloud] SIGNED_IN per utente già sincronizzato (token refresh) → no-op');
+        return;
+      }
+      _lastSyncedUserId = sess.user.id;
       await syncOnLogin(sess.user);
     } else if (event === 'SIGNED_OUT') {
+      _lastSyncedUserId = null;
       // Logout: reset dello state locale. Poi:
       // - se c'è un backup guest (era il tuo state prima del login),
       //   lo ripristiniamo → ritorni esattamente dov'eri prima.

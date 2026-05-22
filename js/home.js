@@ -4,7 +4,7 @@
 
 // Cloud sync (Supabase) caricato dinamicamente per non bloccare la pagina
 // se l'utente ha un ad-blocker che impedisce l'accesso alla CDN.
-import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=4').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped, onSave } from './data/state.js?v=6';
@@ -634,7 +634,7 @@ async function openAccountModal(gs) {
     try {
       // Flush dello stato pendente prima del logout (best effort)
       try {
-        const cs = await import('./data/cloud-sync.js?v=3');
+        const cs = await import('./data/cloud-sync.js?v=4');
         await cs.flushSync();
       } catch {}
       // Pulisci cache access

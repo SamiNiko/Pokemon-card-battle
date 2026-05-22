@@ -25,7 +25,7 @@ import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-
  *  Da chiamare dopo eventi critici (reward, trainer beaten) per evitare
  *  che il debounce di 1.5s perda la modifica se l'utente naviga via. */
 function flushCloudNow() {
-  import('./data/cloud-sync.js?v=3').then(cs => cs.flushSync?.()).catch(() => {});
+  import('./data/cloud-sync.js?v=4').then(cs => cs.flushSync?.()).catch(() => {});
 }
 
 /** Versione async — attendi il completamento del push.
@@ -39,7 +39,7 @@ async function flushCloudAndNavigate(url) {
   const indicator = showSaveIndicator('💾 Salvataggio in corso…');
   let okSaved = true;
   try {
-    const cs = await import('./data/cloud-sync.js?v=3');
+    const cs = await import('./data/cloud-sync.js?v=4');
     await cs.flushSync?.();
   } catch (e) {
     okSaved = false;

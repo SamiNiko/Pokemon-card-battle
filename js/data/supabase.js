@@ -21,8 +21,8 @@ const SUPABASE_KEY  = 'sb_publishable_ZzfRUFP4R2ioXbBrPD9VCg_JojGp4Ub';
    Il Broadcaster ID è il tuo user ID Twitch numerico
    (recupera con https://www.streamweasels.com/tools/convert-twitch-username-to-user-id/).
    ============================================================ */
-export const TWITCH_CLIENT_ID     = 'REPLACE_WITH_TWITCH_CLIENT_ID';
-export const TWITCH_BROADCASTER_ID = 'REPLACE_WITH_TWITCH_BROADCASTER_ID';
+export const TWITCH_CLIENT_ID     = 'ntgjwu4dxl3rya4na0tk133gt1btaf';
+export const TWITCH_BROADCASTER_ID = '250476450';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {

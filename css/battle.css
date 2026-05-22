@@ -546,31 +546,93 @@
   font-feature-settings: "tnum";
 }
 
+/* ============================================================
+   MOBILE — tablet / phone landscape / phone portrait
+   ============================================================
+   Strategia: su mobile droppiamo la colonna spacer vuota dei
+   player-block (lo spazio rubato dal "lato simmetrico"). Su un
+   telefono da 400px erano 96px sprecati per ogni blocco — ora
+   tutta quella larghezza torna alla griglia di combattimento. */
+
 @media (max-width: 768px) {
   .battle {
     grid-template-rows: 1fr auto 1fr;
     padding: var(--sp-2);
+    gap: var(--sp-2);
   }
-  .bench { width: 130px; }   /* 2 col da ~58px + gap */
-  /* Colonna bench ridotta per dare più spazio alla griglia centrale */
-  .player-block--enemy,
-  .player-block--self { grid-template-columns: 130px 1fr 130px; }
-  .battle-center { padding: var(--sp-2); gap: var(--sp-2); }
-  .battle-center__turn-num, .battle-center__timer-value { font-size: 1.2rem; }
-  .battle-center { grid-template-columns: 1fr auto 1fr auto; }
+  /* Drop dello spacer: solo 2 colonne, bench da un lato e grid dall'altro */
+  .player-block--enemy { grid-template-columns: 130px 1fr; }
+  .player-block--self  { grid-template-columns: 1fr 130px; }
+  /* Riassegna grid-column per riflettere il nuovo layout 2-col */
+  .player-block--enemy > .bench { grid-column: 1; }
+  .player-block--enemy > .grid  { grid-column: 2; }
+  .player-block--self  > .grid  { grid-column: 1; }
+  .player-block--self  > .bench { grid-column: 2; }
+  .bench { width: 130px; padding: 2px; }
+
+  /* Player-info più compatta */
+  .player-info { gap: var(--sp-2); }
+  .player-info__avatar { width: 40px; height: 40px; font-size: 0.75rem; }
+  .player-info__name { font-size: 0.85rem; }
+
+  /* Battle-center HUD compatto */
+  .battle-center {
+    grid-template-columns: auto 1fr auto;
+    padding: var(--sp-2);
+    gap: var(--sp-3);
+  }
+  .battle-center__turn-num, .battle-center__timer-value { font-size: 1.15rem; }
+  .battle-center__phase { font-size: 0.78rem; }
+  .battle-center__placement-hint { font-size: 0.7rem; }
+  /* Speed preview nascosto: meno priorità, ricuperiamo spazio */
+  .battle-center__speed { display: none; }
+
+  /* Tasto Home/Exit più piccolo + posizione sicura */
+  .battle__top-right { top: var(--sp-2); right: var(--sp-2); gap: 4px; z-index: 20; }
+  .battle__exit { font-size: 0.75rem; padding: 4px 8px; }
 }
 
-/* Schermi molto stretti (telefoni in portrait) */
+/* Schermi molto stretti (telefoni in portrait < 480px) */
 @media (max-width: 480px) {
-  .battle { padding: var(--sp-1); gap: var(--sp-2); }
-  .bench { width: 96px; }   /* 2 col da ~42px */
-  .player-block--enemy,
-  .player-block--self { grid-template-columns: 96px 1fr 96px; }
-  .battle__top-right { top: var(--sp-1); right: var(--sp-1); gap: 4px; }
-  .battle__exit { font-size: 0.75rem; padding: 4px 8px; }
-  /* I label di fase più piccoli per non sforare */
+  .battle { padding: var(--sp-1); gap: 6px; }
+  .player-block--enemy { grid-template-columns: 100px 1fr; }
+  .player-block--self  { grid-template-columns: 1fr 100px; }
+  .bench { width: 100px; gap: 4px; }
+
+  .player-info { gap: var(--sp-1); }
+  .player-info__avatar { width: 34px; height: 34px; font-size: 0.7rem; border-width: 1.5px; }
+  .player-info__name { font-size: 0.78rem; }
+
+  /* Battle-center: turn/timer affiancati a sx, phase al centro, btn a dx */
+  .battle-center {
+    grid-template-columns: auto 1fr auto;
+    padding: 6px 8px;
+    gap: 8px;
+  }
+  .battle-center__turn,
+  .battle-center__timer { flex-direction: row; gap: 4px; align-items: baseline; }
   .battle-center__turn-label,
-  .battle-center__timer-label { font-size: 0.62rem; }
+  .battle-center__timer-label { font-size: 0.6rem; }
+  .battle-center__turn-num, .battle-center__timer-value { font-size: 0.95rem; }
+  .battle-center__phase { font-size: 0.72rem; line-height: 1.2; }
+  .battle-center__placement-hint { font-size: 0.62rem; }
+  /* Pulsante Conferma turno più piccolo ma sempre touch-friendly */
+  .battle-center .btn { font-size: 0.78rem; padding: 8px 12px; min-height: 38px; }
+
+  .battle__top-right { top: 4px; right: 4px; }
+  .battle__exit { font-size: 0.7rem; padding: 3px 7px; }
+
+  /* HP bar più piccola in spazio ridotto */
+  .hp-bar__label { font-size: 0.65rem; }
+}
+
+/* Phone portrait MOLTO stretto (< 380px) — ulteriore compattazione */
+@media (max-width: 380px) {
+  .player-block--enemy { grid-template-columns: 88px 1fr; }
+  .player-block--self  { grid-template-columns: 1fr 88px; }
+  .bench { width: 88px; }
+  .player-info__avatar { width: 30px; height: 30px; }
+  .player-info__name { font-size: 0.72rem; }
 }
 
 /* ============================================================

@@ -397,14 +397,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllModa
       history.replaceState(null, '', location.pathname);
     }
 
-    // Tutorial onboarding: parte SOLO se welcome è già stato fatto
-    // e il tutorial non è mai stato visto. Se siamo nel welcome, il
-    // tutorial parte invece quando l'utente sceglie Login/Ospite
-    // (vedi hideWelcome → maybeStartTutorial).
-    if (localStorage.getItem(ONBOARDING_FLAG) === '1' && !isTutorialDone()) {
-      // Aspetto un attimo dopo il render così la home è già visibile dietro
-      setTimeout(() => initTutorial(), 350);
-    }
+    // (Tutorial onboarding spostato dentro initWelcomeOverlay → branch
+    // "access OK": parte solo dopo che il gate Twitch ha autorizzato)
 
   } catch (e) {
     console.error(e);

@@ -12,7 +12,7 @@
    Versioning: bumpa CACHE_VERSION quando vuoi forzare un refresh
    completo della cache (es. dopo cambi major).
    ============================================================ */
-const CACHE_VERSION = 'v38';
+const CACHE_VERSION = 'v39';
 const STATIC_CACHE  = `shc-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `shc-runtime-${CACHE_VERSION}`;
 
@@ -126,8 +126,12 @@ async function cacheFirst(req) {
   if (cached) return cached;
   try {
     const fresh = await fetch(req);
-    const cache = await caches.open(RUNTIME_CACHE);
-    cache.put(req, fresh.clone());
+    // Cache solo risposte complete (status 200). Le risposte parziali (206)
+    // sono il risultato di range requests (es. audio seek) → non cachabili.
+    if (fresh.ok && fresh.status === 200) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      cache.put(req, fresh.clone()).catch(() => {});
+    }
     return fresh;
   } catch (e) {
     return cached ?? Response.error();

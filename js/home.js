@@ -105,7 +105,7 @@ const NEWS_ITEMS = [
         },
         {
           title: 'Ricompense',
-          text: 'Da 100 gemme (Brock) a 5000 (easter egg). Totale Lega completa: 22.500 gemme (~22 multi-pull). Solo alla PRIMA vittoria.',
+          text: 'Da 100💎 + 100🪙 (Brock) a 5000💎 + 5000🪙 (easter egg). Totale Lega completa: 22.500💎 e 22.500🪙. Solo alla PRIMA vittoria di ogni trainer.',
         },
         {
           title: 'Modalità',

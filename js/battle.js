@@ -1758,8 +1758,11 @@ async function showEndGameScreen(result, gemReward, coinReward = 0) {
   // ---- Reward (gemme + eventuali pokeuro) ----
   const rewardEl   = $('#endgameReward');
   const amountEl   = $('#endgameRewardAmount');
+  const labelEl    = rewardEl?.querySelector('.endgame-panel__reward-label');
   if (gemReward > 0 || coinReward > 0) {
     rewardEl.classList.remove('hidden');
+    // Etichetta dinamica: 'gemme' se solo gem, '+ monete' se anche pokeuro
+    if (labelEl) labelEl.textContent = coinReward > 0 ? 'gemme + monete' : 'gemme';
     // Counter animato 0 → gemReward + suffisso pokeuro se presente
     const DUR = 900;
     const startT = performance.now();
@@ -1769,7 +1772,7 @@ async function showEndGameScreen(result, gemReward, coinReward = 0) {
       const g = Math.round(gemReward  * e);
       const c = Math.round(coinReward * e);
       amountEl.innerHTML = coinReward > 0
-        ? `+${g} <span style="opacity:.7;font-size:.8em;">+ ${c}🪙</span>`
+        ? `+${g}💎 <span style="opacity:.85;font-size:.85em;">+${c}🪙</span>`
         : `+${g}`;
       if (t < 1) requestAnimationFrame(step);
     };

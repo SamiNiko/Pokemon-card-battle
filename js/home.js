@@ -12,10 +12,63 @@ import { findItem }                    from './data/items.js?v=3';
 import { openCardModal }                from './data/card-modal.js?v=9';
 import { initTutorial, isTutorialDone } from './data/tutorial.js?v=3';
 import { playBGM }                      from './data/bgm.js?v=8';
+import { SFX }                          from './data/sfx.js';
 
 // Avvia subito la BGM della home (parte dopo il primo gesto utente per via
 // delle restrizioni browser sull'autoplay audio)
 playBGM('home');
+
+/* ================================================================
+   SFX HOOKS — click sound delegation
+   ================================================================
+   Invece di legare un handler per ogni bottone, usiamo event
+   delegation sul document: ad ogni click viene cercato il selector
+   più "interessante" e si gioca il SFX corrispondente.
+   pointerdown (non click) → suono immediato, prima che lo span
+   eventualmente intercetti. */
+document.addEventListener('pointerdown', e => {
+  const t = e.target;
+  if (!t || !t.closest) return;
+  // Modal close / cancel → cancel
+  if (t.closest('[data-close-modal], [data-account-close], #newsModalClose, #newsBackdrop, #accountBannerClose')) {
+    SFX.cancel?.();
+    return;
+  }
+  // Play options (modal Gioca) → confirm
+  if (t.closest('.play-option')) {
+    SFX.confirm?.();
+    return;
+  }
+  // Welcome / locked overlay → confirm
+  if (t.closest('#btnWelcomeLogin, #btnLockedFollow, #btnLockedRecheck, #btnAccountLogin, #accountBannerCta')) {
+    SFX.confirm?.();
+    return;
+  }
+  if (t.closest('#btnLockedLogout, #btnAccountLogout')) {
+    SFX.cancel?.();
+    return;
+  }
+  // News card → soft click
+  if (t.closest('.news-card')) {
+    SFX.cardPick?.();
+    return;
+  }
+  // Team tab → click
+  if (t.closest('.team-tab')) {
+    SFX.click?.();
+    return;
+  }
+  // Menu bottoni principali → click
+  if (t.closest('.menu-btn')) {
+    SFX.click?.();
+    return;
+  }
+  // Account button (avatar header)
+  if (t.closest('#btnAccount')) {
+    SFX.click?.();
+    return;
+  }
+});
 
 const $ = sel => document.querySelector(sel);
 const $id = id => document.getElementById(id);

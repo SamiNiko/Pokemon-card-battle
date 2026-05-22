@@ -8,6 +8,7 @@ import('./data/cloud-sync.js?v=3').catch(err => console.warn('[cloud] non dispon
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState, addPokemonOrLevelUp, getFreeSummonsLeft, consumeFreeSummon } from './data/state.js?v=6';
 import { playBGM }                                       from './data/bgm.js?v=8';
+import { SFX }                                           from './data/sfx.js';
 
 playBGM('summon');
 import { MOVESETS }                    from './data/movesets.js?v=3';
@@ -223,10 +224,11 @@ function showConfirm(n) {
   $('confirmModal').classList.remove('hidden');
 }
 
-$('confirmCancel').addEventListener('click',   () => $('confirmModal').classList.add('hidden'));
-$('confirmBackdrop').addEventListener('click', () => $('confirmModal').classList.add('hidden'));
+$('confirmCancel').addEventListener('click',   () => { SFX.cancel?.(); $('confirmModal').classList.add('hidden'); });
+$('confirmBackdrop').addEventListener('click', () => { SFX.cancel?.(); $('confirmModal').classList.add('hidden'); });
 
 $('confirmOk').addEventListener('click', async () => {
+  SFX.confirm?.();
   $('confirmModal').classList.add('hidden');
   await handlePull(pendingPullN);
 });
@@ -234,14 +236,17 @@ $('confirmOk').addEventListener('click', async () => {
 $('btnPull1').addEventListener('click', () => {
   // Gratis se ci sono ancora pull onboarding
   if (getFreeSummonsLeft() === 0 && getGems() < COST_SINGLE) {
+    SFX.insufficient?.();
     alert('Gemme insufficienti!');
     return;
   }
+  SFX.click?.();
   showConfirm(1);
 });
 
 $('btnPull10').addEventListener('click', () => {
-  if (getGems() < COST_MULTI) { alert('Gemme insufficienti!'); return; }
+  if (getGems() < COST_MULTI) { SFX.insufficient?.(); alert('Gemme insufficienti!'); return; }
+  SFX.click?.();
   showConfirm(10);
 });
 
@@ -265,7 +270,7 @@ function handleSkipClick() {
   showSummary();
 }
 
-$('btnSkipPull').addEventListener('click', handleSkipClick);
+$('btnSkipPull').addEventListener('click', () => { SFX.click?.(); handleSkipClick(); });
 
 /* Hold-to-charge: l'utente tiene premuto sullo schermo per "caricare"
    il portale. Quando la barra è piena, la pull prosegue. Rilasciando
@@ -363,6 +368,12 @@ async function summonIntro() {
   else if (maxIdx === 2) tier = 't2';  // rare              → energia
   else if (maxIdx === 3) tier = 't3';  // epic              → fulmini
   else                   tier = 't4';  // pseudo            → distorsione spazio
+
+  // SFX: sweep ascendente di "evocazione" (più drammatico se tier alto)
+  SFX.summonPull?.();
+  if (tier === 't4' || tier === 't3') {
+    setTimeout(() => SFX.rare?.(), 250);
+  }
 
   const overlay = $('pullOverlay');
   const intro   = document.createElement('div');
@@ -573,6 +584,12 @@ async function playStarsStage(rarity) {
   const starsScreen = $('starsScreen');
   const starsRow    = $('starsRow');
   const starsCount  = { pseudo: 5, epic: 4, rare: 3, uncommon: 2 }[rarity] ?? 2;
+
+  // SFX: jingle scalato per rarità — l'utente sente subito quanto è figo il pull
+  if (rarity === 'pseudo')        SFX.legendary?.();
+  else if (rarity === 'epic')     SFX.rare?.();
+  else if (rarity === 'rare')     SFX.reveal?.();
+  else if (rarity === 'uncommon') SFX.cardPlace?.();
 
   // Aurora di sfondo
   let aurora;
@@ -1120,7 +1137,7 @@ function buildDetailHTML(entry, pkmn) {
 /* ---- Detail mode dal rewind: il bottone "Avanti →" diventa "✕ Chiudi" ---- */
 let isShowingDetailFromSummary = false;
 
-$('revealNext').addEventListener('click', () => {
+$('revealNext').addEventListener('click', () => { SFX.cardPick?.();
   if (isShowingDetailFromSummary) {
     isShowingDetailFromSummary = false;
     $('revealNext').textContent = 'Avanti →';
@@ -1193,7 +1210,7 @@ function showSummary() {
 }
 
 // Chiudi overlay dopo il riepilogo
-$('pullClose').addEventListener('click', () => {
+$('pullClose').addEventListener('click', () => { SFX.confirm?.();
   $('pullOverlay').classList.add('hidden');
 });
 
@@ -1247,12 +1264,12 @@ function buildRatesModal() {
   }
 }
 
-$('btnRates').addEventListener('click', () => {
+$('btnRates').addEventListener('click', () => { SFX.click?.();
   buildRatesModal();
   $('ratesModal').classList.remove('hidden');
 });
-$('btnRatesClose').addEventListener('click',  () => $('ratesModal').classList.add('hidden'));
-$('ratesBackdrop').addEventListener('click',  () => $('ratesModal').classList.add('hidden'));
+$('btnRatesClose').addEventListener('click',  () => { SFX.cancel?.(); $('ratesModal').classList.add('hidden'); });
+$('ratesBackdrop').addEventListener('click',  () => { SFX.cancel?.(); $('ratesModal').classList.add('hidden'); });
 
 /* ================================================================
    KEYBOARD

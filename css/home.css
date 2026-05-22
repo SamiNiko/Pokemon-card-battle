@@ -1387,6 +1387,35 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
+/* News banner Twitch sub: bordo viola animato */
+.news-card--twitch-sub {
+  border-left: 4px solid #9147ff !important;
+  background: linear-gradient(135deg, rgba(145, 71, 255, 0.18) 0%, rgba(19, 28, 48, 0.92) 60%);
+  position: relative;
+  overflow: hidden;
+}
+.news-card--twitch-sub::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(145, 71, 255, 0.15) 50%, transparent 100%);
+  animation: twitch-sweep 3.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes twitch-sweep {
+  0%, 100% { transform: translateX(-100%); }
+  50%      { transform: translateX(100%);  }
+}
+.news-card--twitch-sub:hover {
+  border-left-color: #b888ff !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 28px rgba(145, 71, 255, 0.35);
+}
+.news-card--twitch-sub .news-card__badge {
+  background: linear-gradient(90deg, #9147ff, #b888ff);
+  color: white;
+  font-weight: 700;
+}
+
 /* Badge sub: stellina che lampeggia accanto all'avatar header */
 .sub-badge {
   position: absolute;

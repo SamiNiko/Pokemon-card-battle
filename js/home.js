@@ -26,6 +26,36 @@ const $id = id => document.getElementById(id);
 
 const NEWS_ITEMS = [
   {
+    id: 'twitch-sub',
+    icon: '💜',
+    type: 'banner',
+    badge: 'Supportami',
+    title: 'Abbonati su Twitch — bonus speciali!',
+    preview: 'Sostieni il canale e ricevi vantaggi cosmetici + economici dentro il gioco. Non rompe il bilanciamento.',
+    modal: {
+      subtitle: 'Cosa ottieni se ti abboni',
+      sections: [
+        {
+          title: '✨ Badge stellina',
+          text: 'Una stellina dorata animata accanto al tuo nome in home — visibile a te e (in PvP) all\'avversario.',
+        },
+        {
+          title: '🪙 +10% pokeuro su ogni reward',
+          text: 'Ogni vittoria contro AI / trainer / PvP ti dà il 10% extra in monete. Le gemme restano invariate per non rompere l\'economia summon.',
+        },
+        {
+          title: '🎁 Bonus futuri',
+          text: 'Sto lavorando a una cornice avatar dorata in battaglia e a un summon ×1 gratis giornaliero per abbonati. Stay tuned!',
+        },
+        {
+          title: 'Perché farlo?',
+          text: 'Se ti diverte il gioco e vuoi vedermi sviluppare di più, l\'abbonamento è il modo più diretto di supportarmi. Anche solo seguire il canale aiuta tantissimo!',
+        },
+      ],
+      cta: { label: '💜 Vai al canale Twitch', href: 'https://www.twitch.tv/samuel_04_', external: true },
+    },
+  },
+  {
     id: 'kanto-banner',
     icon: '✨',
     type: 'banner',
@@ -204,7 +234,7 @@ function buildNews() {
 
   NEWS_ITEMS.forEach((item, i) => {
     const card = document.createElement('div');
-    card.className = `news-card news-card--${item.type}`;
+    card.className = `news-card news-card--${item.type} news-card--${item.id}`;
     card.style.animationDelay = `${0.21 + i * 0.07}s`;
     card.innerHTML = `
       <span class="news-card__icon">${item.icon}</span>
@@ -252,8 +282,9 @@ function openNewsModal(item) {
         openModal('#playModal');
       });
     } else {
+      const extAttrs = item.modal.cta.external ? ' target="_blank" rel="noopener"' : '';
       footer.innerHTML = `
-        <a class="news-modal__cta" href="${item.modal.cta.href}">${item.modal.cta.label}</a>
+        <a class="news-modal__cta" href="${item.modal.cta.href}"${extAttrs}>${item.modal.cta.label}</a>
       `;
     }
     footer.classList.remove('hidden');

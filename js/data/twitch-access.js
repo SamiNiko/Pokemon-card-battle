@@ -74,21 +74,34 @@ export async function checkAccess(opts = {}) {
                    ?? null;
   const providerToken = session.provider_token ?? null;
 
-  // 1. Follower check via edge function
+  // 1. Follower check client-side via /helix/channels/followed
+  //    (l'endpoint /channels/followers richiede scope moderator: NON è il
+  //    nostro caso. /channels/followed invece usa lo scope user:read:follows
+  //    che l'utente concede a noi al login.)
   let isFollower = false;
-  try {
-    const { data, error } = await supabase.functions.invoke('check-twitch-access', {
-      body: { twitch_id: twitchId },
-    });
-    if (error) throw error;
-    isFollower = !!data?.isFollower;
-  } catch (e) {
-    console.warn('[twitch-access] edge function failed:', e);
+  if (providerToken && twitchId) {
+    try {
+      const url = `https://api.twitch.tv/helix/channels/followed?user_id=${twitchId}&broadcaster_id=${TWITCH_BROADCASTER_ID}`;
+      const res = await fetch(url, {
+        headers: {
+          'Client-Id':     TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${providerToken}`,
+        },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        isFollower = Array.isArray(json.data) && json.data.length > 0;
+      } else {
+        console.warn('[twitch-access] /channels/followed failed:', res.status, await res.text());
+      }
+    } catch (e) {
+      console.warn('[twitch-access] follow check error:', e);
+    }
   }
 
-  // 2. Subscriber check client-side con il token utente
+  // 2. Subscriber check client-side via /helix/subscriptions/user
   let isSubscriber = false;
-  if (providerToken && twitchId && TWITCH_CLIENT_ID !== 'REPLACE_WITH_TWITCH_CLIENT_ID') {
+  if (providerToken && twitchId) {
     try {
       const url = `https://api.twitch.tv/helix/subscriptions/user?broadcaster_id=${TWITCH_BROADCASTER_ID}&user_id=${twitchId}`;
       const res = await fetch(url, {

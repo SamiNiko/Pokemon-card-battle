@@ -16,13 +16,10 @@ const SUPABASE_KEY  = 'sb_publishable_ZzfRUFP4R2ioXbBrPD9VCg_JojGp4Ub';
 
 /* ============================================================
    Costanti Twitch — valori PUBBLICI, ok hardcodare nel client.
-   Sostituisci con i tuoi reali quando crei la Twitch dev app.
-   Il Client ID è quello dell'app Twitch registrata.
-   Il Broadcaster ID è il tuo user ID Twitch numerico
-   (recupera con https://www.streamweasels.com/tools/convert-twitch-username-to-user-id/).
    ============================================================ */
-export const TWITCH_CLIENT_ID     = 'ntgjwu4dxl3rya4na0tk133gt1btaf';
-export const TWITCH_BROADCASTER_ID = '250476450';
+export const TWITCH_CLIENT_ID       = 'ntgjwu4dxl3rya4na0tk133gt1btaf';
+export const TWITCH_BROADCASTER_ID  = '250476450';
+export const TWITCH_CHANNEL_URL     = 'https://www.twitch.tv/samuel_04_';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
@@ -74,7 +71,8 @@ export async function signInWithTwitch() {
     provider: 'twitch',
     options: {
       redirectTo,
-      scopes: 'user:read:subscriptions',
+      // user:read:subscriptions → check sub. user:read:follows → check follow.
+      scopes: 'user:read:subscriptions user:read:follows',
       skipBrowserRedirect: true,
     },
   });

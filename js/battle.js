@@ -1600,17 +1600,29 @@ async function playEvents(events) {
     }
 
     else if (ev.type === 'turn_end') {
+      // Calcola il delta HP del turno PRIMA di sovrascrivere → ci serve per
+      // mostrare il "-X" fluttuante sopra ogni barra del team.
+      const playerDelta = bs.playerHP - ev.playerHP;
+      const enemyDelta  = bs.enemyHP  - ev.enemyHP;
+
       bs.playerHP = ev.playerHP;
       bs.enemyHP  = ev.enemyHP;
-      // Allineiamo le mappe HP/PP locali con quelle aggiornate dall'engine
-      // (regen + speed_stack non emettono cambi diretti di HP nelle hit events,
-      // ma applyRegen le ha mutate nello scope di resolveTurn).
       if (ev.updatedPlayerPkmnHP) bs.playerPkmnHP = ev.updatedPlayerPkmnHP;
       if (ev.updatedEnemyPkmnHP)  bs.enemyPkmnHP  = ev.updatedEnemyPkmnHP;
       if (ev.updatedPlayerPkmnPP) bs.playerPkmnPP = ev.updatedPlayerPkmnPP;
       if (ev.updatedEnemyPkmnPP)  bs.enemyPkmnPP  = ev.updatedEnemyPkmnPP;
       updateHPBar('player');
       updateHPBar('enemy');
+
+      // -X fluttuante sopra le barre HP per il danno totale subito nel turno
+      if (playerDelta > 0) {
+        const bar = $(`.hp-bar[data-side="self"]`);
+        if (bar) showHPBarDamageFloat(bar, playerDelta);
+      }
+      if (enemyDelta > 0) {
+        const bar = $(`.hp-bar[data-side="enemy"]`);
+        if (bar) showHPBarDamageFloat(bar, enemyDelta);
+      }
     }
   }
 }

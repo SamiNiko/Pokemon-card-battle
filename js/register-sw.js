@@ -7,25 +7,20 @@
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').then(reg => {
-      // Quando arriva un aggiornamento del SW, attiva subito il nuovo
-      // così la prossima nav usa il codice fresco.
+      // Quando arriva un nuovo SW, NON forziamo l'attivazione: resta in
+      // 'waiting' finché tutte le tab non sono chiuse. Cosi' nessuna
+      // sessione attiva viene interrotta (PRIMA: skipWaiting → controllerchange
+      // → location.reload mid-battaglia → utente perdeva la partita).
+      // L'aggiornamento si applica al prossimo cold start della PWA.
       reg.addEventListener('updatefound', () => {
         const newSW = reg.installing;
         newSW?.addEventListener('statechange', () => {
           if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            newSW.postMessage('SKIP_WAITING');
+            console.log('[sw] Nuovo SW pronto. Attivazione al prossimo riavvio dell\'app.');
           }
         });
       });
     }).catch(err => console.warn('[sw] registrazione fallita:', err));
-
-    // Quando il SW prende il controllo (dopo skipWaiting), ricarica
-    // la pagina così l'utente vede subito la versione nuova.
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
+    // NO controllerchange handler: niente reload automatico.
   });
 }

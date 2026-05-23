@@ -27,7 +27,7 @@ async function loadCloudModules() {
   try {
     [supabaseModule, cloudSyncModule] = await Promise.all([
       import('./data/supabase.js'),
-      import('./data/cloud-sync.js?v=5'),
+      import('./data/cloud-sync.js?v=6'),
     ]);
     return true;
   } catch (e) {

@@ -21,11 +21,20 @@ import { getScaledStats }                      from './data/stats-scaling.js?v=3
 import { playBGM }                             from './data/bgm.js?v=9';
 import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-battle.js?v=1';
 
+// CRITICO: import EAGER di cloud-sync così la sua inizializzazione (incluso
+// onSave listener) parte SUBITO all'avvio di battle.js, PRIMA che il
+// giocatore possa modificare lo state. Senza questo, cloud-sync veniva
+// caricato solo a fine battaglia (dynamic import in flushCloudAndNavigate)
+// e il suo syncOnLogin sovrascriveva i cambi locali (brock + reward) con
+// lo stato cloud pre-battaglia → ricompense perse, indicator '✅ Salvato'
+// menzognero perché _pendingState era null al momento del flush.
+import { ready as cloudReady, flushSync as cloudFlushSync } from './data/cloud-sync.js?v=6';
+
 /** Flush immediato del cloud-sync (best-effort, fire-and-forget).
  *  Da chiamare dopo eventi critici (reward, trainer beaten) per evitare
  *  che il debounce di 1.5s perda la modifica se l'utente naviga via. */
 function flushCloudNow() {
-  import('./data/cloud-sync.js?v=5').then(cs => cs.flushSync?.()).catch(() => {});
+  try { cloudFlushSync?.(); } catch (e) { console.warn('[battle] flushCloudNow:', e); }
 }
 
 /** Versione async — attendi il completamento del push.
@@ -39,8 +48,7 @@ async function flushCloudAndNavigate(url) {
   const indicator = showSaveIndicator('💾 Salvataggio in corso…');
   let okSaved = true;
   try {
-    const cs = await import('./data/cloud-sync.js?v=5');
-    await cs.flushSync?.();
+    await cloudFlushSync?.();
   } catch (e) {
     okSaved = false;
     console.warn('[battle] flush prima della navigazione fallito:', e);
@@ -192,6 +200,13 @@ init();
 async function init() {
   buildGrid('#playerGrid', 'self');
   buildGrid('#enemyGrid',  'enemy');
+
+  // CRITICO: aspetta che cloud-sync sia completamente inizializzato (incluso
+  // il pull iniziale + registrazione listener onSave) PRIMA di permettere al
+  // giocatore di toccare lo state. Senza questo, durante la battaglia i
+  // saveState (markTrainerBeaten, reward) non triggerano il listener →
+  // _pendingState resta null → flushSync no-op → push mai inviato → reward perse.
+  try { await cloudReady; } catch (e) { console.warn('[battle] cloud-sync ready failed (proseguo offline-only):', e); }
 
   // GATE EARLY: AI e Trainer richiedono che il giocatore abbia un team.
   // Se vuoto, redirect immediato (senza caricare PokeAPI o mostrare l'intro).

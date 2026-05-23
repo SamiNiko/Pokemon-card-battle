@@ -38,6 +38,19 @@ export async function startCloudSync() {
   if (_started) return;
   _started = true;
 
+  // 0. Aggancia hook onSave PER PRIMO — così qualsiasi saveState (anche
+  // quello del syncOnLogin iniziale, o quelli che arrivano da battle.js
+  // mentre il pull è ancora in corso) viene catturato dal listener.
+  // BUG PRECEDENTE: la registrazione era in fondo, dopo syncOnLogin, quindi
+  // tutti i saveState durante una battaglia (markTrainerBeaten, reward)
+  // andavano persi se cloud-sync era stato caricato pigramente.
+  onSave(state => {
+    if (state.accountType !== 'supabase') return;
+    _pendingState = state;
+    clearTimeout(_pushTimer);
+    _pushTimer = setTimeout(pushPending, SAVE_DEBOUNCE_MS);
+  });
+
   // 1. Se c'è una sessione esistente, fai pull dello stato remoto subito
   const session = await getSession();
   if (session) {
@@ -96,15 +109,16 @@ export async function startCloudSync() {
       location.reload();
     }
   });
-
-  // 3. Aggancia hook onSave: ogni saveState() rimbalza sul cloud (debounced)
-  onSave(state => {
-    if (state.accountType !== 'supabase') return;
-    _pendingState = state;
-    clearTimeout(_pushTimer);
-    _pushTimer = setTimeout(pushPending, SAVE_DEBOUNCE_MS);
-  });
+  // (Listener onSave già registrato in cima a questa funzione, vedi step 0)
 }
+
+/* Promise di ready: risolta quando l'inizializzazione di cloud-sync è
+   completa (incluso syncOnLogin iniziale). Pages che mutano lo state
+   in modo critico (battle.js) possono attendere questa promise prima
+   di permettere all'utente di agire, evitando race condition. */
+export const ready = startCloudSync().catch(e => {
+  console.warn('[cloud] startup failed:', e);
+});
 
 /**
  * Forza un push immediato (utile prima del logout o chiusura pagina).
@@ -232,11 +246,7 @@ async function pushPending() {
   await pushToCloud(state);
 }
 
-/* ============================================================
-   AUTO-START
-   ============================================================
-   Importare questo file da una qualsiasi pagina avvia il sync
-   automaticamente. Idempotente: chiamate ripetute non hanno effetto.
-*/
-startCloudSync().catch(e => console.warn('[cloud] startup failed:', e));
+/* AUTO-START — già fatto in cima al file via `export const ready = startCloudSync()`.
+   Importare questo file da una qualsiasi pagina avvia il sync automaticamente.
+   Idempotente: chiamate ripetute non hanno effetto (vedi _started flag). */
 

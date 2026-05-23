@@ -1891,8 +1891,11 @@ async function showEndGameScreen(result, gemReward, coinReward = 0) {
       const e = 1 - Math.pow(1 - t, 3);
       const g = Math.round(gemReward  * e);
       const c = Math.round(coinReward * e);
+      // L'HTML ha già un'icona 💎 statica (.endgame-panel__reward-icon)
+      // accanto al numero, quindi qui mettiamo solo i numeri. Per i pokeuro
+      // l'icona 🪙 è inline perché non c'è uno slot statico dedicato.
       amountEl.innerHTML = coinReward > 0
-        ? `+${g}💎 <span style="opacity:.85;font-size:.85em;">+${c}🪙</span>`
+        ? `+${g} <span style="opacity:.85;font-size:.85em;">+${c}🪙</span>`
         : `+${g}`;
       if (t < 1) requestAnimationFrame(step);
     };

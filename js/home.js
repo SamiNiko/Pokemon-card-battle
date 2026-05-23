@@ -124,7 +124,7 @@ const NEWS_ITEMS = [
         },
         {
           title: 'Probabilità',
-          text: '★★★★★ Pseudo Leggendario: 0.3% — ★★★★ Epico: 2% — ★★★ Raro: 12% — ★★ Non Comune: 30% — ★ Comune: 55.7%',
+          text: '★★★★★ Pseudo Leggendario: 1% — ★★★★ Epico: 5% — ★★★ Raro: 15% — ★★ Non Comune: 28% — ★ Comune: 51%',
         },
         {
           title: 'Garanzie',

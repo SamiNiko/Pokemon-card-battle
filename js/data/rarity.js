@@ -203,11 +203,14 @@ export const COMUNI = [
    I leggendari NON sono in tabella perché non sono summonabili.
 */
 export const PULL_RATES = {
-  pseudo:    0.3,    // 5★
-  epic:      2.0,    // 4★
-  rare:      12.0,   // 3★
-  uncommon:  30.0,   // 2★
-  common:    55.7,   // 1★
+  // Bilanciamento ribilanciato (era 0.3/2.0/12.0/30.0/55.7): le rarità alte
+  // erano troppo restrittive — 4★ usciva ~ogni 50 pull, fastidioso. Adesso
+  // 4★ esce in media ~1 volta per multi-pull, 5★ ~1 volta per 10 multi-pull.
+  pseudo:    1.0,    // 5★  (× 3.3 rispetto a prima)
+  epic:      5.0,    // 4★  (× 2.5)
+  rare:      15.0,   // 3★  (× 1.25)
+  uncommon:  28.0,   // 2★  (leggermente ridotto)
+  common:    51.0,   // 1★  (ridotto per fare spazio)
 };
 
 /* ============================================================

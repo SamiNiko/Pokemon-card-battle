@@ -370,10 +370,13 @@ export function resolveTurn({
         hp[defSide] = Math.max(0, hp[defSide] - dmg);
 
         // PP gain (nessun difensore → nessuna passiva incoming, ma il costo
-        // del finisher si applica comunque)
+        // del finisher si applica comunque).
+        // IMPORTANTE: il finisher NON genera PP anche a colpo a segno (vedi
+        // commento simmetrico in computePPDelta sopra). Una mossa 'spesa'
+        // non deve auto-finanziarsi.
         let delta = 0;
         if (move.isFinisher) delta -= 3;
-        delta += 1;   // hit a segno (danno diretto è sempre "land")
+        else delta += 1;   // base/auto: hit a segno → +1 (danno diretto è sempre "land")
         setPP(atkSide, attacker.id, getPP(atkSide, attacker.id) + delta);
 
         events.push({

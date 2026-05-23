@@ -8,7 +8,7 @@
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
 import { getState, getActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=6';
 import { findItem }                            from './data/items.js?v=3';
-import { resolveTurn }                         from './engine/combat.js?v=2';
+import { resolveTurn }                         from './engine/combat.js?v=3';
 import { getPassive }                          from './data/passives.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
 import { MOVESETS }                            from './data/movesets.js?v=3';

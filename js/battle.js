@@ -8,7 +8,7 @@
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
 import { getState, getActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=6';
 import { findItem }                            from './data/items.js?v=3';
-import { resolveTurn }                         from './engine/combat.js';
+import { resolveTurn }                         from './engine/combat.js?v=2';
 import { getPassive }                          from './data/passives.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
 import { MOVESETS }                            from './data/movesets.js?v=3';
@@ -1542,6 +1542,8 @@ async function playEvents(events) {
       if (hpBarEl) {
         hpBarEl.classList.add('is-shaking');
         setTimeout(() => hpBarEl.classList.remove('is-shaking'), ANIM.hpShake);
+        // Float "-X" sopra la barra HP: feedback visivo del danno preso
+        showHPBarDamageFloat(hpBarEl, ev.damage);
       }
 
       const targetLabel = ev.defenderSide === 'player' ? 'a te' : "all'avversario";
@@ -1627,6 +1629,19 @@ function showPPFloat(cardEl) {
   float.textContent = '+1 PP';
   cardEl.appendChild(float);
   setTimeout(() => float.remove(), 850);
+}
+
+/** Mostra "-X" fluttuante sopra la barra HP (danno diretto al team) */
+function showHPBarDamageFloat(barEl, damage) {
+  if (!barEl || !damage) return;
+  // Rimuovi eventuali float precedenti per evitare accumulo se più colpi diretti
+  // arrivano in sequenza ravvicinata.
+  barEl.querySelectorAll('.hp-bar__damage').forEach(el => el.remove());
+  const float = document.createElement('span');
+  float.className = 'hp-bar__damage';
+  float.textContent = `−${damage}`;
+  barEl.appendChild(float);
+  setTimeout(() => float.remove(), 1100);
 }
 
 /** Mostra un numero di danno fluttuante sopra la carta */

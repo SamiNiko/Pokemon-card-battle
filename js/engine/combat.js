@@ -259,13 +259,18 @@ export function resolveTurn({
   }
 
   /* Calcola la variazione di PP per l'attaccante dopo un colpo a segno.
-     +1 base, -3 se finisher (costo). Modificato da passive del difensore:
+     -3 se finisher (costo). +1 se mossa base e colpisce. Modificato da
+     passive del difensore:
        - pp_block_chance (Statico): RNG, può azzerare il +1 di gain
-       - extra_pp_cost (Pressione): -1 PP extra (= netto 0 invece di +1) */
+       - extra_pp_cost (Pressione): -1 PP extra (= netto 0 invece di +1)
+     IMPORTANTE: il finisher NON genera PP anche se colpisce. È una mossa
+     'spesa', non deve auto-finanziarsi nel turno successivo. */
   function computePPDelta(move, isFinisher, defenderPassive, hitLanded, ppEvents) {
     let delta = 0;
     if (isFinisher) delta -= 3;
     if (!hitLanded) return { delta, ppBlocked: null, extraCost: null };
+    // Finisher: niente PP gain, anche su colpo a segno.
+    if (isFinisher) return { delta, ppBlocked: null, extraCost: null };
 
     let ppGain = 1;
     let blocked = null;

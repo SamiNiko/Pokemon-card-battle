@@ -12,10 +12,10 @@
 */
 
 // Cloud sync dinamico: se la CDN Supabase è bloccata, la pagina funziona lo stesso
-import('./data/cloud-sync.js?v=6').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=7').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, getActiveTeam }     from './data/state.js?v=6';
+import { getState, getActiveTeam }     from './data/state.js?v=7';
 import { createOnlineClient }          from './data/online.js';
 
 const $  = id => document.getElementById(id);

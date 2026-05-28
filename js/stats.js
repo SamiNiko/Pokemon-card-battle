@@ -3,10 +3,10 @@
    ============================================================ */
 
 // Cloud sync caricato dinamicamente (non bloccante)
-import('./data/cloud-sync.js?v=6').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=7').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState }                    from './data/state.js?v=6';
+import { getState }                    from './data/state.js?v=7';
 import {
   getMatchHistory,
   getLifetimeStats,
@@ -18,7 +18,7 @@ import {
   LEGGENDARI, PSEUDO_LEGGENDARI, EPICI, RARI, NON_COMUNI, COMUNI,
   getRarity, tierLabel, tierStars, tierColor,
 } from './data/rarity.js';
-import { openCardModal } from './data/card-modal.js?v=9';
+import { openCardModal } from './data/card-modal.js?v=10';
 import { playBGM }       from './data/bgm.js?v=9';
 
 playBGM('stats');

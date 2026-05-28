@@ -16,7 +16,7 @@
   <title>Pokémon Card Battle — Allenatori</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
   <link rel="stylesheet" href="css/page-hero.css?v=1" />
-  <link rel="stylesheet" href="css/trainers.css?v=4" />
+  <link rel="stylesheet" href="css/trainers.css?v=5" />
   <link rel="preload" as="audio" href="assets/audio/menu.mp3" />
   <script src="js/register-sw.js?v=2" defer></script>
 </head>
@@ -64,6 +64,14 @@
         <div class="trainer-modal__team" id="trainerModalTeam"></div>
       </div>
 
+      <!-- Deck picker: scegli quale dei tuoi 4 team usare in questa battaglia -->
+      <div class="trainer-modal__deck-section">
+        <span class="trainer-modal__section-label">Il tuo deck</span>
+        <div class="trainer-modal__deck-tabs" id="trainerModalDecks">
+          <!-- popolato da JS -->
+        </div>
+      </div>
+
       <div class="trainer-modal__reward" id="trainerModalReward">
         <span>💎</span>
         <b id="trainerModalRewardAmount">0</b>
@@ -77,6 +85,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/trainers.js?v=10"></script>
+  <script type="module" src="js/trainers.js?v=11"></script>
 </body>
 </html>

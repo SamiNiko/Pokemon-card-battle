@@ -238,7 +238,7 @@ export const POKEMON_PASSIVE = {
   100: { key: 'statico', activeSlots: ['front-left', 'front-right'] },   // Voltorb
   101: { key: 'velocitascatto', activeSlots: ['front-left', 'front-right'] },   // Electrode
   102: { key: 'rigenerazione', activeSlots: ['back-left', 'back-right'] },   // Exeggcute
-  103: { key: 'rigenerazione', activeSlots: ['back-center', 'back-left'] },   // Exeggutor
+  103: { key: 'pancialarda', activeSlots: ['front-center', 'front-left'] },   // Exeggutor — promosso a tank Fire/Ice in prima linea (era 'rigenerazione' back-only)
   104: { key: 'corazza', activeSlots: ['front-center', 'front-left'] },   // Cubone
   105: { key: 'ultrapotenza', activeSlots: ['front-center'] },   // Marowak
   106: { key: 'tecnico', activeSlots: ['front-center', 'front-left'] },   // Hitmonlee

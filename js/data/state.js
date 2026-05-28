@@ -553,3 +553,61 @@ function generateGuestId() {
   return 'guest-' + Date.now().toString(36) + '-' +
          Math.random().toString(36).slice(2, 10);
 }
+
+/* ================================================================
+   DEV HELPERS — solo per il dev (Samuel_04_) o in locale
+   ================================================================
+   Esposti su window.dev così il dev può testare i pull / lo shop /
+   la collezione senza dover guadagnare valuta. In produzione sono
+   disponibili SOLO se l'account Twitch loggato è 'samuel_04_'.
+
+   Uso da console del browser:
+     dev.gems(20000)      → imposta 20000 gemme
+     dev.coins(20000)     → imposta 20000 pokeuro
+     dev.rich()           → 50000 gemme + 50000 pokeuro
+     dev.giveAll()        → sblocca tutti i 151 Pokémon
+     dev.freeSummons(10)  → reimposta i summon gratis
+     dev.wipe()           → reset totale dello state (ricarica la pagina)
+   Dopo gems/coins ricarica la pagina o naviga per vedere l'UI aggiornata.
+*/
+const DEV_TWITCH_LOGIN = 'samuel_04_';   // unico account autorizzato in produzione
+
+function _isDevEnvironment() {
+  if (typeof window === 'undefined') return false;
+  // 1. Ambiente locale (localhost / 127.0.0.1 / file://) → sempre dev
+  const h = window.location?.hostname ?? '';
+  if (h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '' || window.location?.protocol === 'file:') {
+    return true;
+  }
+  // 2. Produzione: solo se l'account Twitch loggato è quello del dev.
+  //    Leggo direttamente la cache di twitch-access (sync, no import circolare).
+  try {
+    const raw = localStorage.getItem('pkmn_twitch_access_v1');
+    if (raw) {
+      const acc = JSON.parse(raw);
+      if ((acc?.twitchLogin ?? '').toLowerCase() === DEV_TWITCH_LOGIN) return true;
+    }
+  } catch {}
+  return false;
+}
+
+(function installDevHelpers() {
+  if (typeof window === 'undefined') return;
+  if (!_isDevEnvironment()) return;
+
+  window.dev = {
+    gems(n = 20000)  { const s = getState(); s.gems = Math.max(0, n | 0); saveState(); console.info(`[dev] gemme = ${s.gems}`); return s.gems; },
+    coins(n = 20000) { const s = getState(); s.pokeuro = Math.max(0, n | 0); saveState(); console.info(`[dev] pokeuro = ${s.pokeuro}`); return s.pokeuro; },
+    rich() { this.gems(50000); this.coins(50000); return 'gemme + pokeuro = 50000'; },
+    freeSummons(n = 6) { const s = getState(); s.freeSummonsLeft = Math.max(0, n | 0); saveState(); console.info(`[dev] free summons = ${s.freeSummonsLeft}`); return s.freeSummonsLeft; },
+    giveAll() {
+      const s = getState();
+      s.owned = Array.from({ length: 151 }, (_, i) => i + 1);
+      saveState();
+      console.info('[dev] sbloccati tutti i 151 Pokémon');
+      return s.owned.length;
+    },
+    wipe() { resetState(); console.info('[dev] state azzerato — ricarico…'); setTimeout(() => location.reload(), 200); },
+  };
+  console.info('%c[dev] helper attivi: dev.gems(), dev.coins(), dev.rich(), dev.giveAll(), dev.freeSummons(), dev.wipe()', 'color:#5ee8d8');
+})();

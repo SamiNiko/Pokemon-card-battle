@@ -9,7 +9,7 @@
 import { findPokemon }                       from './pokeapi.js';
 import { MOVESETS }                          from './movesets.js?v=3';
 import { getRarity, tierStars, tierLabel }   from './rarity.js';
-import { getEquipped }                       from './state.js?v=6';
+import { getEquipped }                       from './state.js?v=7';
 import { findItem }                          from './items.js?v=3';
 import { typeLabel }                          from './types.js';
 import { getPassive }                        from './passives.js';
@@ -38,12 +38,20 @@ function getArtworkUrl(pkmn) {
 
 let modalEl = null;
 
+/* Stato della navigazione "tra carte" (prev/next Pokemon nel modal).
+   Popolato da openCardModal quando opts.navList è passato. */
+let _navList  = null;     // array di Pokémon ID nella sequenza corrente
+let _navIndex = 0;        // indice corrente
+let _navOpts  = {};       // opts (teamSlot ecc.) riusato per ogni card
+
 function ensureModal() {
   if (modalEl) return modalEl;
   modalEl = document.createElement('div');
   modalEl.className = 'card-modal hidden';
   modalEl.innerHTML = `
     <div class="card-modal__backdrop" data-card-close></div>
+    <button class="card-modal__card-nav card-modal__card-nav--prev hidden" data-card-nav="prev" aria-label="Pokémon precedente">‹</button>
+    <button class="card-modal__card-nav card-modal__card-nav--next hidden" data-card-nav="next" aria-label="Pokémon successivo">›</button>
     <div class="card-modal__card">
       <button class="card-modal__close" data-card-close aria-label="Chiudi">✕</button>
       <div class="card-modal__shine" aria-hidden="true"></div>
@@ -67,6 +75,14 @@ function ensureModal() {
     </div>
   `;
   document.body.appendChild(modalEl);
+
+  // Navigazione tra Pokémon (esterno, ai lati del card-modal).
+  modalEl.querySelectorAll('[data-card-nav]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      navigateCard(btn.dataset.cardNav);
+    });
+  });
 
   modalEl.querySelectorAll('[data-card-close]').forEach(el => {
     el.addEventListener('click', closeCardModal);
@@ -110,14 +126,46 @@ function ensureModal() {
     }
   }, { passive: true });
 
-  // ESC chiude, frecce ← → cambiano pagina
+  // ESC chiude. Su mobile / con nav-list attiva, ← → cambiano Pokémon
+  // (più utile); altrimenti cambiano pagina del singolo Pokémon.
   document.addEventListener('keydown', e => {
     if (modalEl.classList.contains('hidden')) return;
-    if (e.key === 'Escape')                  closeCardModal();
-    else if (e.key === 'ArrowRight')         setModalPage(1);
-    else if (e.key === 'ArrowLeft')          setModalPage(0);
+    if (e.key === 'Escape') { closeCardModal(); return; }
+    if (e.key === 'ArrowRight') {
+      if (_navList && _navIndex < _navList.length - 1) navigateCard('next');
+      else setModalPage(1);
+    } else if (e.key === 'ArrowLeft') {
+      if (_navList && _navIndex > 0) navigateCard('prev');
+      else setModalPage(0);
+    }
   });
   return modalEl;
+}
+
+/** Naviga al prev/next Pokémon nella lista corrente (se presente). */
+function navigateCard(dir) {
+  if (!_navList) return;
+  if (dir === 'prev' && _navIndex > 0) _navIndex--;
+  else if (dir === 'next' && _navIndex < _navList.length - 1) _navIndex++;
+  else return;
+  // Re-render mantenendo navList intatto.
+  const nextId = _navList[_navIndex];
+  openCardModal(nextId, { ..._navOpts, navList: _navList, navIndex: _navIndex });
+}
+
+function updateCardNavButtons() {
+  if (!modalEl) return;
+  const prev = modalEl.querySelector('[data-card-nav="prev"]');
+  const next = modalEl.querySelector('[data-card-nav="next"]');
+  if (!_navList || _navList.length <= 1) {
+    prev?.classList.add('hidden');
+    next?.classList.add('hidden');
+    return;
+  }
+  prev?.classList.remove('hidden');
+  next?.classList.remove('hidden');
+  if (prev) prev.disabled = _navIndex === 0;
+  if (next) next.disabled = _navIndex === _navList.length - 1;
 }
 
 /** Cambia pagina del carosello (0 o 1) + aggiorna dots e disabilita frecce ai bordi. */
@@ -132,11 +180,35 @@ function setModalPage(idx) {
   modalEl.querySelector('[data-page-nav="next"]').disabled = idx === 1;
 }
 
+/**
+ * Apre il modal per un Pokemon.
+ * opts:
+ *   - teamSlot:     se != null, mostra l'oggetto del team specifico (default = active)
+ *   - heldOverride: oggetto item (o null) da mostrare invece di getEquipped.
+ *                   Usato in battaglia per le carte avversarie: senza
+ *                   override il modal pesca dall'inventario del player,
+ *                   mostrando l'oggetto SBAGLIATO sul nemico.
+ *   - heldHidden:   true → nasconde del tutto la riga "Oggetto tenuto"
+ *                   (es. nemico in PvE senza items definiti).
+ */
 export function openCardModal(pokemonId, opts = {}) {
   const pkmn = findPokemon(pokemonId);
   if (!pkmn) return;
   const rarity   = getRarity(pokemonId);
   const teamSlot = opts.teamSlot ?? null;
+
+  // Aggiorna lo stato di navigazione "tra carte". Se opts include navList,
+  // i bottoni laterali ‹ › appariranno e cambieranno Pokémon senza chiudere.
+  if (Array.isArray(opts.navList) && opts.navList.length > 0) {
+    _navList  = opts.navList;
+    _navIndex = Math.max(0, Math.min(_navList.length - 1, opts.navIndex ?? _navList.indexOf(pokemonId)));
+    // Salvo opts "puliti" da riusare nelle navigate (senza il navList/index circolari).
+    const { navList, navIndex, ...rest } = opts;
+    _navOpts = rest;
+  } else if (opts.navList === null) {
+    // Reset esplicito
+    _navList = null; _navIndex = 0; _navOpts = {};
+  }
 
   const modal   = ensureModal();
   const card    = modal.querySelector('.card-modal__card');
@@ -170,12 +242,15 @@ export function openCardModal(pokemonId, opts = {}) {
   const page1 = modal.querySelector('.card-page--1');
   const page2 = modal.querySelector('.card-page--2');
   page1.innerHTML = buildPage1HTML({ id: pokemonId, rarity }, pkmn);
-  page2.innerHTML = buildPage2HTML({ id: pokemonId, teamSlot },  pkmn);
-  // Apro sempre dalla pagina 1
-  setModalPage(0);
+  page2.innerHTML = buildPage2HTML({ id: pokemonId, teamSlot, heldOverride: opts.heldOverride, heldHidden: opts.heldHidden },  pkmn);
+  // openOnPage: 0 (default = pagina 1 con stats) o 1 (pagina 2 con item/passiva)
+  setModalPage(opts.openOnPage === 1 ? 1 : 0);
 
   // Glow di rarità
   glow.style.background = GLOW_PER_RARITY[rarity] ?? GLOW_PER_RARITY.common;
+
+  // Aggiorna visibilità/state dei bottoni di navigazione tra carte
+  updateCardNavButtons();
 
   modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -222,6 +297,16 @@ const STAT_COLORS = {
   VEL:   '#ffcb05',   // giallo (velocità)
 };
 
+// Icone per stat: aiutano a distinguere ATK/SP.A e DEF/SP.D a colpo d'occhio.
+const STAT_ICONS = {
+  HP:    '❤',
+  ATK:   '⚔',
+  'SP.A':'✨',
+  DEF:   '🛡',
+  'SP.D':'🌀',
+  VEL:   '⚡',
+};
+
 function buildPage1HTML(entry, pkmn) {
   const starsStr  = '★'.repeat(tierStars(entry.rarity));
   const rarityLbl = tierLabel(entry.rarity);
@@ -247,15 +332,27 @@ function buildPage1HTML(entry, pkmn) {
     { label: 'VEL',   val: s.speed ?? 0 },
   ].map(({ label, val }) => {
     const color = STAT_COLORS[label] ?? '#a8b3cf';
+    const icon  = STAT_ICONS[label]  ?? '';
     return `
       <div class="detail-stat">
-        <span class="detail-stat__label" style="color:${color}">${label}</span>
+        <span class="detail-stat__label" style="color:${color}"><span aria-hidden="true" style="margin-right:4px">${icon}</span>${label}</span>
         <div class="detail-stat__bar-wrap">
           <div class="detail-stat__bar" style="background:${color}" data-val="${val}" data-label="${label}"></div>
         </div>
         <span class="detail-stat__val">${val}</span>
       </div>`;
   }).join('');
+
+  // ---- Profilo Difensivo: indica chiaramente se è più tank Fisico o Speciale.
+  // Risolve l'assenza di indicatore SP.D: ora c'è un badge esplicito.
+  const defS  = s.def   ?? 0;
+  const sdefS = s.spDef ?? 0;
+  const defDelta = Math.abs(defS - sdefS);
+  const defThreshold = Math.max(defS, sdefS) * 0.12;   // bilanciato se < 12% di scarto
+  let defRole;
+  if (defDelta <= defThreshold)       defRole = { icon: '⚖', label: 'Difesa Bilanciata', color: '#a8b3cf' };
+  else if (defS > sdefS)              defRole = { icon: '🛡', label: 'Tank Fisico',       color: '#6890f0' };
+  else                                defRole = { icon: '🌀', label: 'Tank Speciale',     color: '#5ee8d8' };
 
   // ---- Ruolo (cat + role label) ----
   const roleIcon  = isPhys ? '⚔' : '✨';
@@ -277,9 +374,15 @@ function buildPage1HTML(entry, pkmn) {
     <div class="detail-name">${pkmn.name}</div>
     <div class="detail-types">${typeBadges}</div>
 
-    <div class="detail-role" style="--role-color:${roleColor}">
-      <span class="detail-role__icon">${roleIcon}</span>
-      <span class="detail-role__label">${roleLabel}</span>
+    <div class="detail-role-row">
+      <div class="detail-role" style="--role-color:${roleColor}">
+        <span class="detail-role__icon">${roleIcon}</span>
+        <span class="detail-role__label">${roleLabel}</span>
+      </div>
+      <div class="detail-role detail-role--def" style="--role-color:${defRole.color}">
+        <span class="detail-role__icon">${defRole.icon}</span>
+        <span class="detail-role__label">${defRole.label}</span>
+      </div>
     </div>
 
     <span class="detail-section-label">Base Stats</span>
@@ -317,13 +420,23 @@ function buildPage2HTML(entry, pkmn) {
     </div>`
   ).join('');
 
-  // Oggetto tenuto (per-team)
-  const teamSlot = entry.teamSlot;
-  const heldId   = getEquipped(pkmn.id, teamSlot);
-  const heldItem = heldId ? findItem(heldId) : null;
+  // Oggetto tenuto (per-team).
+  // Priorità: heldOverride (es. enemy in battaglia) > getEquipped del player.
+  // Se heldHidden: niente sezione (utile per nemici PvE senza items).
+  const teamSlot   = entry.teamSlot;
+  let heldItem = null;
+  if (entry.heldOverride !== undefined) {
+    heldItem = entry.heldOverride;   // può essere null o un item object
+  } else {
+    const heldId = getEquipped(pkmn.id, teamSlot);
+    heldItem = heldId ? findItem(heldId) : null;
+  }
   const teamLabel = teamSlot != null ? ` (Team ${teamSlot + 1})` : '';
-  const heldHTML = heldItem
-    ? `<div class="detail-held">
+  let heldHTML = '';
+  if (entry.heldHidden) {
+    heldHTML = '';   // nessuna sezione oggetto (es. nemico PvE)
+  } else if (heldItem) {
+    heldHTML = `<div class="detail-held">
          <span class="detail-held__icon">${heldItem.image
             ? `<img src="${heldItem.image}" alt="${heldItem.name}" onerror="this.outerHTML='${heldItem.icon}'" />`
             : heldItem.icon}</span>
@@ -332,8 +445,9 @@ function buildPage2HTML(entry, pkmn) {
            <span class="detail-held__name">${heldItem.name}</span>
            <span class="detail-held__desc">${heldItem.description}</span>
          </div>
-       </div>`
-    : `<div class="detail-held detail-held--empty">
+       </div>`;
+  } else {
+    heldHTML = `<div class="detail-held detail-held--empty">
          <span class="detail-held__icon">🎒</span>
          <div class="detail-held__body">
            <span class="detail-held__label">Oggetto tenuto${teamLabel}</span>
@@ -341,6 +455,7 @@ function buildPage2HTML(entry, pkmn) {
            <span class="detail-held__desc">Equipaggia un oggetto dalla Collezione → Team.</span>
          </div>
        </div>`;
+  }
 
   // Passiva con mini-grid 3×2
   const passiveHTML = (() => {

@@ -3,10 +3,10 @@
    ============================================================ */
 
 // Cloud sync dinamico: se la CDN Supabase è bloccata, la pagina funziona lo stesso
-import('./data/cloud-sync.js?v=6').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=7').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState, addPokemonOrLevelUp, getFreeSummonsLeft, consumeFreeSummon, onSave } from './data/state.js?v=6';
+import { getState, saveState, addPokemonOrLevelUp, getFreeSummonsLeft, consumeFreeSummon, onSave } from './data/state.js?v=7';
 import { playBGM, stopBGM }                              from './data/bgm.js?v=9';
 import { SFX }                                           from './data/sfx.js?v=3';
 
@@ -23,6 +23,11 @@ const $ = id => document.getElementById(id);
    immediatamente così le animazioni "saltano" al punto successivo. */
 let pullSkipRequested = false;
 
+/* Step-skip: tap sull'overlay durante stelle/pokéball/intro → fast-forward
+   solo quella fase, poi la carta viene comunque mostrata. Distinto dal
+   pullSkip (= bottone ⏭ Skip, salta tutto fino al summary). */
+let stepSkipRequested = false;
+
 /* Lockout su 'Avanti →': il bottone diventa cliccabile SOLO dopo che il
    pokemon è rimasto a schermo abbastanza tempo. Risolve i 'tap fantasma'
    da touchend → click sintetizzato (es. l'utente teneva premuto sul gate
@@ -35,6 +40,21 @@ const sleep = ms => new Promise(resolve => {
   const t = setTimeout(resolve, ms);
   const i = setInterval(() => {
     if (pullSkipRequested) {
+      clearTimeout(t);
+      clearInterval(i);
+      resolve();
+    }
+  }, 30);
+  setTimeout(() => clearInterval(i), ms + 100);
+});
+
+/* Sleep che risolve anche su step-skip (oltre che su full-skip).
+   Usato dentro stars/stinger/intro per permettere tap-to-fast-forward. */
+const sleepStep = ms => new Promise(resolve => {
+  if (pullSkipRequested || stepSkipRequested) { resolve(); return; }
+  const t = setTimeout(resolve, ms);
+  const i = setInterval(() => {
+    if (pullSkipRequested || stepSkipRequested) {
       clearTimeout(t);
       clearInterval(i);
       resolve();
@@ -280,6 +300,19 @@ function handleSkipClick() {
 
 $('btnSkipPull').addEventListener('click', () => { SFX.click?.(); handleSkipClick(); });
 
+/* Tap sull'overlay (NON sul bottone skip e NON su revealNext) durante una
+   fase pre-reveal → fast-forward della fase corrente (stelle / pokéball /
+   intro). Il reveal della carta viene comunque mostrato dopo. */
+$('pullOverlay').addEventListener('click', (e) => {
+  if (e.target.closest('#btnSkipPull') || e.target.closest('#revealNext') ||
+      e.target.closest('#pullClose')   || e.target.closest('.summary-card')) return;
+  // Attivo solo se siamo in una fase saltabile (stars visibile / stinger / intro presenti)
+  const inStars   = !$('starsScreen').classList.contains('hidden');
+  const inIntro   = !!document.querySelector('.summon-intro');
+  const inStinger = !!document.querySelector('.stinger-pokeball');
+  if (inStars || inIntro || inStinger) stepSkipRequested = true;
+});
+
 /* Hold-to-charge: l'utente tiene premuto sullo schermo per "caricare"
    il portale. Quando la barra è piena, la pull prosegue. Rilasciando
    prima del completo, la barra decade lentamente. */
@@ -374,6 +407,8 @@ async function pullGate() {
    ================================================================ */
 
 async function summonIntro() {
+  // Reset step-skip a ogni nuova fase: tap qui fast-forwarda solo l'intro.
+  stepSkipRequested = false;
   /* Determino il tier dell'intro dalla rarità VISIBILE (chain[0]) per non
      spoilerare il fakeout: se un pseudo è in fakeout da "uncommon",
      l'intro mostrerà tier 1 invece di tier 4. */
@@ -453,7 +488,7 @@ async function summonIntro() {
   void intro.offsetWidth;
   intro.classList.add('is-active');
 
-  await sleep(1700);
+  await sleepStep(1700);
   intro.remove();
 }
 
@@ -535,6 +570,7 @@ async function showNextResult() {
 
 async function showCommonGlow() {
   if (pullSkipRequested) return;
+  stepSkipRequested = false;
   // Nascondi il reveal precedente PRIMA del bagliore, così non si vede
   // il Pokémon precedente trasparire sotto l'animazione
   $('revealScreen').classList.add('hidden');
@@ -544,7 +580,7 @@ async function showCommonGlow() {
   overlay.appendChild(glow);
   void glow.offsetWidth;
   glow.classList.add('is-active');
-  await sleep(560);
+  await sleepStep(560);
   glow.remove();
 }
 
@@ -552,6 +588,9 @@ async function showCommonGlow() {
 
 async function showStars(entry) {
   if (pullSkipRequested) return;
+  // Reset step-skip per la nuova fase "stelle". Un tap qui salta solo le
+  // stelle e la pokéball, ma la carta viene comunque mostrata dopo.
+  stepSkipRequested = false;
 
   const starsScreen = $('starsScreen');
   const nameEl      = $('starsName');
@@ -580,7 +619,7 @@ async function showStars(entry) {
   /* === UPGRADE successivi (fakeout) === */
   for (let i = 1; i < chain.length; i++) {
     if (pullSkipRequested) return;
-    await sleep(1000);                                   // pausa fra fakeout (+0.5s)
+    await sleepStep(1000);                               // pausa fra fakeout (+0.5s)
     if (pullSkipRequested) return;
     await playStarsUpgrade(chain[i - 1], chain[i]);
   }
@@ -589,10 +628,10 @@ async function showStars(entry) {
   if (pullSkipRequested) return;
   const finalRarity = chain[chain.length - 1];
   const holdMs = { pseudo: 1500, epic: 1200, rare: 900, uncommon: 600 }[finalRarity] ?? 600;
-  await sleep(holdMs);
+  await sleepStep(holdMs);
 
   starsScreen.classList.add('is-fading-out');
-  await sleep(380);
+  await sleepStep(380);
 
   await stingerTransition(finalRarity, async () => {
     starsScreen.classList.add('hidden');
@@ -626,32 +665,32 @@ async function playStarsStage(rarity) {
     const beam1 = document.createElement('div');
     beam1.className = 'stars-screen__beam stars-screen__beam--pseudo';
     starsScreen.appendChild(beam1);
-    await sleep(80);
+    await sleepStep(80);
     beam1.classList.add('is-firing');
-    await sleep(450);
+    await sleepStep(450);
     flashScreen('pseudo');
     shakeOverlay();
-    await sleep(400);
+    await sleepStep(400);
     beam1.remove();
     aurora.classList.add('is-shown');
-    await sleep(550);
+    await sleepStep(550);
   } else if (rarity === 'epic') {
     const beam = document.createElement('div');
     beam.className = 'stars-screen__beam';
     starsScreen.appendChild(beam);
-    await sleep(60);
+    await sleepStep(60);
     beam.classList.add('is-firing');
-    await sleep(600);
+    await sleepStep(600);
     flashScreen('epic');
-    await sleep(400);
+    await sleepStep(400);
     beam.remove();
     aurora.classList.add('is-shown');
-    await sleep(450);
+    await sleepStep(450);
   } else if (rarity === 'rare') {
     aurora.classList.add('is-shown');
-    await sleep(450);
+    await sleepStep(450);
   } else if (rarity === 'uncommon') {
-    await sleep(280);
+    await sleepStep(280);
   }
 
   /* === PHASE 2 — Stelle una alla volta === */
@@ -666,7 +705,7 @@ async function playStarsStage(rarity) {
 
   for (let i = 0; i < starsCount; i++) {
     if (pullSkipRequested) return;
-    await sleep(i === 0 ? firstDelay : nextDelay);
+    await sleepStep(i === 0 ? firstDelay : nextDelay);
 
     const s = document.createElement('span');
     s.className = `star-icon star-icon--${rarity}`;
@@ -703,7 +742,7 @@ async function playStarsUpgrade(fromRarity, toRarity) {
   // 2) SOSPENSIONE — silenzio teso. Lo sfondo è ancora quello "fake",
   //    le stelle sono ancora del colore vecchio. Tutto è fermo.
   if (pullSkipRequested) return;
-  await sleep(900);
+  await sleepStep(900);
   if (pullSkipRequested) return;
 
   // 3) MOMENTO DEL REVEAL — TUTTO DI BOTTO in un solo frame:
@@ -754,12 +793,14 @@ async function playStarsUpgrade(fromRarity, toRarity) {
   }
 
   // 4) Aspetto che pulse (700ms) + star-appear (500ms) finiscano
-  await sleep(750);
+  await sleepStep(750);
 }
 
 /* ---- Stinger transition (stile Twitch) ---- */
 
 async function stingerTransition(rarity, switchSceneFn) {
+  // Reset step-skip per la fase pokéball.
+  stepSkipRequested = false;
   const overlay = $('pullOverlay');
   const stinger = document.createElement('div');
   stinger.className = `stinger-pokeball stinger-pokeball--${rarity}`;
@@ -777,18 +818,18 @@ async function stingerTransition(rarity, switchSceneFn) {
 
   /* FASE 1 — La pokéball appare al centro con bounce + wobble (~750ms) */
   stinger.classList.add('is-active');
-  await sleep(750);
+  await sleepStep(750);
 
   /* FASE 2 — La pokéball si apre: due metà volano via, il bottone lampeggia,
      un'onda di luce esplode dal centro */
   stinger.classList.add('is-opening');
-  await sleep(280);   // attesa fino al picco del flash (ball quasi sparita)
+  await sleepStep(280);   // attesa fino al picco del flash (ball quasi sparita)
 
   /* A questo punto il flash copre il centro → cambio scena sotto */
   if (switchSceneFn) await switchSceneFn();
 
   /* FASE 3 — Il flash si espande oltre lo schermo e svanisce → reveal visibile */
-  await sleep(620);
+  await sleepStep(620);
 
   stinger.remove();
 }
@@ -1202,6 +1243,11 @@ $('revealNext').addEventListener('click', () => {
 });
 
 async function showCardDetail(entry) {
+  // Il flag `pullSkipRequested` può essere ancora true dopo uno Skip della pull.
+  // showReveal() fa early-return se è true → revealScreen non viene mostrato
+  // e l'utente vede solo lo sfondo blurrato (= "schermo sfocato che richiede
+  // riavvio" segnalato). Qui siamo fuori dal pull-flow, quindi resettiamo.
+  pullSkipRequested = false;
   isShowingDetailFromSummary = true;
   $('summaryScreen').classList.add('hidden');
   $('revealNext').textContent = '✕ Chiudi';
@@ -1215,6 +1261,9 @@ function showSummary() {
   document.querySelectorAll('.summon-intro, .stinger-pokeball').forEach(el => el.remove());
   $('pullGate').classList.add('hidden');
   $('btnSkipPull').classList.add('hidden');
+  // Reset del flag skip: la pull è finita, da qui in poi i click su carte
+  // del summary devono mostrare i dettagli normalmente.
+  pullSkipRequested = false;
 
   $('revealScreen').classList.add('hidden');
   $('starsScreen').classList.add('hidden');

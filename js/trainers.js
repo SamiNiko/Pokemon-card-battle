@@ -6,7 +6,7 @@
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { TRAINERS, getTrainer, getUnlockedTrainers, getTrainerTotalStars, getTrainerDifficulty } from './data/trainers.js?v=8';
-import { getTrainersBeaten, isTrainerBeaten, onSave } from './data/state.js?v=6';
+import { getTrainersBeaten, isTrainerBeaten, onSave, getTeamSlot, getState, setActiveTeam } from './data/state.js?v=7';
 import { getRarity, tierStars }               from './data/rarity.js';
 import { playBGM }                            from './data/bgm.js?v=9';
 
@@ -178,7 +178,47 @@ function openTrainerModal(id) {
     `;
   }
 
+  // Deck picker: 4 tabs con il riepilogo del team per ogni slot. L'utente
+  // seleziona il deck da usare → setActiveTeam viene chiamato.
+  renderDeckPicker();
+
   modal.classList.remove('hidden');
+}
+
+function renderDeckPicker() {
+  const root = $('#trainerModalDecks');
+  if (!root) return;
+  root.innerHTML = '';
+  const active = getState().activeTeam ?? 0;
+
+  for (let slot = 0; slot < 4; slot++) {
+    const team = getTeamSlot(slot).filter(id => id != null);
+    const tab  = document.createElement('button');
+    tab.type   = 'button';
+    tab.className = 'trainer-modal__deck-tab' + (slot === active ? ' is-active' : '');
+    tab.dataset.slot = String(slot);
+
+    if (team.length === 0) {
+      tab.classList.add('is-empty');
+      tab.innerHTML = `<span class="trainer-modal__deck-name">Team ${slot + 1}</span><span class="trainer-modal__deck-empty">Vuoto</span>`;
+      tab.disabled = true;
+    } else {
+      const pkmnHTML = team.slice(0, 6).map(id => {
+        const p = findPokemon(id);
+        if (!p) return '';
+        return `<img src="${p.sprite.default}" alt="${p.name}" loading="lazy" />`;
+      }).join('');
+      tab.innerHTML = `
+        <span class="trainer-modal__deck-name">Team ${slot + 1}</span>
+        <div class="trainer-modal__deck-pkmns">${pkmnHTML}</div>
+      `;
+      tab.addEventListener('click', () => {
+        setActiveTeam(slot);
+        renderDeckPicker();   // ridisegna per aggiornare lo stato attivo
+      });
+    }
+    root.appendChild(tab);
+  }
 }
 
 function closeTrainerModal() {

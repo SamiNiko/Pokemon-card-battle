@@ -4,12 +4,12 @@
 
 // Cloud sync (Supabase) caricato dinamicamente per non bloccare la pagina
 // se l'utente ha un ad-blocker che impedisce l'accesso alla CDN.
-import('./data/cloud-sync.js?v=6').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=7').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
-import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped, onSave } from './data/state.js?v=6';
+import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped, onSave } from './data/state.js?v=7';
 import { findItem }                    from './data/items.js?v=3';
-import { openCardModal }                from './data/card-modal.js?v=9';
+import { openCardModal }                from './data/card-modal.js?v=10';
 import { initTutorial, isTutorialDone } from './data/tutorial.js?v=3';
 import { playBGM }                      from './data/bgm.js?v=9';
 import { SFX }                          from './data/sfx.js?v=3';
@@ -124,7 +124,7 @@ const NEWS_ITEMS = [
         },
         {
           title: 'Probabilità',
-          text: '★★★★★ Pseudo Leggendario: 1% — ★★★★ Epico: 5% — ★★★ Raro: 15% — ★★ Non Comune: 28% — ★ Comune: 51%',
+          text: '★★★★★ Pseudo Leggendario: 0.5% — ★★★★ Epico: 3% — ★★★ Raro: 14% — ★★ Non Comune: 30% — ★ Comune: 52.5%',
         },
         {
           title: 'Garanzie',
@@ -634,7 +634,7 @@ async function openAccountModal(gs) {
     try {
       // Flush dello stato pendente prima del logout (best effort)
       try {
-        const cs = await import('./data/cloud-sync.js?v=6');
+        const cs = await import('./data/cloud-sync.js?v=7');
         await cs.flushSync();
       } catch {}
       // Pulisci cache access
@@ -670,7 +670,24 @@ function maybeShowGuestBanner(gs) {
      3. Sessione ma né follower né sub → lockedOverlay
 */
 
+/** True se stiamo girando in locale (dev): localhost / 127.0.0.1 / file://.
+ *  Su localhost l'OAuth Twitch NON funziona perché il redirect URL è
+ *  registrato solo per il dominio di produzione (GitHub Pages). */
+function isLocalDev() {
+  const h = location.hostname;
+  return h === 'localhost' || h === '127.0.0.1' || h === '[::1]' || h === '' || location.protocol === 'file:';
+}
+
 async function initWelcomeOverlay(gs) {
+  // DEV BYPASS: in locale salta del tutto il gate Twitch così puoi testare
+  // tutte le pagine come guest (lo stato vive in localStorage). In produzione
+  // (dominio GitHub Pages) il gate resta attivo come sempre.
+  if (isLocalDev()) {
+    console.info('%c[gate] localhost dev → gate Twitch bypassato (guest mode di test)', 'color:#5ee8d8');
+    if (!isTutorialDone()) setTimeout(() => initTutorial(), 350);
+    return;
+  }
+
   // Aspetta che supabaseModule sia caricato (da initAccountUI)
   // Poll breve, max ~1s
   for (let i = 0; i < 20 && !supabaseModule; i++) {
@@ -696,7 +713,11 @@ async function initWelcomeOverlay(gs) {
     access = { loggedIn: true, isFollower: false, isSubscriber: false };
   }
 
-  if (!tw.canPlay(access)) {
+  // Il broadcaster (dev) NON può seguire/abbonarsi al proprio canale, quindi
+  // fallirebbe il gate sul suo stesso gioco. Lo lasciamo sempre entrare.
+  const isBroadcaster = (access?.twitchLogin ?? '').toLowerCase() === 'samuel_04_';
+
+  if (!isBroadcaster && !tw.canPlay(access)) {
     showLockedOverlay(access);
     return;
   }

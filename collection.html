@@ -16,8 +16,8 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Collezione</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
-  <link rel="stylesheet" href="css/collection.css?v=10" />
-  <link rel="stylesheet" href="css/card-modal.css?v=8" />
+  <link rel="stylesheet" href="css/collection.css?v=12" />
+  <link rel="stylesheet" href="css/card-modal.css?v=9" />
   <link rel="stylesheet" href="css/page-hero.css?v=1" />
   <link rel="preload" as="audio" href="assets/audio/menu.mp3" />
   <script src="js/register-sw.js?v=2" defer></script>
@@ -83,6 +83,26 @@
         <div class="team-editor__right">
           <div class="pool-toolbar">
             <input type="text" class="pool-toolbar__search" id="poolSearch" placeholder="🔍 Cerca Pokémon…" />
+            <div class="pool-toolbar__filters">
+              <select id="poolSortStat" class="pokedex-toolbar__select" aria-label="Ordina per statistica">
+                <option value="">Ordina: Pokédex</option>
+                <option value="hp">↓ HP (decrescente)</option>
+                <option value="atk">↓ ATK</option>
+                <option value="def">↓ DEF</option>
+                <option value="spAtk">↓ SP.ATK</option>
+                <option value="spDef">↓ SP.DEF</option>
+                <option value="speed">↓ VEL</option>
+              </select>
+              <select id="poolRarity" class="pokedex-toolbar__select" aria-label="Filtra per rarità">
+                <option value="">Rarità: tutte</option>
+                <option value="legendary">★★★★★★ Leggendario</option>
+                <option value="pseudo">★★★★★ Pseudo Leggendario</option>
+                <option value="epic">★★★★ Epico</option>
+                <option value="rare">★★★ Raro</option>
+                <option value="uncommon">★★ Non Comune</option>
+                <option value="common">★ Comune</option>
+              </select>
+            </div>
             <div class="pool-toolbar__types" id="poolTypes">
               <!-- chip filtro tipi generati da JS -->
             </div>
@@ -103,6 +123,24 @@
     <section class="tab-panel" data-tab-panel="pokemon">
       <div class="pokedex-toolbar">
         <input type="text" class="pool-toolbar__search" id="dexSearch" placeholder="🔍 Cerca…" />
+        <select id="dexSortStat" class="pokedex-toolbar__select" aria-label="Ordina per statistica">
+          <option value="">Ordina: Pokédex</option>
+          <option value="hp">↓ HP (decrescente)</option>
+          <option value="atk">↓ ATK</option>
+          <option value="def">↓ DEF</option>
+          <option value="spAtk">↓ SP.ATK</option>
+          <option value="spDef">↓ SP.DEF</option>
+          <option value="speed">↓ VEL</option>
+        </select>
+        <select id="dexRarity" class="pokedex-toolbar__select" aria-label="Filtra per rarità">
+          <option value="">Rarità: tutte</option>
+          <option value="legendary">★★★★★★ Leggendario</option>
+          <option value="pseudo">★★★★★ Pseudo Leggendario</option>
+          <option value="epic">★★★★ Epico</option>
+          <option value="rare">★★★ Raro</option>
+          <option value="uncommon">★★ Non Comune</option>
+          <option value="common">★ Comune</option>
+        </select>
         <label class="pokedex-toolbar__only-owned">
           <input type="checkbox" id="dexOnlyOwned" />
           <span>Solo posseduti</span>
@@ -172,6 +210,6 @@
     <span id="toastMsg"></span>
   </div>
 
-  <script type="module" src="js/collection.js?v=12"></script>
+  <script type="module" src="js/collection.js?v=14"></script>
 </body>
 </html>

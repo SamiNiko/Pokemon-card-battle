@@ -3,7 +3,7 @@
    ============================================================ */
 
 // Cloud sync dinamico: se la CDN Supabase è bloccata, la pagina funziona lo stesso
-import('./data/cloud-sync.js?v=6').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=7').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import {
@@ -18,8 +18,8 @@ import {
   getPokemonHoldingItem,
   getItemUsages,
   equipItem,
-} from './data/state.js?v=6';
-import { openCardModal }                       from './data/card-modal.js?v=9';
+} from './data/state.js?v=7';
+import { openCardModal }                       from './data/card-modal.js?v=10';
 import { findItem, ITEM_CATEGORIES, isItemAllowedForPokemon } from './data/items.js?v=3';
 import { typeLabel }                            from './data/types.js';
 import { playBGM }                              from './data/bgm.js?v=9';
@@ -50,9 +50,13 @@ let allPokemon  = [];
 let currentSlot = 0;            // slot correntemente visualizzato/giocato (0=A..3=D)
 let poolSearch  = '';
 let poolType    = null;         // tipo filtrato (null = tutti)
+let poolSortStat = '';          // '' | 'hp' | 'atk' | 'def' | 'spAtk' | 'spDef' | 'speed'
+let poolRarity   = '';          // '' | 'legendary' | 'pseudo' | 'epic' | 'rare' | 'uncommon' | 'common'
 
 let dexSearch    = '';
 let dexOnlyOwned = false;
+let dexSortStat  = '';            // '' | 'hp' | 'atk' | 'def' | 'spAtk' | 'spDef' | 'speed'
+let dexRarity    = '';            // '' | 'legendary' | 'pseudo' | 'epic' | 'rare' | 'uncommon' | 'common'
 
 /* ================================================================
    INIT
@@ -85,6 +89,14 @@ let dexOnlyOwned = false;
     poolSearch = e.target.value.toLowerCase().trim();
     renderTeamTab();
   });
+  $('#poolSortStat')?.addEventListener('change', e => {
+    poolSortStat = e.target.value;
+    renderPool();
+  });
+  $('#poolRarity')?.addEventListener('change', e => {
+    poolRarity = e.target.value;
+    renderPool();
+  });
 
   // Toolbar pokédex
   $('#dexSearch').addEventListener('input', e => {
@@ -93,6 +105,14 @@ let dexOnlyOwned = false;
   });
   $('#dexOnlyOwned').addEventListener('change', e => {
     dexOnlyOwned = e.target.checked;
+    renderPokemonGrid();
+  });
+  $('#dexSortStat')?.addEventListener('change', e => {
+    dexSortStat = e.target.value;
+    renderPokemonGrid();
+  });
+  $('#dexRarity')?.addEventListener('change', e => {
+    dexRarity = e.target.value;
     renderPokemonGrid();
   });
 
@@ -286,8 +306,14 @@ function renderPool() {
   const filtered = owned.filter(p => {
     if (poolSearch && !p.name.toLowerCase().includes(poolSearch)) return false;
     if (poolType && !p.types.includes(poolType)) return false;
+    if (poolRarity && getRarity(p.id) !== poolRarity) return false;
     return true;
   });
+
+  // Ordinamento per stat (decrescente) se selezionato.
+  if (poolSortStat) {
+    filtered.sort((a, b) => (b.stats?.[poolSortStat] ?? 0) - (a.stats?.[poolSortStat] ?? 0));
+  }
 
   // Stato vuoto: nessun Pokémon posseduto
   if (owned.length === 0) {
@@ -381,18 +407,33 @@ function renderPokemonGrid() {
   const filtered = allPokemon.filter(p => {
     if (dexOnlyOwned && !isOwned(p.id)) return false;
     if (dexSearch && !p.name.toLowerCase().includes(dexSearch)) return false;
+    if (dexRarity && getRarity(p.id) !== dexRarity) return false;
     return true;
   });
+
+  // Ordinamento per stat (se selezionato): decrescente.
+  if (dexSortStat) {
+    filtered.sort((a, b) => (b.stats?.[dexSortStat] ?? 0) - (a.stats?.[dexSortStat] ?? 0));
+  }
+
+  // Lista dei soli ID OWNED nel filtrato: la passiamo a openCardModal come
+  // navList così le frecce ‹ › scorrono solo tra Pokémon effettivamente
+  // posseduti (cliccando uno "locked" non si apre nulla, ma navigando dentro
+  // il modal non vogliamo che l'utente arrivi su una carta che non possiede).
+  const ownedIds = filtered.filter(p => isOwned(p.id)).map(p => p.id);
 
   for (const p of filtered) {
     const c = makeCard(p);
     if (!isOwned(p.id)) {
       c.classList.add('is-locked');
     } else {
-      // Posseduto → click apre la carta completa
+      // Posseduto → click apre la carta completa con navList
       c.style.cursor = 'pointer';
       c.title = 'Apri carta';
-      c.addEventListener('click', () => openCardModal(p.id));
+      c.addEventListener('click', () => {
+        const navIndex = ownedIds.indexOf(p.id);
+        openCardModal(p.id, { navList: ownedIds, navIndex });
+      });
     }
     root.appendChild(c);
   }

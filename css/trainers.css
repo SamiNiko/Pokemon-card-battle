@@ -352,6 +352,66 @@
 }
 
 .trainer-modal__team-section { padding: var(--sp-4) var(--sp-5) var(--sp-3); }
+
+/* Deck picker — 4 tabs orizzontali nel modal trainer */
+.trainer-modal__deck-section {
+  padding: var(--sp-2) var(--sp-5) var(--sp-3);
+}
+.trainer-modal__deck-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+.trainer-modal__deck-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+.trainer-modal__deck-tab:hover:not(:disabled) {
+  border-color: rgba(255,255,255,0.3);
+  color: var(--text);
+}
+.trainer-modal__deck-tab.is-active {
+  border-color: var(--trainer-color, var(--accent));
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--trainer-color, var(--accent)) inset, 0 0 12px rgba(255,255,255,0.06);
+}
+.trainer-modal__deck-tab.is-empty {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.trainer-modal__deck-name { font-size: 0.72rem; letter-spacing: 0.05em; }
+.trainer-modal__deck-empty { font-size: 0.65rem; color: var(--text-dim); }
+.trainer-modal__deck-pkmns {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-height: 32px;
+  overflow: hidden;
+}
+.trainer-modal__deck-pkmns img {
+  width: 26px;
+  height: 26px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+@media (max-width: 600px) {
+  .trainer-modal__deck-tabs { grid-template-columns: repeat(2, 1fr); }
+}
 .trainer-modal__section-label {
   display: block;
   font-size: 0.6rem;

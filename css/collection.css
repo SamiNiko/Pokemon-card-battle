@@ -264,6 +264,14 @@
 .pool-toolbar__search:focus { border-color: var(--accent); }
 .pool-toolbar__search::placeholder { color: var(--text-muted); }
 
+/* Riga filtri (ordina stat + rarità) nel pool di creazione team */
+.pool-toolbar__filters {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.pool-toolbar__filters .pokedex-toolbar__select { flex: 1 1 160px; min-width: 0; }
+
 /* Card nel pool che è già nel team selezionato: badge ✓ + bordo accent.
    Cliccarla la RIMUOVE dal team. */
 .team-pool .card.is-in-team {
@@ -379,6 +387,23 @@
   cursor: pointer;
 }
 .pokedex-toolbar__only-owned input { accent-color: var(--accent); }
+
+.pokedex-toolbar__select {
+  background: rgba(0,0,0,0.35);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  min-width: 160px;
+  transition: border-color 0.15s;
+}
+.pokedex-toolbar__select:hover  { border-color: rgba(255,255,255,0.4); }
+.pokedex-toolbar__select:focus  { border-color: var(--accent); }
+.pokedex-toolbar__select option { background: #15182a; color: var(--text); }
 
 .pokemon-grid {
   display: grid;

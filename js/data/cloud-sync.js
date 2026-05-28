@@ -8,7 +8,7 @@
 */
 
 import { supabase, getSession, onAuthChange }          from './supabase.js';
-import { getState, saveState, onSave, resetState }     from './state.js?v=6';
+import { getState, saveState, onSave, resetState }     from './state.js?v=7';
 
 const SAVE_DEBOUNCE_MS  = 1500;
 const CLOUD_USED_FLAG   = 'pkmn_cloud_account_used';  // anti-dupe device flag
@@ -120,6 +120,20 @@ export const ready = startCloudSync().catch(e => {
   console.warn('[cloud] startup failed:', e);
 });
 
+// Installa subito la nav guard a livello modulo: appena cloud-sync è
+// importato (dynamic import incluso), tutti i click su <a> diventano
+// safe rispetto al flush. Non aspetta startCloudSync — la guard funziona
+// anche se la sessione non è ancora caricata (in tal caso _pendingState
+// resta null e la guard non interferisce).
+if (typeof document !== 'undefined') {
+  // Aspetta che il DOM sia almeno parsabile (la guard usa document.addEventListener)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => installNavGuard(), { once: true });
+  } else {
+    installNavGuard();
+  }
+}
+
 /**
  * Forza un push immediato (utile prima del logout o chiusura pagina).
  */
@@ -129,6 +143,41 @@ export async function flushSync() {
     _pushTimer = null;
   }
   if (_pendingState) await pushPending();
+}
+
+/* ============================================================
+   NAV GUARD — flush cloud prima di navigare via link
+   ============================================================
+   Fix: utente acquista item nello shop → debounce 1.5s in coda →
+   utente clicca "←" troppo presto → pagina cambia, debounce
+   annullato, l'acquisto non arriva mai al cloud.
+   Soluzione: intercetta i click su <a href> same-origin; se c'è
+   uno state pending, blocca la navigazione, flush, poi naviga.
+   Idempotente: chiamabile più volte senza side effect. */
+let _navGuardInstalled = false;
+export function installNavGuard() {
+  if (_navGuardInstalled) return;
+  _navGuardInstalled = true;
+  document.addEventListener('click', async (e) => {
+    // Solo click sinistro senza modificatori (no Ctrl/Cmd-click "open in new tab")
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    if (a.target && a.target !== '_self') return;        // _blank/_top → skip
+    if (e.defaultPrevented) return;                       // qualcuno ha già preso
+    const href = a.getAttribute('href');
+    if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+    // External link → skip (lascia che il browser navighi normalmente)
+    try {
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin) return;
+    } catch { return; }
+    // Niente da flushare → no-op (lascia che il browser navighi normalmente)
+    if (!_pendingState && !_pushTimer) return;
+    e.preventDefault();
+    try { await flushSync(); } catch (err) { console.warn('[cloud] nav-guard flush failed:', err); }
+    window.location.href = a.href;
+  }, true);   // capturing: prendiamo prima dei handler interni alla pagina
 }
 
 /* ============================================================

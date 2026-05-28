@@ -8,7 +8,7 @@ import {
   setUserName,
   exportSave,
   importSave,
-} from './data/state.js?v=6';
+} from './data/state.js?v=7';
 
 import { initTutorial }     from './data/tutorial.js?v=3';
 import { SFX, getVolume, setVolume, unlockAudio } from './data/sfx.js?v=3';
@@ -27,7 +27,7 @@ async function loadCloudModules() {
   try {
     [supabaseModule, cloudSyncModule] = await Promise.all([
       import('./data/supabase.js'),
-      import('./data/cloud-sync.js?v=6'),
+      import('./data/cloud-sync.js?v=7'),
     ]);
     return true;
   } catch (e) {

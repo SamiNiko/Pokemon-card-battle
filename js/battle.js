@@ -6,7 +6,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
-import { getState, getActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=6';
+import { getState, getActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=7';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js?v=3';
 import { getPassive }                          from './data/passives.js';
@@ -15,7 +15,7 @@ import { MOVESETS }                            from './data/movesets.js?v=3';
 import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
-import { openCardModal }                       from './data/card-modal.js?v=9';
+import { openCardModal }                       from './data/card-modal.js?v=10';
 import { SFX }                                 from './data/sfx.js?v=3';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
 import { playBGM }                             from './data/bgm.js?v=9';
@@ -28,7 +28,7 @@ import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-
 // e il suo syncOnLogin sovrascriveva i cambi locali (brock + reward) con
 // lo stato cloud pre-battaglia → ricompense perse, indicator '✅ Salvato'
 // menzognero perché _pendingState era null al momento del flush.
-import { ready as cloudReady, flushSync as cloudFlushSync } from './data/cloud-sync.js?v=6';
+import { ready as cloudReady, flushSync as cloudFlushSync } from './data/cloud-sync.js?v=7';
 
 /** Flush immediato del cloud-sync (best-effort, fire-and-forget).
  *  Da chiamare dopo eventi critici (reward, trainer beaten) per evitare
@@ -174,6 +174,11 @@ const bs = {
   enemyField:     new Map(),
   playerHeld:     new Map(),    // pokemonId → item (oggetto tenuto del team attivo)
   enemyHeld:      new Map(),    // pokemonId → item (vuoto in AI mode, popolato in PvP futuro)
+  // Lock dei Choice items (Bendascelta/Lentiscelta/Stolascelta): una volta
+  // usata una mossa base, il Pokemon resta bloccato su quella mossa fino a
+  // quando non viene messo K.O. o spostato in panchina. Il finisher resta
+  // comunque utilizzabile (PP permettendo).
+  lockedMove:     new Map(),    // pokemonId → 'basic1' | 'basic2' (mai 'finisher')
   timeLeft:       TURN_SECONDS,
   timerHandle:    null,
   /* ---- Stato PvP (solo se MODE === 'pvp') ---- */
@@ -614,10 +619,23 @@ function openMovePicker(pkmn) {
   movePickerPkmnId = pkmn.id;
   const set = MOVESETS[pkmn.id];
   const pp  = bs.playerPkmnPP.get(pkmn.id) ?? 0;
-  const sel = bs.selectedMoves.get(pkmn.id) ?? 'basic1';
+  let sel = bs.selectedMoves.get(pkmn.id) ?? 'basic1';
+
+  // Choice-lock: se il Pokemon è bloccato su una base, riallinea sel così
+  // l'opzione corretta appare selezionata anche se l'utente aveva scelto
+  // altro prima (es. cambiava al picker senza confermare).
+  const lockedKey = bs.lockedMove.get(pkmn.id) ?? null;
+  if (lockedKey && sel !== 'finisher') {
+    sel = lockedKey;
+    bs.selectedMoves.set(pkmn.id, lockedKey);
+  }
+  const heldItem = bs.playerHeld.get(pkmn.id) ?? null;
+  const lockLabel = lockedKey && heldItem
+    ? `<br><span style="color:#f5a050">🔒 ${heldItem.name}: bloccato sulla mossa scelta (il Finisher resta disponibile)</span>`
+    : '';
 
   titleEl.textContent = `Mossa di ${cap(pkmn.name)}`;
-  subEl.innerHTML     = `PP attuali: ${pp}/3 · <span style="opacity:.7">tasto destro per i dettagli della carta</span>`;
+  subEl.innerHTML     = `PP attuali: ${pp}/3 · <span style="opacity:.7">tasto destro per i dettagli della carta</span>${lockLabel}`;
 
   // Formato moves: [base1, base2, finisher] (nuovo) o [basic, finisher] (legacy)
   let options = [];
@@ -639,8 +657,13 @@ function openMovePicker(pkmn) {
   optsEl.innerHTML = options.map(opt => {
     const isSel       = opt.key === sel;
     const insuffPP    = (opt.cost ?? 0) > pp;
-    const disabled    = insuffPP ? 'disabled' : '';
+    // Choice-lock: disabilita le base diverse da quella lockata. Il
+    // finisher resta sempre selezionabile (PP permettendo).
+    const isLockedOut = lockedKey && opt.key !== 'finisher' && opt.key !== lockedKey;
+    const disabledRaw = insuffPP || isLockedOut;
+    const disabled    = disabledRaw ? 'disabled' : '';
     const ppLabel     = opt.cost ? `<span class="move-option__cost ${insuffPP ? 'is-low' : ''}">★ ${opt.cost} PP</span>` : '';
+    const lockLabelInline = isLockedOut ? `<span class="move-option__cost" style="background:#3a2c1d;color:#f5a050">🔒 bloccata</span>` : '';
     const catLabel    = opt.move.cat === 'special' ? 'Speciale' : opt.move.cat === 'physical' ? 'Fisica' : '—';
     return `
       <button class="move-option ${isSel ? 'is-selected' : ''}" data-move-sel="${opt.key}" ${disabled}>
@@ -658,6 +681,7 @@ function openMovePicker(pkmn) {
             <span class="move-option__sep">·</span>
             <span class="move-option__power">Potenza ${opt.move.power ?? '—'}</span>
             ${ppLabel}
+            ${lockLabelInline}
           </div>
         </div>
         ${isSel ? '<span class="move-option__check">✓</span>' : ''}
@@ -718,9 +742,15 @@ function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
   const moveLabel = getMoveLabel(pkmn.id, side);
   const held   = heldMap.get(pkmn.id) ?? null;
 
-  // Icona oggetto tenuto (solo se equipaggiato)
+  // Icona oggetto tenuto (solo se equipaggiato). Il title contiene nome
+  // + descrizione → hover prolungato mostra il tooltip nativo. Click sull'
+  // icona apre direttamente il card-modal alla pagina 2 (dove appare l'item).
+  const heldTitle = held
+    ? (held.description ? `${held.name} — ${held.description}` : held.name)
+        .replace(/"/g, '&quot;')
+    : '';
   const heldHTML = held
-    ? `<span class="card__held" title="${held.name}">
+    ? `<span class="card__held" title="${heldTitle}" data-item-tooltip="1">
          ${held.image
            ? `<img src="${held.image}" alt="${held.name}" onerror="this.outerHTML='${held.icon}'" />`
            : held.icon}
@@ -785,18 +815,43 @@ function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
   const isOwnAndActive = side === 'self' && !bs.playerDeadIds.has(pkmn.id) && bs.phase !== 'resolving';
   el.addEventListener('click', e => {
     if (el.classList.contains('was-dragged')) return;
+
+    // Click su badge oggetto / passiva → apre il modal direttamente sulla
+    // pagina 2 (dove appaiono item e passiva). Stop al normale flusso così
+    // su una carta del player non si apre il move-picker.
+    const heldEl   = e.target.closest('.card__held');
+    const passEl   = e.target.closest('.card__passive-badge');
+    if (heldEl || passEl) {
+      e.stopPropagation();
+      const heldOverride = side === 'enemy' ? (bs.enemyHeld.get(pkmn.id) ?? null) : undefined;
+      openCardModal(pkmn.id, { openOnPage: 1, heldOverride });
+      return;
+    }
+
     if (isOwnAndActive) {
       // TUTORIAL: prima del move picker mostra il popup di spiegazione
       if (IS_TUTORIAL) showTutorialStep('movePicker').then(() => openMovePicker(pkmn));
       else             openMovePicker(pkmn);
     } else {
-      openCardModal(pkmn.id);
+      // Per le carte avversarie: passa heldOverride dal bs.enemyHeld
+      // così il modal NON mostra gli oggetti del player.
+      if (side === 'enemy') {
+        const enemyHeld = bs.enemyHeld.get(pkmn.id) ?? null;
+        openCardModal(pkmn.id, { heldOverride: enemyHeld });
+      } else {
+        openCardModal(pkmn.id);
+      }
     }
   });
   el.addEventListener('contextmenu', e => {
     e.preventDefault();
     if (el.classList.contains('was-dragged')) return;
-    openCardModal(pkmn.id);
+    if (side === 'enemy') {
+      const enemyHeld = bs.enemyHeld.get(pkmn.id) ?? null;
+      openCardModal(pkmn.id, { heldOverride: enemyHeld });
+    } else {
+      openCardModal(pkmn.id);
+    }
   });
 
   // Drag & drop solo per carte del giocatore (non morte, non in fase resolving)
@@ -989,6 +1044,8 @@ function onTouchDragEnd(e) {
     placeCardOnSlot(dragId, slot.dataset.slotKey, dragFromSlot);
   } else if (bench && dragFromSlot !== 'bench') {
     bs.playerField.delete(dragFromSlot);
+    // Tornare in panchina resetta il Choice-lock (regola "switch out").
+    clearChoiceLock(dragId);
     renderField();
   }
 
@@ -1002,11 +1059,17 @@ function setupSlotDrop() {
     slot.addEventListener('dragover', e => {
       if (bs.phase !== 'placement' || dragId === null) return;
       const occupant = bs.playerField.get(slot.dataset.slotKey);
-      // Accetta drop se: slot vuoto, oppure occupato dalla stessa carta
-      if (!occupant || occupant.id === dragId) {
+      // Accetta drop se: slot vuoto, oppure occupato dalla stessa carta,
+      // oppure è uno SWAP fra due slot del campo (drag da slot occupato).
+      const isSwapDrop = occupant && occupant.id !== dragId && dragFromSlot !== 'bench';
+      if (!occupant || occupant.id === dragId || isSwapDrop) {
         e.preventDefault();
-        slot.classList.add('is-drop-target');
+        slot.classList.add(isSwapDrop ? 'is-swap-target' : 'is-drop-target');
       }
+    });
+
+    slot.addEventListener('dragleave', () => {
+      slot.classList.remove('is-swap-target');
     });
 
     slot.addEventListener('dragleave', () => {
@@ -1015,7 +1078,7 @@ function setupSlotDrop() {
 
     slot.addEventListener('drop', e => {
       e.preventDefault();
-      slot.classList.remove('is-drop-target');
+      slot.classList.remove('is-drop-target', 'is-swap-target');
       if (dragId === null) return;
       placeCardOnSlot(dragId, slot.dataset.slotKey, dragFromSlot);
     });
@@ -1036,6 +1099,8 @@ function setupBenchDrop() {
     e.preventDefault();
     if (dragId === null || dragFromSlot === 'bench') return;
     bs.playerField.delete(dragFromSlot);
+    // Tornare in panchina resetta il Choice-lock (regola "switch out").
+    clearChoiceLock(dragId);
     renderField();
   });
 }
@@ -1045,11 +1110,25 @@ function placeCardOnSlot(pokemonId, targetSlotKey, fromSlotKey) {
   const pkmn = findPokemon(pokemonId);
   if (!pkmn) return;
 
+  const existing = bs.playerField.get(targetSlotKey);
+  const isSwap   = existing && existing.id !== pokemonId
+                && fromSlotKey !== 'bench' && fromSlotKey !== targetSlotKey;
+
+  if (isSwap) {
+    // SWAP diretto in campo: A va su S2 (occupato da B), B va su S1.
+    // Risolve "Permettere di scambiare direttamente i Pokémon in campo
+    // senza passare dalla panchina".
+    bs.playerField.set(fromSlotKey,   existing);
+    bs.playerField.set(targetSlotKey, pkmn);
+    SFX.cardPlace();
+    renderField();
+    return;
+  }
+
   // Libera lo slot di partenza
   if (fromSlotKey !== 'bench') bs.playerField.delete(fromSlotKey);
 
   // Se lo slot target è già occupato da un ALTRO, lo rimuoviamo (torna in panchina)
-  const existing = bs.playerField.get(targetSlotKey);
   if (existing && existing.id !== pokemonId) bs.playerField.delete(targetSlotKey);
 
   // Controlla limite 3 carte in campo
@@ -1398,6 +1477,82 @@ const ANIM = {
   finisherCharge: 480,   // pre-carica dorata prima del lunge per la mossa Finisher
 };
 
+/* ============================================================
+   ITEM EFFECTS — applicati lato battle.js (post-resolveTurn) per
+   evitare di riscrivere il motore. Coprono al momento:
+     - Conchinella     : +15% del danno inflitto recuperato come HP
+     - Bendascelta /
+       Lentiscelta /
+       Stolascelta     : LOCK sulla prima mossa base usata (il
+                         finisher resta sempre disponibile)
+   ============================================================ */
+const CHOICE_ITEM_IDS = new Set(['bendascelta', 'lentiscelta', 'stolascelta']);
+
+function getHeldFor(side, pokemonId) {
+  const map = side === 'player' ? bs.playerHeld : bs.enemyHeld;
+  return map.get(pokemonId) ?? null;
+}
+
+function applyItemEffectsOnAttack(ev) {
+  if (!ev || (ev.damage ?? 0) <= 0) {
+    // Anche con damage 0 il Choice-lock può scattare (è la "scelta" a contare).
+    if (ev?.type !== 'attack' && ev?.type !== 'direct_damage') return;
+  }
+  const held = getHeldFor(ev.attackerSide, ev.attackerId);
+
+  // ---- CONCHINELLA: drain HP pari al 15% del danno ----
+  if (held?.id === 'conchinella' && (ev.damage ?? 0) > 0) {
+    const dmg = ev.damage;
+    const heal = Math.max(1, Math.round(dmg * 0.15));
+    const pkmn = findPokemon(ev.attackerId);
+    if (pkmn) {
+      const maxHP = getScaledStats(pkmn).hp;
+      const hpMap = ev.attackerSide === 'player' ? bs.playerPkmnHP : bs.enemyPkmnHP;
+      const cur   = hpMap.get(ev.attackerId) ?? maxHP;
+      // Non guarire un Pokemon già a 0 (potrebbe essere morto a seguito di
+      // un effetto suo precedente — non ha senso resuscitarlo).
+      if (cur > 0) {
+        const next = Math.min(maxHP, cur + heal);
+        const actual = next - cur;
+        if (actual > 0) {
+          hpMap.set(ev.attackerId, next);
+          const htmlSide = ev.attackerSide === 'player' ? 'self' : 'enemy';
+          updateCardHP(ev.attackerId, next, htmlSide);
+          const name = pkmn.name;
+          log(`🐚 Conchinella: ${cap(name)} recupera ${actual} HP.`, 'item');
+        }
+      }
+    }
+  }
+
+  // ---- CHOICE LOCK: dopo aver usato una mossa BASE, blocco la scelta ----
+  // Si applica anche dopo un danno diretto (la mossa è comunque "stata usata").
+  // Non si applica al finisher: il finisher è la "ultimate" del Pokemon e
+  // resta disponibile in qualsiasi caso (è già limitato dai PP).
+  if (held && CHOICE_ITEM_IDS.has(held.id) && !ev.isFinisher) {
+    const sideMap = ev.attackerSide === 'player' ? bs.selectedMoves : null;
+    // Lock solo lato player (l'AI non ha bisogno di lock: sceglie ogni turno).
+    if (sideMap && !bs.lockedMove.has(ev.attackerId)) {
+      const moveKey = sideMap.get(ev.attackerId) ?? 'basic1';
+      // Lock SOLO se è una mossa base: basic1 o basic2 (mai finisher/auto).
+      if (moveKey === 'basic1' || moveKey === 'basic2') {
+        bs.lockedMove.set(ev.attackerId, moveKey);
+        const name = findPokemon(ev.attackerId)?.name ?? 'Pokémon';
+        log(`🔒 ${held.name}: ${cap(name)} è ora bloccato sulla mossa scelta.`, 'item');
+      }
+    }
+  }
+}
+
+/** Reset del Choice-lock quando il Pokemon non è più "in azione":
+ *  - K.O. (defeated)
+ *  - Tolto dal campo (drag in panchina)  */
+function clearChoiceLock(pokemonId) {
+  if (bs.lockedMove.has(pokemonId)) {
+    bs.lockedMove.delete(pokemonId);
+  }
+}
+
 async function playEvents(events) {
   for (const ev of events) {
 
@@ -1483,6 +1638,8 @@ async function playEvents(events) {
         if (ev.targetDied) {
           if (ev.defenderSide === 'player') bs.playerDeadIds.add(ev.targetId);
           else                              bs.enemyDeadIds.add(ev.targetId);
+          // Choice-lock: si resetta su K.O. (solo player side ha lock attivo)
+          if (ev.defenderSide === 'player') clearChoiceLock(ev.targetId);
           log(`${defName} è stato messo KO!`, 'ko');
           await sleep(ANIM.faintReveal);
           defEl.classList.add('is-ko-anim');
@@ -1519,6 +1676,10 @@ async function playEvents(events) {
         const defName = findPokemon(ev.targetId)?.name ?? 'Pokémon';
         log(`${cap(ev.enduredByPassive)}! ${cap(defName)} sopravvive con 1 HP!`, 'passive');
       }
+
+      // ---- ITEM EFFECTS: applicati lato battle.js per evitare di
+      // ricalibrare il motore. Conchinella e Choice-lock partono da qui.
+      applyItemEffectsOnAttack(ev);
 
       await sleep(ANIM.hitImpact);
       if (atkEl) atkEl.classList.remove('is-attacking');
@@ -1564,6 +1725,9 @@ async function playEvents(events) {
         updateCardPP(ev.attackerId, ev.ppAfter, atkHtmlSide2);
         if (atkEl && (ev.ppDelta ?? 0) > 0) showPPFloat(atkEl);
       }
+
+      // ITEM EFFECTS: anche su danno diretto (Conchinella heal + Choice lock).
+      applyItemEffectsOnAttack(ev);
 
       await sleep(ANIM.hitImpact);
       if (atkEl) atkEl.classList.remove('is-attacking');

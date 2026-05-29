@@ -503,6 +503,40 @@
   margin-bottom: var(--sp-4);
   gap: var(--sp-3);
 }
+
+/* Toolbar filtri inventario (categoria/rarità/ordina) */
+.inventory__toolbar {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-4);
+}
+.inventory__toolbar .pokedex-toolbar__select { flex: 1 1 160px; min-width: 0; }
+
+/* Messaggio "Nessun oggetto corrisponde al filtro" — riusato in inventario e picker */
+.inv-item__empty-filter {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--sp-4);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Toolbar filtri item-picker (versione compatta nel modal) */
+.item-picker__toolbar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: var(--sp-2);
+}
+.item-picker__toolbar.hidden { display: none; }
+.item-picker__toolbar .pokedex-toolbar__select {
+  flex: 1 1 140px;
+  min-width: 0;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+}
 .inventory__title {
   font-family: var(--font-display);
   font-size: 1.5rem;

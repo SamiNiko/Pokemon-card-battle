@@ -58,6 +58,32 @@ let dexOnlyOwned = false;
 let dexSortStat  = '';            // '' | 'hp' | 'atk' | 'def' | 'spAtk' | 'spDef' | 'speed'
 let dexRarity    = '';            // '' | 'legendary' | 'pseudo' | 'epic' | 'rare' | 'uncommon' | 'common'
 
+// Filtri/ordinamento OGGETTI — separati per inventario e picker così l'utente
+// può tenere stati distinti (es. in inventario "tutte" e nel picker "solo difensivi").
+let invFilterCat   = '';   // '' | 'type' | 'berry' | 'defense' | 'offense' | 'choice' | 'special' | 'exclusive'
+let invFilterRar   = '';   // '' | 'common' | 'uncommon' | 'rare' | 'epic'
+let invSort        = '';   // '' | 'name' | 'priceAsc' | 'priceDesc' | 'rarityDesc' | 'category'
+let pickerFilterCat= '';
+let pickerFilterRar= '';
+let pickerSort     = '';
+
+const ITEM_RARITY_ORDER = { epic: 4, rare: 3, uncommon: 2, common: 1 };
+const ITEM_CATEGORY_ORDER = ['type', 'berry', 'defense', 'offense', 'choice', 'special', 'exclusive'];
+
+/** Applica filtri + ordinamento a una lista di itemId. Usato sia per
+ *  l'inventario che per il picker (stati separati ma logica identica). */
+function applyItemFiltersAndSort(itemIds, filterCat, filterRar, sortMode) {
+  let arr = itemIds.map(id => findItem(id)).filter(Boolean);
+  if (filterCat) arr = arr.filter(it => it.category === filterCat);
+  if (filterRar) arr = arr.filter(it => it.rarity === filterRar);
+  if (sortMode === 'name')        arr.sort((a, b) => a.name.localeCompare(b.name, 'it'));
+  else if (sortMode === 'priceAsc')   arr.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
+  else if (sortMode === 'priceDesc')  arr.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
+  else if (sortMode === 'rarityDesc') arr.sort((a, b) => (ITEM_RARITY_ORDER[b.rarity] ?? 0) - (ITEM_RARITY_ORDER[a.rarity] ?? 0));
+  else if (sortMode === 'category')   arr.sort((a, b) => ITEM_CATEGORY_ORDER.indexOf(a.category) - ITEM_CATEGORY_ORDER.indexOf(b.category));
+  return arr.map(it => it.id);
+}
+
 /* ================================================================
    INIT
    ================================================================ */
@@ -115,6 +141,16 @@ let dexRarity    = '';            // '' | 'legendary' | 'pseudo' | 'epic' | 'rar
     dexRarity = e.target.value;
     renderPokemonGrid();
   });
+
+  // Toolbar inventario oggetti
+  $('#invFilterCat')?.addEventListener('change', e => { invFilterCat = e.target.value; renderInventory(); });
+  $('#invFilterRar')?.addEventListener('change', e => { invFilterRar = e.target.value; renderInventory(); });
+  $('#invSort')?.addEventListener('change',      e => { invSort      = e.target.value; renderInventory(); });
+
+  // Toolbar picker (item modal)
+  $('#pickerFilterCat')?.addEventListener('change', e => { pickerFilterCat = e.target.value; renderPickerItems(); });
+  $('#pickerFilterRar')?.addEventListener('change', e => { pickerFilterRar = e.target.value; renderPickerItems(); });
+  $('#pickerSort')?.addEventListener('change',      e => { pickerSort      = e.target.value; renderPickerItems(); });
 
   // Build chip tipi
   buildTypeChips();
@@ -527,7 +563,12 @@ function renderInventory() {
   grid.innerHTML = '';
 
   const owned = getOwnedItems();
-  count.textContent = `${owned.length} ${owned.length === 1 ? 'oggetto' : 'oggetti'}`;
+  // Conteggio: "X / Y oggetti" se ci sono filtri attivi, altrimenti totale puro.
+  const filtered = applyItemFiltersAndSort(owned, invFilterCat, invFilterRar, invSort);
+  const hasFilter = !!(invFilterCat || invFilterRar);
+  count.textContent = hasFilter
+    ? `${filtered.length} / ${owned.length} ${owned.length === 1 ? 'oggetto' : 'oggetti'}`
+    : `${owned.length} ${owned.length === 1 ? 'oggetto' : 'oggetti'}`;
 
   if (owned.length === 0) {
     empty.classList.remove('hidden');
@@ -535,7 +576,12 @@ function renderInventory() {
   }
   empty.classList.add('hidden');
 
-  for (const itemId of owned) {
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="inv-item__empty-filter">Nessun oggetto corrisponde al filtro.</div>`;
+    return;
+  }
+
+  for (const itemId of filtered) {
     const item = findItem(itemId);
     if (!item) continue;
     const usages = getItemUsages(itemId);     // [{teamSlot, pokemonId}, ...] cross-team
@@ -605,6 +651,7 @@ function openItemPicker(targetPokemonId = null) {
   $('#pickerPokemons').classList.add('hidden');
   $('#pickerBack').classList.add('hidden');
   $('#pickerItems').classList.remove('hidden');
+  $('#pickerToolbar')?.classList.remove('hidden');
 
   // Titolo + sottotitolo dinamici
   if (targetPokemonId != null) {
@@ -642,7 +689,13 @@ function renderPickerItems() {
   empty.classList.add('hidden');
   grid.classList.remove('hidden');
 
-  for (const itemId of owned) {
+  const filtered = applyItemFiltersAndSort(owned, pickerFilterCat, pickerFilterRar, pickerSort);
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="inv-item__empty-filter">Nessun oggetto corrisponde al filtro.</div>`;
+    return;
+  }
+
+  for (const itemId of filtered) {
     const item = findItem(itemId);
     if (!item) continue;
     const cat = ITEM_CATEGORIES[item.category];
@@ -733,6 +786,7 @@ function renderPickerPokemons() {
   $('#pickerTitle').textContent = `Scegli un Pokémon`;
   $('#pickerSub').textContent = `Step 2/2 — A quale Pokémon del team ${currentSlot + 1} dare ${item.icon} ${item.name}?`;
   $('#pickerItems').classList.add('hidden');
+  $('#pickerToolbar')?.classList.add('hidden');
   $('#pickerPokemons').classList.remove('hidden');
   $('#pickerBack').classList.remove('hidden');
 
@@ -796,6 +850,7 @@ $('#pickerBack').addEventListener('click', () => {
   $('#pickerPokemons').classList.add('hidden');
   $('#pickerBack').classList.add('hidden');
   $('#pickerItems').classList.remove('hidden');
+  $('#pickerToolbar')?.classList.remove('hidden');
   $('#pickerTitle').textContent = 'Equipaggia oggetto';
   $('#pickerSub').textContent = `Step 1/2 — Scegli un oggetto. Poi sceglierai a quale Pokémon del team ${currentSlot + 1} darlo.`;
 });

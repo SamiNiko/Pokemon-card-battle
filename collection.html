@@ -16,7 +16,7 @@
   <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png" />
   <title>Pokémon Card Battle — Collezione</title>
   <link rel="stylesheet" href="css/base.css?v=8" />
-  <link rel="stylesheet" href="css/collection.css?v=12" />
+  <link rel="stylesheet" href="css/collection.css?v=13" />
   <link rel="stylesheet" href="css/card-modal.css?v=9" />
   <link rel="stylesheet" href="css/page-hero.css?v=1" />
   <link rel="preload" as="audio" href="assets/audio/menu.mp3" />
@@ -158,6 +158,34 @@
           <h2 class="inventory__title">🎒 Inventario</h2>
           <span class="inventory__count" id="invCount">0 oggetti</span>
         </div>
+        <!-- Toolbar filtri + ordinamento -->
+        <div class="inventory__toolbar">
+          <select id="invFilterCat" class="pokedex-toolbar__select" aria-label="Filtra per categoria">
+            <option value="">Categoria: tutte</option>
+            <option value="type">🔮 Potenziamento Tipo</option>
+            <option value="berry">🍒 Bacche</option>
+            <option value="defense">🛡️ Difensivi</option>
+            <option value="offense">⚔️ Offensivi</option>
+            <option value="choice">🎯 Choice</option>
+            <option value="special">✨ Speciali</option>
+            <option value="exclusive">⭐ Esclusivi</option>
+          </select>
+          <select id="invFilterRar" class="pokedex-toolbar__select" aria-label="Filtra per rarità">
+            <option value="">Rarità: tutte</option>
+            <option value="epic">★★★★ Epico</option>
+            <option value="rare">★★★ Raro</option>
+            <option value="uncommon">★★ Non Comune</option>
+            <option value="common">★ Comune</option>
+          </select>
+          <select id="invSort" class="pokedex-toolbar__select" aria-label="Ordina">
+            <option value="">Ordina: predefinito</option>
+            <option value="name">Nome A→Z</option>
+            <option value="priceAsc">Prezzo ↑</option>
+            <option value="priceDesc">Prezzo ↓</option>
+            <option value="rarityDesc">Rarità ↓</option>
+            <option value="category">Categoria</option>
+          </select>
+        </div>
         <div class="inventory__grid" id="invGrid">
           <!-- popolato da JS -->
         </div>
@@ -182,6 +210,34 @@
       <div class="item-picker__head">
         <h2 class="item-picker__title" id="pickerTitle">Scegli un oggetto</h2>
         <p class="item-picker__sub" id="pickerSub"></p>
+        <!-- Toolbar filtri + ordinamento (visibile solo nello Step 1 oggetti) -->
+        <div class="item-picker__toolbar" id="pickerToolbar">
+          <select id="pickerFilterCat" class="pokedex-toolbar__select" aria-label="Filtra per categoria">
+            <option value="">Categoria: tutte</option>
+            <option value="type">🔮 Tipo</option>
+            <option value="berry">🍒 Bacche</option>
+            <option value="defense">🛡️ Difensivi</option>
+            <option value="offense">⚔️ Offensivi</option>
+            <option value="choice">🎯 Choice</option>
+            <option value="special">✨ Speciali</option>
+            <option value="exclusive">⭐ Esclusivi</option>
+          </select>
+          <select id="pickerFilterRar" class="pokedex-toolbar__select" aria-label="Filtra per rarità">
+            <option value="">Rarità: tutte</option>
+            <option value="epic">★★★★ Epico</option>
+            <option value="rare">★★★ Raro</option>
+            <option value="uncommon">★★ Non Comune</option>
+            <option value="common">★ Comune</option>
+          </select>
+          <select id="pickerSort" class="pokedex-toolbar__select" aria-label="Ordina">
+            <option value="">Ordina: predefinito</option>
+            <option value="name">Nome A→Z</option>
+            <option value="priceAsc">Prezzo ↑</option>
+            <option value="priceDesc">Prezzo ↓</option>
+            <option value="rarityDesc">Rarità ↓</option>
+            <option value="category">Categoria</option>
+          </select>
+        </div>
       </div>
 
       <!-- Step 1: griglia oggetti -->
@@ -210,6 +266,6 @@
     <span id="toastMsg"></span>
   </div>
 
-  <script type="module" src="js/collection.js?v=15"></script>
+  <script type="module" src="js/collection.js?v=16"></script>
 </body>
 </html>

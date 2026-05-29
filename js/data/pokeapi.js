@@ -19,6 +19,14 @@ const TOTAL = 151;
 
 let _all = null; // cache in memoria
 
+/** URL dell'official-artwork (alta risoluzione) per un id Pokémon.
+ *  Derivato dall'id → robusto anche se la cache localStorage è vecchia
+ *  e non contiene il campo sprite.official. Usato come fallback delle
+ *  carte custom in assets/cards/NNN.webp. */
+export function officialArtworkUrl(id) {
+  return `${SPRITE_BASE}/other/official-artwork/${id}.png`;
+}
+
 /** Carica tutti i 151 Pokémon — ritorna Promise<Pokemon[]> */
 export async function loadAllPokemon(onProgress) {
   if (_all) return _all;

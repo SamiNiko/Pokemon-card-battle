@@ -19,7 +19,7 @@ import {
   getItemUsages,
   equipItem,
 } from './data/state.js?v=7';
-import { openCardModal }                       from './data/card-modal.js?v=10';
+import { openCardModal }                       from './data/card-modal.js?v=11';
 import { findItem, ITEM_CATEGORIES, isItemAllowedForPokemon } from './data/items.js?v=3';
 import { typeLabel }                            from './data/types.js';
 import { playBGM }                              from './data/bgm.js?v=9';
@@ -474,12 +474,17 @@ function makeCard(pkmn) {
       ${pkmn.types.map(t => `<span class="type-badge" data-type="${t}">${typeLabel(t)}</span>`).join('')}
     </div>
   `;
-  // Fallback automatico: se l'artwork non c'è, torna allo sprite pixelato
+  // Fallback a 2 livelli: webp custom → official artwork → sprite pixel
+  const officialArt = pkmn.sprite?.official
+      || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
   const img = el.querySelector('.card__img');
   img.onerror = () => {
-    img.onerror = null;
-    img.classList.add('is-fallback');
-    img.src = pkmn.sprite.default;
+    img.onerror = () => {
+      img.onerror = null;
+      img.classList.add('is-fallback');
+      img.src = pkmn.sprite.default;
+    };
+    img.src = officialArt;
   };
   return el;
 }

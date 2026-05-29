@@ -147,10 +147,12 @@ function openTrainerModal(id) {
     const card = document.createElement('div');
     card.className = 'trainer-modal__pkmn';
     card.dataset.rarity = getRarity(p.id);
+    const officialArt = p.sprite?.official
+        || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p.id}.png`;
     card.innerHTML = `
       <img class="trainer-modal__pkmn-img" src="assets/cards/${String(p.id).padStart(3,'0')}.webp"
            alt="${p.name}"
-           onerror="this.onerror=null;this.classList.add('is-fallback');this.src='${p.sprite.default}';" />
+           onerror="this.onerror=function(){this.onerror=null;this.classList.add('is-fallback');this.src='${p.sprite.default}';};this.src='${officialArt}';" />
       <span class="trainer-modal__pkmn-name">${p.name}</span>
     `;
     teamEl.appendChild(card);

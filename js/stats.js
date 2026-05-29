@@ -18,7 +18,7 @@ import {
   LEGGENDARI, PSEUDO_LEGGENDARI, EPICI, RARI, NON_COMUNI, COMUNI,
   getRarity, tierLabel, tierStars, tierColor,
 } from './data/rarity.js';
-import { openCardModal } from './data/card-modal.js?v=10';
+import { openCardModal } from './data/card-modal.js?v=11';
 import { playBGM }       from './data/bgm.js?v=9';
 
 playBGM('stats');

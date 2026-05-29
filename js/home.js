@@ -9,7 +9,7 @@ import('./data/cloud-sync.js?v=8').catch(err => console.warn('[cloud] non dispon
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState, saveState, getTeamSlot, setActiveTeam, getEquipped, onSave } from './data/state.js?v=7';
 import { findItem }                    from './data/items.js?v=3';
-import { openCardModal }                from './data/card-modal.js?v=10';
+import { openCardModal }                from './data/card-modal.js?v=11';
 import { initTutorial, isTutorialDone } from './data/tutorial.js?v=3';
 import { playBGM }                      from './data/bgm.js?v=9';
 import { SFX }                          from './data/sfx.js?v=3';
@@ -237,12 +237,17 @@ function buildTeam(gs) {
         <span class="team-slot__name">${pkmn.name}</span>
         ${heldBadgeHTML}
       `;
-      // Fallback artwork → sprite
+      // Fallback a 2 livelli: webp custom → official artwork → sprite
+      const officialArt = pkmn.sprite?.official
+          || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
       const img = div.querySelector('.team-slot__img');
       img.onerror = () => {
-        img.onerror = null;
-        img.classList.add('is-fallback');
-        img.src = pkmn.sprite.default;
+        img.onerror = () => {
+          img.onerror = null;
+          img.classList.add('is-fallback');
+          img.src = pkmn.sprite.default;
+        };
+        img.src = officialArt;
       };
       // Click → apre il card modal (read-only, per modifiche → Collezione)
       div.style.cursor = 'pointer';

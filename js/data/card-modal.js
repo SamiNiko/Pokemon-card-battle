@@ -225,12 +225,22 @@ export function openCardModal(pokemonId, opts = {}) {
   sprite.src = pkmn.sprite.default;
   sprite.alt = pkmn.name;
 
-  // Artwork con fallback automatico
+  // Artwork con fallback a 2 livelli:
+  //   1) assets/cards/NNN.webp (custom, se presente)
+  //   2) official-artwork PokéAPI (alta risoluzione, tutti i 151)
+  //   3) sprite pixel (is-missing → mostra lo sprite ingrandito)
+  const officialArt = pkmn.sprite?.official
+      || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
   artwork.alt = pkmn.name;
   artwork.onerror = () => {
-    artwork.onerror = null;
-    artwork.classList.add('is-missing');
-    sprite.classList.add('is-solo');
+    // 1° errore: la webp custom manca → prova l'official artwork
+    artwork.onerror = () => {
+      // 2° errore: nemmeno l'official → ripiega sullo sprite pixel
+      artwork.onerror = null;
+      artwork.classList.add('is-missing');
+      sprite.classList.add('is-solo');
+    };
+    artwork.src = officialArt;
   };
   artwork.onload = () => {
     artwork.classList.remove('is-missing');

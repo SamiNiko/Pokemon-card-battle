@@ -15,7 +15,7 @@ import { MOVESETS }                            from './data/movesets.js?v=3';
 import { createOnlineClient }                  from './data/online.js';
 import { recordMatch }                         from './data/match-history.js';
 import { typeLabel }                           from './data/types.js';
-import { openCardModal }                       from './data/card-modal.js?v=10';
+import { openCardModal }                       from './data/card-modal.js?v=11';
 import { SFX }                                 from './data/sfx.js?v=3';
 import { getScaledStats }                      from './data/stats-scaling.js?v=3';
 import { playBGM }                             from './data/bgm.js?v=9';
@@ -138,6 +138,13 @@ const cap   = s => s[0].toUpperCase() + s.slice(1);
 function getArtworkUrl(pkmn) {
   if (!pkmn) return '';
   return `assets/cards/${String(pkmn.id).padStart(3, '0')}.webp`;
+}
+
+/** Official-artwork (alta risoluzione) come fallback se la webp custom manca. */
+function getOfficialArt(pkmn) {
+  if (!pkmn) return '';
+  return pkmn.sprite?.official
+      || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
 }
 
 const COLS          = ['left', 'center', 'right'];
@@ -778,7 +785,7 @@ function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
       ${passiveBadgeHTML}
       <div class="card__sprite">
         <img class="card__img" src="${getArtworkUrl(pkmn)}" alt="${pkmn.name}"
-             onerror="this.onerror=null;this.classList.add('is-fallback');this.src='${pkmn.sprite.default}';" />
+             onerror="this.onerror=function(){this.onerror=null;this.classList.add('is-fallback');this.src='${pkmn.sprite.default}';};this.src='${getOfficialArt(pkmn)}';" />
       </div>
       <div class="card__name">${pkmn.name}</div>
       <div class="card__types">

@@ -14,6 +14,67 @@ import { getPassive }           from '../data/passives.js';
 const DIRECT_BASE_POWER = 150;
 const ROWS = ['front', 'back'];
 
+/* ============================================================
+   HELD ITEMS — effetti in battaglia
+   ============================================================
+   Gli oggetti tenuti modificano stat, danno e HP. Sono applicati
+   qui nel motore (sorgente di verità deterministica). La mappa
+   held è { pokemonId → itemObject } passata da battle.js.
+
+   Categorie di effetto:
+     - STAT     : modificano le stat effettive (applyItemStats)
+     - OUT_MULT : moltiplicano il danno inflitto (itemOutgoingMult)
+     - IN_MULT  : moltiplicano il danno subito (itemIncomingMult)
+     - HOOK     : effetti a evento (heal, reflect, self-damage, regen)
+   Il LOCK dei Choice item è UI-side (battle.js), qui applichiamo
+   solo i loro boost di stat.
+   ============================================================ */
+
+/** Applica i modificatori di STAT di un oggetto sulle stat scalate.
+ *  ctx: { hpFrac, isFrontline, isFirstTurnIn } — condizioni contestuali. */
+function applyItemStats(s, item, ctx = {}) {
+  if (!item) return s;
+  const out = { ...s };
+  switch (item.id) {
+    case 'bendascelta':    out.atk   = Math.round(out.atk   * 1.25); break;  // +25% ATK
+    case 'lentiscelta':    out.spAtk = Math.round(out.spAtk * 1.25); break;  // +25% SP.ATK
+    case 'stolascelta':    out.speed += 30; break;                            // +30 VEL
+    case 'ancora-pesante': out.def   = Math.round(out.def * 1.20); out.speed = Math.max(0, out.speed - 15); break;
+    case 'corpetto-assalto': if (ctx.isFrontline) out.spDef = Math.round(out.spDef * 1.15); break;
+    case 'turbo-booster':  if (ctx.isFirstTurnIn) out.speed += 40; break;
+    case 'metalpolvere':   out.def   = Math.round(out.def   * 2); break;     // Ditto
+    case 'velopolvere':    out.speed = Math.round(out.speed * 2); break;     // Ditto
+    case 'osso-spesso':    out.atk   = Math.round(out.atk   * 2); break;     // Cubone/Marowak
+    case 'elettropalla':   out.atk = Math.round(out.atk * 2); out.spAtk = Math.round(out.spAtk * 2); break; // Pikachu
+  }
+  // Bacche: si attivano quando gli HP sono sotto il 35%.
+  if (ctx.hpFrac != null && ctx.hpFrac < 0.35) {
+    if (item.id === 'baccasalak')  out.speed += 25;
+    if (item.id === 'baccalici')   out.atk   = Math.round(out.atk   * 1.20);
+    if (item.id === 'baccapitaya') out.spAtk = Math.round(out.spAtk * 1.20);
+  }
+  return out;
+}
+
+/** Moltiplicatore del danno INFLITTO dall'attaccante per via dell'oggetto. */
+function itemOutgoingMult(item, move, ctx = {}) {
+  if (!item) return 1;
+  let m = 1;
+  if (item.boostType && move.type === item.boostType)        m *= 1.15;  // potenziamenti tipo (18)
+  if (item.id === 'assorbisfera')                            m *= 1.20;  // +20% danno (e -5% HP, hook)
+  if (item.id === 'cristallo-finisher' && move.isFinisher)   m *= 1.25;  // finisher +25%
+  if (item.id === 'distortozona' && ctx.isSlowest)           m *= 1.20;  // se più lento in campo
+  return m;
+}
+
+/** Moltiplicatore del danno SUBITO dal difensore per via dell'oggetto. */
+function itemIncomingMult(item, move, ctx = {}) {
+  if (!item) return 1;
+  // Scudo Riflesso: la PRIMA mossa speciale subita ogni turno → metà danno.
+  if (item.id === 'scudo-riflesso' && move.cat === 'special' && ctx.firstSpecialThisTurn) return 0.5;
+  return 1;
+}
+
 // ---- Mossa automatica (nessuna mossa sbloccata o selezione 'auto') -----
 
 function getAutoMove(pkmn) {
@@ -86,9 +147,12 @@ export function calcDamage(attacker, move, defender, opts = {}) {
   let effStab = stab;
   if (atkPassive?.meta?.kind === 'stab_boost' && stab > 1) effStab = atkPassive.meta.mult ?? 2.0;
 
-  // Stats SCALATE per rarità + eventuale boost ATK / debuff DEF (Ultrapotenza)
-  const atkS = getScaledStats(attacker);
-  const defS = getScaledStats(defender);
+  // Stats SCALATE per rarità + item + eventuale boost ATK / debuff DEF (Ultrapotenza).
+  // Gli oggetti modificano le stat effettive prima del calcolo.
+  const atkItem = opts.attackerItem ?? null;
+  const defItem = opts.defenderItem ?? null;
+  const atkS = applyItemStats(getScaledStats(attacker), atkItem, { hpFrac: opts.attackerHPFrac });
+  const defS = applyItemStats(getScaledStats(defender), defItem, { isFrontline: opts.defenderIsFrontline });
   let atkStat = move.cat === 'physical' ? atkS.atk : atkS.spAtk;
   let defStat = move.cat === 'physical' ? defS.def : defS.spDef;
   if (atkPassive?.meta?.kind === 'atk_boost_def_drop') {
@@ -108,6 +172,8 @@ export function calcDamage(attacker, move, defender, opts = {}) {
     if (m.kind === 'base_move_boost'  && !move.isFinisher)                    damage *= (m.mult ?? 1);
     if (m.kind === 'finisher_boost'   &&  move.isFinisher)                    damage *= (m.mult ?? 1);
   }
+  // OUTGOING item (potenziamenti tipo, assorbisfera, cristallo finisher, distortozona)
+  damage *= itemOutgoingMult(atkItem, move, { isSlowest: opts.attackerIsSlowest });
 
   // INCOMING modifiers (resistenze del difensore)
   if (defPassive) {
@@ -116,11 +182,14 @@ export function calcDamage(attacker, move, defender, opts = {}) {
     if (m.kind === 'cat_resist'  &&  m.cat === move.cat)                      damage *= (m.mult ?? 1);
     if (m.kind === 'first_hit_resist' && opts.isFullHP)                       damage *= (1 - (m.amount ?? 0));
   }
+  // INCOMING item (scudo riflesso)
+  damage *= itemIncomingMult(defItem, move, { firstSpecialThisTurn: opts.firstSpecialThisTurn });
 
   // ENDURE_ONCE (Vigore): se il danno ucciderebbe e il difensore non ha ancora
   // attivato questa passiva, taglia il danno per lasciare 1 HP e marca usata.
   let finalDamage = Math.max(1, Math.round(damage));
   let enduredByPassive = null;
+  let survivedByItem = null;
   const prevHP = opts.prevHP ?? null;
   const endureUsedSet = opts.endureUsedSet ?? null;
   if (defPassive?.meta?.kind === 'endure_once'
@@ -132,6 +201,21 @@ export function calcDamage(attacker, move, defender, opts = {}) {
     enduredByPassive = defPassive.name;
   }
 
+  // FOCALNASTRO: se il difensore era a HP PIENI e il colpo lo ucciderebbe,
+  // sopravvive con 1 HP. Diversamente da Vigore non ha limite d'uso, ma
+  // richiede HP pieni all'impatto.
+  if (defItem?.id === 'focalnastro' && !enduredByPassive
+      && prevHP != null && opts.isFullHP && finalDamage >= prevHP) {
+    finalDamage = Math.max(0, prevHP - 1);
+    survivedByItem = defItem.name;
+  }
+
+  // BITORZOLELMO: riflette il 12% del danno FISICO subito all'attaccante.
+  let reflectDamage = 0;
+  if (defItem?.id === 'bitorzolelmo' && move.cat === 'physical' && finalDamage > 0) {
+    reflectDamage = Math.max(1, Math.round(finalDamage * 0.12));
+  }
+
   return {
     damage:   finalDamage,
     typeEff,
@@ -141,6 +225,8 @@ export function calcDamage(attacker, move, defender, opts = {}) {
     atkPassive: atkPassive?.name ?? null,
     defPassive: defPassive?.name ?? null,
     enduredByPassive,
+    survivedByItem,
+    reflectDamage,
   };
 }
 
@@ -193,6 +279,7 @@ export function resolveTurn({
   movesets, selectedMoves, enemySelectedMoves,
   playerPkmnPP, enemyPkmnPP,
   passiveState,
+  playerHeld, enemyHeld,
 }) {
   const pHP   = new Map(playerPkmnHP);
   const eHP   = new Map(enemyPkmnHP);
@@ -201,15 +288,28 @@ export function resolveTurn({
   const pDead = new Set(playerDeadIds);
   const eDead = new Set(enemyDeadIds);
 
-  // Stato passive cross-turn (mutato dentro resolveTurn).
-  //   endureUsed  : Set<pokemonId> (player + enemy uniti — gli ID Pokémon sono distinti tra owned)
-  //   speedStacks : Map<`${side}:${pokemonId}`, stacks>
+  // Oggetti tenuti (Map pokemonId → item). Vuoti se non passati.
+  const pHeld = playerHeld ?? new Map();
+  const eHeld = enemyHeld  ?? new Map();
+  const heldFor = (side, id) => (side === 'player' ? pHeld : eHeld).get(id) ?? null;
+
+  // Stato passive/item cross-turn (mutato dentro resolveTurn).
+  //   endureUsed  : Set<pokemonId> già "salvati" da Vigore (endure_once)
+  //   speedStacks : Map<`${side}:${pokemonId}`, stacks> per Velocitàscatto
+  //   fieldSeen   : Set<`${side}:${pokemonId}`> per Turbo Booster (primo turno in campo)
+  //   ppHitCount  : Map<`${side}:${pokemonId}`, n> per Amplificatore PP
   const ps = passiveState ?? {};
   if (!ps.endureUsed)  ps.endureUsed  = new Set();
   if (!ps.speedStacks) ps.speedStacks = new Map();
+  if (!ps.fieldSeen)   ps.fieldSeen   = new Set();
+  if (!ps.ppHitCount)  ps.ppHitCount  = new Map();
 
   const hp     = { player: playerHP, enemy: enemyHP };
   const events = [];
+
+  // Set per Scudo Riflesso: difensori che hanno già subito la loro PRIMA
+  // mossa speciale in QUESTO turno (la prima dimezza, le successive no).
+  const firstSpecialUsed = new Set();   // chiavi `${side}:${id}`
 
   const moveCtx = { movesets, selectedMoves, enemySelectedMoves, playerPkmnPP: pPP, enemyPkmnPP: ePP };
 
@@ -235,7 +335,18 @@ export function resolveTurn({
     const stacks = ps.speedStacks.get(speedKey(side, p.id)) ?? 0;
     const pass = getActivePassive(p, slotKey);
     const per  = pass?.meta?.kind === 'speed_stack' ? (pass.meta.percent ?? 0) : 0;
-    return base * (1 + per * stacks);
+    let spd = base * (1 + per * stacks);
+    // Modificatori di velocità da oggetto (stolascelta, ancora-pesante,
+    // turbo-booster, velopolvere, baccasalak su HP bassi).
+    const item = heldFor(side, p.id);
+    if (item) {
+      const maxHP        = getScaledStats(p).hp || 1;
+      const hpFrac       = getHP(side, p.id, maxHP) / maxHP;
+      const isFirstTurnIn = !ps.fieldSeen.has(speedKey(side, p.id));
+      spd = applyItemStats({ atk: 0, spAtk: 0, def: 0, spDef: 0, speed: spd },
+                           item, { hpFrac, isFirstTurnIn }).speed;
+    }
+    return spd;
   }
 
   const playerSpeed = playerAlive.reduce((s, [k, p]) => s + effectiveSpeed('player', k, p), 0);
@@ -248,6 +359,18 @@ export function resolveTurn({
     effectiveSpeed('player', kb, b) - effectiveSpeed('player', ka, a));
   const enemyOrder  = [...enemyAlive ].sort(([ka, a], [kb, b]) =>
     effectiveSpeed('enemy',  kb, b) - effectiveSpeed('enemy',  ka, a));
+
+  // Velocità minima in campo (per Distortozona): il Pokémon il cui speed
+  // effettivo è il minimo tra TUTTI i vivi in campo prende il bonus danno.
+  const allSpeeds = [
+    ...playerAlive.map(([k, p]) => effectiveSpeed('player', k, p)),
+    ...enemyAlive .map(([k, p]) => effectiveSpeed('enemy',  k, p)),
+  ];
+  const minFieldSpeed = allSpeeds.length ? Math.min(...allSpeeds) : 0;
+
+  // Marca i Pokémon come "visti in campo" (Turbo Booster non ri-scatta).
+  for (const [k, p] of [...playerAlive]) ps.fieldSeen.add(speedKey('player', p.id));
+  for (const [k, p] of [...enemyAlive])  ps.fieldSeen.add(speedKey('enemy',  p.id));
 
   function findTarget(field, col, defSide) {
     for (const row of ROWS) {
@@ -318,12 +441,32 @@ export function resolveTurn({
         const maxHPDef  = getScaledStats(target.pkmn).hp;
         const prevHP    = getHP(defSide, target.pkmn.id, maxHPDef);
         const isFullHP  = prevHP >= maxHPDef;
+
+        // ---- Contesto OGGETTI ----
+        const atkItem  = heldFor(atkSide, attacker.id);
+        const defItem  = heldFor(defSide, target.pkmn.id);
+        const atkMaxHP = getScaledStats(attacker).hp || 1;
+        const atkHPFrac = getHP(atkSide, attacker.id, atkMaxHP) / atkMaxHP;
+        const defIsFrontline = target.slotKey.startsWith('front');
+        const atkIsSlowest   = Math.abs(effectiveSpeed(atkSide, slotKey, attacker) - minFieldSpeed) < 0.001;
+        // Scudo Riflesso: questa è la prima mossa speciale subita nel turno?
+        const defKey = speedKey(defSide, target.pkmn.id);
+        const firstSpecialThisTurn = move.cat === 'special'
+          && defItem?.id === 'scudo-riflesso' && !firstSpecialUsed.has(defKey);
+        if (firstSpecialThisTurn) firstSpecialUsed.add(defKey);
+
         const res       = calcDamage(attacker, move, target.pkmn, {
           attackerSlot: slotKey,
           defenderSlot: target.slotKey,
           isFullHP,
           prevHP,
           endureUsedSet: ps.endureUsed,
+          attackerItem: atkItem,
+          defenderItem: defItem,
+          attackerHPFrac: atkHPFrac,
+          defenderIsFrontline: defIsFrontline,
+          attackerIsSlowest: atkIsSlowest,
+          firstSpecialThisTurn,
         });
         const newHP  = Math.max(0, prevHP - res.damage);
         setHP(defSide, target.pkmn.id, newHP);
@@ -333,7 +476,58 @@ export function resolveTurn({
         const defPass = getActivePassive(target.pkmn, target.slotKey);
         const hitLanded = res.typeEff > 0 && !res.immuneByPassive;
         const ppRes = computePPDelta(move, move.isFinisher, defPass, hitLanded, events);
-        setPP(atkSide, attacker.id, getPP(atkSide, attacker.id) + ppRes.delta);
+        let ppTotal = ppRes.delta;
+        // AMPLIFICATORE PP: ogni 2 colpi a segno → +1 PP bonus.
+        let ppBonusItem = null;
+        if (atkItem?.id === 'amplificatore-pp' && hitLanded && !move.isFinisher) {
+          const k = speedKey(atkSide, attacker.id);
+          const n = (ps.ppHitCount.get(k) ?? 0) + 1;
+          ps.ppHitCount.set(k, n);
+          if (n % 2 === 0) { ppTotal += 1; ppBonusItem = atkItem.name; }
+        }
+        setPP(atkSide, attacker.id, getPP(atkSide, attacker.id) + ppTotal);
+
+        // ---- HOOK OGGETTI: heal / reflect / self-damage ----
+        const itemEvents = [];
+
+        // CONCHINELLA: l'attaccante recupera il 15% del danno inflitto.
+        if (atkItem?.id === 'conchinella' && res.damage > 0) {
+          const heal = Math.max(1, Math.round(res.damage * 0.15));
+          const curA = getHP(atkSide, attacker.id, atkMaxHP);
+          if (curA > 0) {
+            const nextA = Math.min(atkMaxHP, curA + heal);
+            if (nextA > curA) {
+              setHP(atkSide, attacker.id, nextA);
+              itemEvents.push({ type: 'item_heal', side: atkSide, pokemonId: attacker.id,
+                itemName: atkItem.name, healed: nextA - curA, hpAfter: nextA, maxHP: atkMaxHP });
+            }
+          }
+        }
+
+        // ASSORBISFERA: dopo aver attaccato, l'attaccante perde il 5% degli HP max.
+        if (atkItem?.id === 'assorbisfera') {
+          const curA = getHP(atkSide, attacker.id, atkMaxHP);
+          if (curA > 0) {
+            const loss  = Math.max(1, Math.round(atkMaxHP * 0.05));
+            const nextA = Math.max(0, curA - loss);
+            setHP(atkSide, attacker.id, nextA);
+            if (nextA === 0) markDead(atkSide, attacker.id);
+            itemEvents.push({ type: 'item_recoil', side: atkSide, pokemonId: attacker.id,
+              itemName: atkItem.name, lost: curA - nextA, hpAfter: nextA, maxHP: atkMaxHP });
+          }
+        }
+
+        // BITORZOLELMO: riflette danno fisico all'attaccante.
+        if (res.reflectDamage > 0) {
+          const curA = getHP(atkSide, attacker.id, atkMaxHP);
+          if (curA > 0) {
+            const nextA = Math.max(0, curA - res.reflectDamage);
+            setHP(atkSide, attacker.id, nextA);
+            if (nextA === 0) markDead(atkSide, attacker.id);
+            itemEvents.push({ type: 'item_reflect', side: atkSide, pokemonId: attacker.id,
+              itemName: defItem?.name ?? 'Bitorzolelmo', damage: curA - nextA, hpAfter: nextA, maxHP: atkMaxHP });
+          }
+        }
 
         events.push({
           type:          'attack',
@@ -359,11 +553,15 @@ export function resolveTurn({
           defPassive:    res.defPassive,
           immuneByPassive: res.immuneByPassive ?? null,
           enduredByPassive: res.enduredByPassive ?? null,
-          ppDelta:         ppRes.delta,
+          survivedByItem:   res.survivedByItem ?? null,
+          ppDelta:         ppTotal,
           ppBlockedBy:     ppRes.ppBlocked,
           ppExtraCostBy:   ppRes.extraCost,
+          ppBonusBy:       ppBonusItem,
           ppAfter:         getPP(atkSide, attacker.id),
         });
+        // Eventi item DOPO l'attacco (così l'animazione del colpo va prima)
+        for (const ie of itemEvents) events.push(ie);
       } else {
         const dmg = calcDirectDamage(attacker, move);
         const prevTeamHP = hp[defSide];
@@ -450,6 +648,33 @@ export function resolveTurn({
   }
   applyRegen(playerField, 'player');
   applyRegen(enemyField,  'enemy');
+
+  // ---- HOOK FINE TURNO: AVANZI (item) → +6% HP max ----
+  function applyAvanzi(field, side) {
+    for (const [slotKey, p] of field.entries()) {
+      if (isDead(side, p.id)) continue;
+      const item = heldFor(side, p.id);
+      if (item?.id !== 'avanzi') continue;
+      const maxHP = getScaledStats(p).hp;
+      const cur   = getHP(side, p.id, maxHP);
+      if (cur <= 0) continue;
+      const heal  = Math.max(1, Math.round(maxHP * 0.06));
+      const next  = Math.min(maxHP, cur + heal);
+      if (next === cur) continue;
+      setHP(side, p.id, next);
+      events.push({
+        type:      'item_heal',
+        side,
+        pokemonId: p.id,
+        itemName:  item.name,
+        healed:    next - cur,
+        hpAfter:   next,
+        maxHP,
+      });
+    }
+  }
+  applyAvanzi(playerField, 'player');
+  applyAvanzi(enemyField,  'enemy');
 
   // ---- HOOK FINE TURNO: SPEED STACK (Velocitàscatto) ----
   // Per ogni Pokemon ancora vivo con speed_stack attivo, +1 stack (cap a max_stacks).

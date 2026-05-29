@@ -8,7 +8,7 @@
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
 import { getState, getActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=7';
 import { findItem }                            from './data/items.js?v=3';
-import { resolveTurn }                         from './engine/combat.js?v=3';
+import { resolveTurn }                         from './engine/combat.js?v=4';
 import { getPassive }                          from './data/passives.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
 import { MOVESETS }                            from './data/movesets.js?v=3';
@@ -1232,6 +1232,11 @@ async function confirmTurn() {
     playerPkmnPP:       bs.playerPkmnPP,
     enemyPkmnPP:        bs.enemyPkmnPP,
     passiveState:       bs.passiveState,
+    // In PvP gli oggetti NON sono ancora sincronizzati tra i due client:
+    // applicarli localmente causerebbe desync (i due lati calcolano HP
+    // diversi). Quindi passiamo gli held SOLO in modalità non-PvP.
+    playerHeld:         MODE === 'pvp' ? new Map() : bs.playerHeld,
+    enemyHeld:          MODE === 'pvp' ? new Map() : bs.enemyHeld,
   });
 
   // Anima la sequenza
@@ -1478,13 +1483,12 @@ const ANIM = {
 };
 
 /* ============================================================
-   ITEM EFFECTS — applicati lato battle.js (post-resolveTurn) per
-   evitare di riscrivere il motore. Coprono al momento:
-     - Conchinella     : +15% del danno inflitto recuperato come HP
-     - Bendascelta /
-       Lentiscelta /
-       Stolascelta     : LOCK sulla prima mossa base usata (il
-                         finisher resta sempre disponibile)
+   CHOICE LOCK — UI-side (il resto degli effetti item è nel motore)
+   ============================================================
+   Bendascelta / Lentiscelta / Stolascelta: dopo aver usato una mossa
+   base, il Pokemon resta bloccato su quella mossa. Il finisher resta
+   sempre disponibile. Il lock è uno stato UI (disabilita le altre
+   opzioni nel move-picker), quindi vive qui in battle.js.
    ============================================================ */
 const CHOICE_ITEM_IDS = new Set(['bendascelta', 'lentiscelta', 'stolascelta']);
 
@@ -1493,48 +1497,23 @@ function getHeldFor(side, pokemonId) {
   return map.get(pokemonId) ?? null;
 }
 
+/** True se almeno un Pokemon del team in campo tiene la Monetamuleto
+ *  (+20% di valuta a fine match). */
+function playerHoldsMonetamuleto() {
+  for (const it of bs.playerHeld.values()) if (it?.id === 'monetamuleto') return true;
+  return false;
+}
+
 function applyItemEffectsOnAttack(ev) {
-  if (!ev || (ev.damage ?? 0) <= 0) {
-    // Anche con damage 0 il Choice-lock può scattare (è la "scelta" a contare).
-    if (ev?.type !== 'attack' && ev?.type !== 'direct_damage') return;
-  }
+  if (ev?.type !== 'attack' && ev?.type !== 'direct_damage') return;
   const held = getHeldFor(ev.attackerSide, ev.attackerId);
 
-  // ---- CONCHINELLA: drain HP pari al 15% del danno ----
-  if (held?.id === 'conchinella' && (ev.damage ?? 0) > 0) {
-    const dmg = ev.damage;
-    const heal = Math.max(1, Math.round(dmg * 0.15));
-    const pkmn = findPokemon(ev.attackerId);
-    if (pkmn) {
-      const maxHP = getScaledStats(pkmn).hp;
-      const hpMap = ev.attackerSide === 'player' ? bs.playerPkmnHP : bs.enemyPkmnHP;
-      const cur   = hpMap.get(ev.attackerId) ?? maxHP;
-      // Non guarire un Pokemon già a 0 (potrebbe essere morto a seguito di
-      // un effetto suo precedente — non ha senso resuscitarlo).
-      if (cur > 0) {
-        const next = Math.min(maxHP, cur + heal);
-        const actual = next - cur;
-        if (actual > 0) {
-          hpMap.set(ev.attackerId, next);
-          const htmlSide = ev.attackerSide === 'player' ? 'self' : 'enemy';
-          updateCardHP(ev.attackerId, next, htmlSide);
-          const name = pkmn.name;
-          log(`🐚 Conchinella: ${cap(name)} recupera ${actual} HP.`, 'item');
-        }
-      }
-    }
-  }
-
-  // ---- CHOICE LOCK: dopo aver usato una mossa BASE, blocco la scelta ----
-  // Si applica anche dopo un danno diretto (la mossa è comunque "stata usata").
-  // Non si applica al finisher: il finisher è la "ultimate" del Pokemon e
-  // resta disponibile in qualsiasi caso (è già limitato dai PP).
+  // CHOICE LOCK: dopo aver usato una mossa BASE, blocco la scelta.
+  // Non si applica al finisher (la "ultimate" resta sempre disponibile).
   if (held && CHOICE_ITEM_IDS.has(held.id) && !ev.isFinisher) {
     const sideMap = ev.attackerSide === 'player' ? bs.selectedMoves : null;
-    // Lock solo lato player (l'AI non ha bisogno di lock: sceglie ogni turno).
     if (sideMap && !bs.lockedMove.has(ev.attackerId)) {
       const moveKey = sideMap.get(ev.attackerId) ?? 'basic1';
-      // Lock SOLO se è una mossa base: basic1 o basic2 (mai finisher/auto).
       if (moveKey === 'basic1' || moveKey === 'basic2') {
         bs.lockedMove.set(ev.attackerId, moveKey);
         const name = findPokemon(ev.attackerId)?.name ?? 'Pokémon';
@@ -1676,9 +1655,16 @@ async function playEvents(events) {
         const defName = findPokemon(ev.targetId)?.name ?? 'Pokémon';
         log(`${cap(ev.enduredByPassive)}! ${cap(defName)} sopravvive con 1 HP!`, 'passive');
       }
+      if (ev.survivedByItem) {
+        const defName = findPokemon(ev.targetId)?.name ?? 'Pokémon';
+        log(`🎗️ ${ev.survivedByItem}: ${cap(defName)} resiste con 1 HP!`, 'item');
+      }
+      if (ev.ppBonusBy) {
+        const atkName = findPokemon(ev.attackerId)?.name ?? 'Pokémon';
+        log(`🔋 ${ev.ppBonusBy}: ${cap(atkName)} guadagna 1 PP bonus.`, 'item');
+      }
 
-      // ---- ITEM EFFECTS: applicati lato battle.js per evitare di
-      // ricalibrare il motore. Conchinella e Choice-lock partono da qui.
+      // ---- CHOICE LOCK (UI). Gli altri effetti item sono già nel motore. ----
       applyItemEffectsOnAttack(ev);
 
       await sleep(ANIM.hitImpact);
@@ -1726,12 +1712,42 @@ async function playEvents(events) {
         if (atkEl && (ev.ppDelta ?? 0) > 0) showPPFloat(atkEl);
       }
 
-      // ITEM EFFECTS: anche su danno diretto (Conchinella heal + Choice lock).
+      // CHOICE LOCK anche su danno diretto (la mossa è stata "usata").
       applyItemEffectsOnAttack(ev);
 
       await sleep(ANIM.hitImpact);
       if (atkEl) atkEl.classList.remove('is-attacking');
       await sleep(ANIM.betweenEvents);
+    }
+
+    // ---- EVENTI OGGETTO: heal (Conchinella/Avanzi), recoil (Assorbisfera),
+    //      reflect (Bitorzolelmo). Aggiornano l'HP del singolo Pokemon. ----
+    else if (ev.type === 'item_heal' || ev.type === 'item_recoil' || ev.type === 'item_reflect') {
+      const htmlSide = ev.side === 'player' ? 'self' : 'enemy';
+      const cardEl   = findCardElById(ev.side, ev.pokemonId);
+      const name     = findPokemon(ev.pokemonId)?.name ?? 'Pokémon';
+      const hpMap    = ev.side === 'player' ? bs.playerPkmnHP : bs.enemyPkmnHP;
+      hpMap.set(ev.pokemonId, ev.hpAfter);
+      updateCardHP(ev.pokemonId, ev.hpAfter, htmlSide);
+
+      if (ev.type === 'item_heal') {
+        log(`✨ ${ev.itemName}: ${cap(name)} recupera ${ev.healed} HP.`, 'item');
+        if (cardEl) { cardEl.classList.add('is-regen-anim'); setTimeout(() => cardEl.classList.remove('is-regen-anim'), 900); }
+      } else if (ev.type === 'item_recoil') {
+        log(`💢 ${ev.itemName}: ${cap(name)} perde ${ev.lost} HP per il contraccolpo.`, 'item');
+        if (cardEl) { cardEl.classList.add('is-hit'); setTimeout(() => cardEl.classList.remove('is-hit'), 400); }
+      } else {
+        log(`🪖 ${ev.itemName}: ${cap(name)} subisce ${ev.damage} HP riflessi.`, 'item');
+        if (cardEl) { cardEl.classList.add('is-hit'); setTimeout(() => cardEl.classList.remove('is-hit'), 400); }
+      }
+      // KO da contraccolpo/riflesso
+      if (ev.hpAfter <= 0 && cardEl) {
+        if (ev.side === 'player') { bs.playerDeadIds.add(ev.pokemonId); clearChoiceLock(ev.pokemonId); }
+        else                       bs.enemyDeadIds.add(ev.pokemonId);
+        log(`${cap(name)} è stato messo KO!`, 'ko');
+        cardEl.classList.add('is-fainted');
+      }
+      await sleep(360);
     }
 
     else if (ev.type === 'regen') {
@@ -1796,6 +1812,14 @@ function findCardEl(side, slotKey) {
   const gridId = side === 'player' ? 'playerGrid' : 'enemyGrid';
   const slot   = $(`#${gridId} [data-slot-key="${slotKey}"]`);
   return slot ? slot.querySelector('.card') : null;
+}
+
+/** Trova la card di un Pokemon in campo by id (per eventi item senza slotKey). */
+function findCardElById(side, pokemonId) {
+  const gridId   = side === 'player' ? 'playerGrid' : 'enemyGrid';
+  const sideAttr = side === 'player' ? 'self' : 'enemy';
+  return $(`#${gridId} .card[data-pokemon-id="${pokemonId}"][data-side="${sideAttr}"]`)
+      ?? $(`#${gridId} .card[data-pokemon-id="${pokemonId}"]`);
 }
 
 /** Mostra "+1 PP" fluttuante in basso sulla carta attaccante */
@@ -1936,10 +1960,12 @@ async function endGame(result) {
     const access = tw.getCachedAccess();
     subBonus = !!access?.isSubscriber;
   } catch {}
+  const coinMult = playerHoldsMonetamuleto() ? 1.2 : 1;   // Monetamuleto +20%
   if (MODE === 'pvp') {
     if (result === 'win')      { gemReward = ONLINE_REWARD_WIN;  coinReward = 120; }
     else if (result === 'lose') { gemReward = ONLINE_REWARD_LOSS; coinReward = 30;  }
     else                        { gemReward = ONLINE_REWARD_DRAW; coinReward = 60;  }
+    if (coinMult !== 1) { gemReward = Math.round(gemReward * coinMult); coinReward = Math.round(coinReward * coinMult); }
     if (subBonus) coinReward = Math.round(coinReward * 1.1);
     const gs = getState();
     gs.gems    = (gs.gems    ?? 0) + gemReward;
@@ -1964,6 +1990,7 @@ async function endGame(result) {
         if (t && typeof t.reward === 'number' && t.reward > 0) {
           gemReward  = t.reward;
           coinReward = t.reward;                   // pokeuro = pari alle gemme (bilanciamento shop)
+          if (coinMult !== 1) { gemReward = Math.round(gemReward * coinMult); coinReward = Math.round(coinReward * coinMult); }
           if (subBonus) coinReward = Math.round(coinReward * 1.1);
           const gs = getState();
           gs.gems    = (gs.gems    ?? 0) + gemReward;

@@ -120,20 +120,6 @@ export const ready = startCloudSync().catch(e => {
   console.warn('[cloud] startup failed:', e);
 });
 
-// Installa subito la nav guard a livello modulo: appena cloud-sync è
-// importato (dynamic import incluso), tutti i click su <a> diventano
-// safe rispetto al flush. Non aspetta startCloudSync — la guard funziona
-// anche se la sessione non è ancora caricata (in tal caso _pendingState
-// resta null e la guard non interferisce).
-if (typeof document !== 'undefined') {
-  // Aspetta che il DOM sia almeno parsabile (la guard usa document.addEventListener)
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => installNavGuard(), { once: true });
-  } else {
-    installNavGuard();
-  }
-}
-
 /**
  * Forza un push immediato (utile prima del logout o chiusura pagina).
  */
@@ -178,6 +164,19 @@ export function installNavGuard() {
     try { await flushSync(); } catch (err) { console.warn('[cloud] nav-guard flush failed:', err); }
     window.location.href = a.href;
   }, true);   // capturing: prendiamo prima dei handler interni alla pagina
+}
+
+// Installa la nav guard a livello modulo, DOPO che _navGuardInstalled e
+// installNavGuard sono dichiarati (evita TDZ: chiamarla prima della
+// dichiarazione `let` crashava cloud-sync e bloccava il sync → battaglia
+// in loading infinito). Appena cloud-sync è importato tutti i click su <a>
+// diventano safe rispetto al flush.
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => installNavGuard(), { once: true });
+  } else {
+    installNavGuard();
+  }
 }
 
 /* ============================================================

@@ -3,7 +3,7 @@
    ============================================================ */
 
 // Cloud sync caricato dinamicamente (non bloccante)
-import('./data/cloud-sync.js?v=7').catch(err => console.warn('[cloud] non disponibile:', err.message));
+import('./data/cloud-sync.js?v=8').catch(err => console.warn('[cloud] non disponibile:', err.message));
 
 import { loadAllPokemon, findPokemon } from './data/pokeapi.js';
 import { getState }                    from './data/state.js?v=7';

@@ -28,7 +28,7 @@ import { setTutorialMode, showTutorialStep, isPopupOpen } from './data/tutorial-
 // e il suo syncOnLogin sovrascriveva i cambi locali (brock + reward) con
 // lo stato cloud pre-battaglia → ricompense perse, indicator '✅ Salvato'
 // menzognero perché _pendingState era null al momento del flush.
-import { ready as cloudReady, flushSync as cloudFlushSync } from './data/cloud-sync.js?v=7';
+import { ready as cloudReady, flushSync as cloudFlushSync } from './data/cloud-sync.js?v=8';
 
 /** Flush immediato del cloud-sync (best-effort, fire-and-forget).
  *  Da chiamare dopo eventi critici (reward, trainer beaten) per evitare

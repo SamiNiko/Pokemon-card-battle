@@ -44,7 +44,7 @@ export const PASSIVE_LIBRARY = {
   },
   'levitazione': {
     name:     'Levitazione',
-    effect:   "Immunità totale alle mosse di tipo Terra: subisci 0 danni.",
+    effect:   "Immune alle mosse di tipo Terra.",
     slotPool: ['front-left', 'front-right', 'back-left', 'back-right'],
     meta:     {"kind": "immune", "types": ["ground"]},
   },
@@ -62,7 +62,7 @@ export const PASSIVE_LIBRARY = {
   },
   'rigenerazione': {
     name:     'Rigenerazione',
-    effect:   "A fine di ogni turno recuperi il 15% degli HP massimi.",
+    effect:   "Alla fine di ogni turno recuperi il 15% degli HP massimi.",
     slotPool: ['back-center', 'back-left', 'back-right'],
     meta:     {"kind": "regen", "percent": 0.15, "when": "turn_end"},
   },
@@ -86,19 +86,19 @@ export const PASSIVE_LIBRARY = {
   },
   'adattabilita': {
     name:     'Adattabilità',
-    effect:   "Bonus STAB raddoppiato: le mosse del tuo stesso tipo fanno ×2 invece di ×1,5.",
+    effect:   "Le mosse del tuo stesso tipo (STAB) infliggono ×2 invece di ×1,5.",
     slotPool: ['front-center', 'back-center', 'front-left', 'front-right', 'back-left', 'back-right'],
     meta:     {"kind": "stab_boost", "mult": 2.0},
   },
   'pancialarda': {
     name:     'Pancialarda',
-    effect:   "Resistenza: -30% di danno subito dalle mosse Fuoco e Ghiaccio.",
+    effect:   "-30% di danno subito dalle mosse Fuoco e Ghiaccio.",
     slotPool: ['front-center', 'front-left', 'front-right'],
     meta:     {"kind": "type_resist", "types": ["fire", "ice"], "mult": 0.7},
   },
   'specchiomagico': {
     name:     'Specchiomagico',
-    effect:   "Resistenza Speciale: -25% di danno subito da tutte le mosse Speciali.",
+    effect:   "-25% di danno subito dalle mosse Speciali.",
     slotPool: ['back-center', 'back-left', 'back-right', 'front-center'],
     meta:     {"kind": "cat_resist", "cat": "special", "mult": 0.75},
   },
@@ -116,7 +116,7 @@ export const PASSIVE_LIBRARY = {
   },
   'corazza': {
     name:     'Corazza',
-    effect:   "Resistenza Fisica: -20% di danno subito da tutte le mosse Fisiche.",
+    effect:   "-20% di danno subito dalle mosse Fisiche.",
     slotPool: ['front-center', 'front-left', 'front-right'],
     meta:     {"kind": "cat_resist", "cat": "physical", "mult": 0.8},
   },
@@ -128,7 +128,7 @@ export const PASSIVE_LIBRARY = {
   },
   'ultrapotenza': {
     name:     'Ultrapotenza',
-    effect:   "Attacco raddoppiato, ma Difesa dimezzata: massimo rischio, massima resa.",
+    effect:   "Attacco raddoppiato, ma Difesa dimezzata.",
     slotPool: ['front-center', 'front-left', 'front-right'],
     meta:     {"kind": "atk_boost_def_drop", "atk_mult": 2.0, "def_mult": 0.5},
   },

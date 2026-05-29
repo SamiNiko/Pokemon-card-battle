@@ -6,7 +6,7 @@
    ============================================================ */
 
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
-import { getState, getActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=7';
+import { getState, getActiveTeam, setActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=7';
 import { findItem }                            from './data/items.js?v=3';
 import { resolveTurn }                         from './engine/combat.js?v=4';
 import { getPassive }                          from './data/passives.js';
@@ -219,6 +219,15 @@ async function init() {
   // saveState (markTrainerBeaten, reward) non triggerano il listener →
   // _pendingState resta null → flushSync no-op → push mai inviato → reward perse.
   try { await cloudReady; } catch (e) { console.warn('[battle] cloud-sync ready failed (proseguo offline-only):', e); }
+
+  // DECK SELEZIONATO: se l'URL contiene &team=N (dal deck-picker pre-battaglia),
+  // riapplico la scelta DOPO il pull dal cloud — altrimenti il valore vecchio
+  // di activeTeam appena pullato la sovrascriverebbe.
+  const teamParam = URL_PARAMS.get('team');
+  if (teamParam != null) {
+    const t = parseInt(teamParam, 10);
+    if (!Number.isNaN(t) && t >= 0 && t <= 3) setActiveTeam(t);
+  }
 
   // GATE EARLY: AI e Trainer richiedono che il giocatore abbia un team.
   // Se vuoto, redirect immediato (senza caricare PokeAPI o mostrare l'intro).

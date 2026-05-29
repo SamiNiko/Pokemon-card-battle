@@ -232,8 +232,10 @@ function bindModalCloseHandlers() {
   $$('[data-trainer-close]').forEach(el => el.addEventListener('click', closeTrainerModal));
   $('#trainerModalFight').addEventListener('click', () => {
     if (!currentTrainerId) return;
-    // Naviga a battle.html con mode=trainer & id, il team avversario
-    // viene caricato in battle.js da trainers.js.
-    window.location.href = `battle.html?mode=trainer&id=${encodeURIComponent(currentTrainerId)}`;
+    // Passo il deck selezionato via URL (&team=N): battle.js lo riapplica
+    // DOPO il pull dal cloud, così la scelta non viene sovrascritta dal
+    // valore (vecchio) di activeTeam ancora presente sul cloud.
+    const slot = getState().activeTeam ?? 0;
+    window.location.href = `battle.html?mode=trainer&id=${encodeURIComponent(currentTrainerId)}&team=${slot}`;
   });
 }

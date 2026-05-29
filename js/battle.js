@@ -8,7 +8,7 @@
 import { loadAllPokemon, findPokemon }         from './data/pokeapi.js';
 import { getState, getActiveTeam, setActiveTeam, getEquipped, saveState, markTrainerBeaten, isTrainerBeaten } from './data/state.js?v=7';
 import { findItem }                            from './data/items.js?v=3';
-import { resolveTurn }                         from './engine/combat.js?v=4';
+import { resolveTurn, makeDeterministicRng }   from './engine/combat.js?v=5';
 import { getPassive }                          from './data/passives.js';
 import { aiPlaceCards, aiChooseMoves }         from './engine/ai.js';
 import { MOVESETS }                            from './data/movesets.js?v=3';
@@ -138,13 +138,6 @@ const cap   = s => s[0].toUpperCase() + s.slice(1);
 function getArtworkUrl(pkmn) {
   if (!pkmn) return '';
   return `assets/cards/${String(pkmn.id).padStart(3, '0')}.webp`;
-}
-
-/** Official-artwork (alta risoluzione) come fallback se la webp custom manca. */
-function getOfficialArt(pkmn) {
-  if (!pkmn) return '';
-  return pkmn.sprite?.official
-      || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
 }
 
 const COLS          = ['left', 'center', 'right'];
@@ -794,7 +787,7 @@ function makeCard(pkmn, side, variant = 'bench', slotKey = null) {
       ${passiveBadgeHTML}
       <div class="card__sprite">
         <img class="card__img" src="${getArtworkUrl(pkmn)}" alt="${pkmn.name}"
-             onerror="this.onerror=function(){this.onerror=null;this.classList.add('is-fallback');this.src='${pkmn.sprite.default}';};this.src='${getOfficialArt(pkmn)}';" />
+             onerror="this.onerror=null;this.classList.add('is-fallback');this.src='${pkmn.sprite.default}';" />
       </div>
       <div class="card__name">${pkmn.name}</div>
       <div class="card__types">
@@ -1253,6 +1246,9 @@ async function confirmTurn() {
     // diversi). Quindi passiamo gli held SOLO in modalità non-PvP.
     playerHeld:         MODE === 'pvp' ? new Map() : bs.playerHeld,
     enemyHeld:          MODE === 'pvp' ? new Map() : bs.enemyHeld,
+    // RNG deterministico per PvP: seed = matchId + turno → entrambi i
+    // client producono la stessa sequenza. In single player resta Math.random.
+    rng:                MODE === 'pvp' ? makeDeterministicRng(bs.pvp.matchId, bs.turn) : undefined,
   });
 
   // Anima la sequenza

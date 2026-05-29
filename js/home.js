@@ -237,17 +237,12 @@ function buildTeam(gs) {
         <span class="team-slot__name">${pkmn.name}</span>
         ${heldBadgeHTML}
       `;
-      // Fallback a 2 livelli: webp custom → official artwork → sprite
-      const officialArt = pkmn.sprite?.official
-          || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
+      // Fallback artwork → sprite
       const img = div.querySelector('.team-slot__img');
       img.onerror = () => {
-        img.onerror = () => {
-          img.onerror = null;
-          img.classList.add('is-fallback');
-          img.src = pkmn.sprite.default;
-        };
-        img.src = officialArt;
+        img.onerror = null;
+        img.classList.add('is-fallback');
+        img.src = pkmn.sprite.default;
       };
       // Click → apre il card modal (read-only, per modifiche → Collezione)
       div.style.cursor = 'pointer';

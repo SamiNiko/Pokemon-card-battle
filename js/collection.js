@@ -474,17 +474,12 @@ function makeCard(pkmn) {
       ${pkmn.types.map(t => `<span class="type-badge" data-type="${t}">${typeLabel(t)}</span>`).join('')}
     </div>
   `;
-  // Fallback a 2 livelli: webp custom → official artwork → sprite pixel
-  const officialArt = pkmn.sprite?.official
-      || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
+  // Fallback automatico: se l'artwork non c'è, torna allo sprite pixelato
   const img = el.querySelector('.card__img');
   img.onerror = () => {
-    img.onerror = () => {
-      img.onerror = null;
-      img.classList.add('is-fallback');
-      img.src = pkmn.sprite.default;
-    };
-    img.src = officialArt;
+    img.onerror = null;
+    img.classList.add('is-fallback');
+    img.src = pkmn.sprite.default;
   };
   return el;
 }

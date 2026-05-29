@@ -15,6 +15,41 @@ const DIRECT_BASE_POWER = 150;
 const ROWS = ['front', 'back'];
 
 /* ============================================================
+   RNG DETERMINISTICO (per PvP)
+   ============================================================
+   Math.random() chiamato indipendentemente sui due client diverge
+   immediatamente → desync. In PvP entrambi i client conoscono
+   matchId e turno: derivo un seed da quei due valori, costruisco
+   un Mulberry32, lo passo in resolveTurn. Stesso seed → stessa
+   sequenza di numeri → stesso esito.
+
+   Per AI/Trainer/Tutorial (single-player) si usa Math.random e
+   bona — non c'è niente da sincronizzare.
+   ============================================================ */
+function _hashString(s) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+function _mulberry32(seed) {
+  let st = seed >>> 0;
+  return function rng() {
+    st = (st + 0x6D2B79F5) >>> 0;
+    let t = st;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return (((t ^ (t >>> 14)) >>> 0) / 4294967296);
+  };
+}
+/** Crea un RNG deterministico da matchId + turno. Da usare in PvP. */
+export function makeDeterministicRng(matchId, turn) {
+  return _mulberry32(_hashString(`${matchId}:${turn}`));
+}
+
+/* ============================================================
    HELD ITEMS — effetti in battaglia
    ============================================================
    Gli oggetti tenuti modificano stat, danno e HP. Sono applicati
@@ -280,7 +315,12 @@ export function resolveTurn({
   playerPkmnPP, enemyPkmnPP,
   passiveState,
   playerHeld, enemyHeld,
+  rng,
 }) {
+  // RNG: in PvP arriva un Mulberry32 seedato (matchId+turno) → entrambi i
+  // client tirano la stessa sequenza. Senza rng usiamo Math.random (single
+  // player: AI/Trainer/Tutorial, dove non c'è nulla da sincronizzare).
+  const _rand = typeof rng === 'function' ? rng : Math.random;
   const pHP   = new Map(playerPkmnHP);
   const eHP   = new Map(enemyPkmnHP);
   const pPP   = new Map(playerPkmnPP);
@@ -400,7 +440,7 @@ export function resolveTurn({
     let extra   = null;
     if (defenderPassive) {
       const m = defenderPassive.meta;
-      if (m.kind === 'pp_block_chance' && Math.random() < (m.chance ?? 0)) {
+      if (m.kind === 'pp_block_chance' && _rand() < (m.chance ?? 0)) {
         ppGain = 0;
         blocked = defenderPassive.name;
       }

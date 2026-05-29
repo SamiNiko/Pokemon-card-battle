@@ -891,16 +891,11 @@ function shakeOverlay() {
 
 /* ---- Reveal Screen ---- */
 
-/* ---- Artwork loader: webp custom > official-artwork PokéAPI > sprite ---- */
+/* ---- Artwork loader: artwork dedicata se presente, altrimenti sprite ---- */
 function getArtworkUrl(pkmn) {
   if (!pkmn) return '';
   const id3 = String(pkmn.id).padStart(3, '0');
   return `assets/cards/${id3}.webp`;
-}
-function getOfficialArt(pkmn) {
-  if (!pkmn) return '';
-  return pkmn.sprite?.official
-      || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pkmn.id}.png`;
 }
 
 async function showReveal(entry) {
@@ -923,19 +918,16 @@ async function showReveal(entry) {
     sprite.src = pkmn.sprite.default;
     sprite.alt = pkmn.name;
 
-    // ARTWORK: webp custom → official artwork → (se manca anche quello) sprite "solo"
+    // ARTWORK (può mancare → in tal caso sprite diventa "solo" e ingrandisce)
     artwork.alt = pkmn.name;
     artwork.onerror = () => {
-      // 1° errore: webp custom assente → prova l'official artwork
-      artwork.onerror = () => {
-        artwork.onerror = null;
-        artwork.onload  = null;
-        artwork.classList.add('is-missing');
-        sprite.classList.add('reveal-screen__sprite--solo');
-      };
-      artwork.src = getOfficialArt(pkmn);
+      artwork.onerror = null;
+      artwork.onload  = null;
+      artwork.classList.add('is-missing');
+      sprite.classList.add('reveal-screen__sprite--solo');
     };
     artwork.onload = () => {
+      artwork.onerror = null;
       artwork.classList.remove('is-missing');
       sprite.classList.remove('reveal-screen__sprite--solo');
     };
@@ -1301,16 +1293,13 @@ function showSummary() {
       <span class="summary-card__name">${pkmn?.name ?? `#${entry.id}`}</span>
     `;
 
-    // Carica artwork: webp custom → official artwork → sprite
+    // Carica artwork con fallback allo sprite
     const img = card.querySelector('.summary-card__art');
     if (pkmn) {
       img.onerror = () => {
-        img.onerror = () => {
-          img.onerror = null;
-          img.classList.add('is-fallback');
-          img.src = pkmn.sprite.default;
-        };
-        img.src = getOfficialArt(pkmn);
+        img.onerror = null;
+        img.classList.add('is-fallback');
+        img.src = pkmn.sprite.default;
       };
       img.src = getArtworkUrl(pkmn);
     }
